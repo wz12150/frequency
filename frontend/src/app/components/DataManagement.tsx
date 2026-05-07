@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Plus, Edit, Trash2, FileUp, FileDown, X, Upload, Download, Search, Eye, ArrowLeft, ChevronRight, Info } from 'lucide-react';
 import { RecordDetailCard } from './RecordDetailCard';
 import { LicenseForm } from './LicenseForm';
+import { planningApi, PlanningVO } from '../api/planning';
 
 type DataTab = 'station' | 'license' | 'planning';
 
@@ -64,7 +65,7 @@ type LicenseRecord = {
 };
 
 type FrequencyBand = {
-  id: number;
+  guid: string;
   category: string;
   subCategory: string;
   service: string;
@@ -76,6 +77,33 @@ type FrequencyBand = {
   status: 'occupied' | 'free';
   note: string;
 };
+
+const convertToFrequencyBand = (vo: PlanningVO): FrequencyBand => ({
+  guid: vo.guid,
+  category: vo.radioservices,
+  subCategory: vo.subservices,
+  service: vo.level,
+  bandName: vo.segmentname,
+  startFreq: vo.startfrequency,
+  endFreq: vo.stopfrequency,
+  step: vo.step,
+  bandwidth: vo.bandwidth,
+  status: 'free' as const,
+  note: vo.remark || '',
+});
+
+const convertToPlanningVO = (fb: FrequencyBand): Partial<PlanningVO> => ({
+  guid: fb.guid,
+  radioservices: fb.category,
+  subservices: fb.subCategory,
+  level: fb.service,
+  segmentname: fb.bandName,
+  startfrequency: fb.startFreq,
+  stopfrequency: fb.endFreq,
+  step: fb.step,
+  bandwidth: fb.bandwidth,
+  remark: fb.note,
+});
 
 type DetailRecord =
   | { type: 'station'; data: StationRecord }
@@ -124,14 +152,14 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Station Name</label><input value={value.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Station Name <span className="text-red-500">*</span></label><input value={value.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Technical Standard</label><input value={value.technicalStandard ?? ''} onChange={(e) => update('technicalStandard', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Bandwidth Processing Unit Model</label><input value={value.bandwidthProcessingUnitModel ?? ''} onChange={(e) => update('bandwidthProcessingUnitModel', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Owner Name</label><input value={value.ownerName ?? ''} onChange={(e) => update('ownerName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Owner Name <span className="text-red-500">*</span></label><input value={value.ownerName ?? ''} onChange={(e) => update('ownerName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Backhaul Network Access Method</label><input value={value.backhaulNetworkAccessMethod ?? ''} onChange={(e) => update('backhaulNetworkAccessMethod', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Station Purpose</label><input value={value.stationPurpose ?? ''} onChange={(e) => update('stationPurpose', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Modulation Type</label><input value={value.modulationType ?? ''} onChange={(e) => update('modulationType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Station Type</label><input value={value.type} onChange={(e) => update('type', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Station Type <span className="text-red-500">*</span></label><input value={value.type} onChange={(e) => update('type', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Transmit Frequency</label><input value={value.frequency} onChange={(e) => update('frequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Receive Frequency</label><input value={value.frequency} onChange={(e) => update('frequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Equipment Name and Model</label><input value={value.equipmentNameAndModel ?? ''} onChange={(e) => update('equipmentNameAndModel', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
@@ -139,8 +167,8 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
             <div><label className="block text-sm font-medium mb-2">Equipment Output Power</label><input value={value.equipmentPower ?? value.power ?? ''} onChange={(e) => updateMany({ equipmentPower: e.target.value, power: e.target.value })} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Antenna Type</label><input value={value.antenna ?? ''} onChange={(e) => update('antenna', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Antenna Count</label><input value={value.antennaCount ?? ''} onChange={(e) => update('antennaCount', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Province</label><input value={value.province ?? ''} onChange={(e) => update('province', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Region</label><input value={value.region} onChange={(e) => update('region', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Province <span className="text-red-500">*</span></label><input value={value.province ?? ''} onChange={(e) => update('province', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Region <span className="text-red-500">*</span></label><input value={value.region} onChange={(e) => update('region', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Detailed Location</label><input value={value.detailedLocation ?? ''} onChange={(e) => update('detailedLocation', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Status</label><select value={value.status} onChange={(e) => update('status', e.target.value as StationRecord['status'])} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"><option value="normal">Normal</option><option value="expiring">Expiring</option><option value="expired">Expired</option></select></div>
             <div><label className="block text-sm font-medium mb-2">Open Date</label><input type="date" value={value.openDate ?? ''} onChange={(e) => update('openDate', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
@@ -175,11 +203,15 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium mb-2">Frequency Band</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">ITU Region 1 Allocation</label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">National Allocation</label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Utilization</label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Special Conditions</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">分类名称</label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">子类名称</label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">等级</label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">频段名称</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">起始频率</label><input type="number" value={value.startFreq} onChange={(e) => update('startFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">结束频率</label><input type="number" value={value.endFreq} onChange={(e) => update('endFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">步进</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">信号带宽</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">备注</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
           </div>
         </div>
         <div className="p-6 border-t border-border flex justify-end gap-3">
@@ -295,13 +327,22 @@ export function DataManagement() {
     { id: 1, number: 'LIC-2024-001580', organization: 'Mongolia Telecom', station: 'Ulaanbaatar Central A', frequency: '1800-1850 MHz', type: 'Mobile', power: '50W', status: 'normal', startDate: '2024-01-01', endDate: '2027-12-31', licenseAuthorization: 'Yes', unit: 'Mongolia Telecom', category: 'Mobile', law: 'Telecom Law', coverage: 'Ulaanbaatar', process: 'Approved', code: '001580', decisionDate: '2024-01-01', decision: 'Granted', description: 'Frequency authorization', registration: 'Mongolia Telecom', address: 'Ulaanbaatar Central A', phone: '-', email: '-', administrativeInfo: '-', contactPerson: '-' },
     { id: 2, number: 'LIC-2024-000890', organization: 'Mongolia Broadcasting', station: 'Dornogovi Station B', frequency: '470-478 MHz', type: 'Broadcasting', power: '100W', status: 'expiring', startDate: '2023-06-01', endDate: '2026-05-31', licenseAuthorization: 'Yes', unit: 'Mongolia Broadcasting', category: 'Broadcasting', law: 'Broadcast Law', coverage: 'Dornogovi', process: 'Approved', code: '000890', decisionDate: '2023-06-01', decision: 'Granted', description: 'Frequency authorization', registration: 'Mongolia Broadcasting', address: 'Dornogovi Station B', phone: '-', email: '-', administrativeInfo: '-', contactPerson: '-' },
   ]);
-  const [planningRecords, setPlanningRecords] = useState<FrequencyBand[]>([
-    { id: 1, category: 'Mobile', subCategory: 'LTE/5G', service: 'Primary', bandName: 'Band 3', startFreq: 1710, endFreq: 1785, step: 5, bandwidth: 5, status: 'occupied', note: 'ITU Allocation' },
-    { id: 2, category: 'Broadcasting', subCategory: 'DVB-T', service: 'Primary', bandName: 'UHF', startFreq: 470, endFreq: 862, step: 8, bandwidth: 8, status: 'occupied', note: 'Broadcast allocation' },
-    { id: 3, category: 'Fixed', subCategory: 'Microwave', service: 'Secondary', bandName: 'C-Band', startFreq: 3700, endFreq: 4200, step: 40, bandwidth: 40, status: 'occupied', note: 'Point-to-point links' },
-    { id: 4, category: 'Satellite', subCategory: 'Ku-Band', service: 'Primary', bandName: 'DBS', startFreq: 11700, endFreq: 12200, step: 27, bandwidth: 27, status: 'occupied', note: 'Satellite downlink' },
-    { id: 5, category: 'Unallocated', subCategory: '-', service: '-', bandName: 'Reserved', startFreq: 2300, endFreq: 2400, step: 0, bandwidth: 0, status: 'free', note: 'Reserved for future coordination' },
-  ]);
+  const [planningRecords, setPlanningRecords] = useState<FrequencyBand[]>([]);
+
+  useEffect(() => {
+    const fetchPlanningData = async () => {
+      try {
+        const res = await planningApi.page({ pageSize: 1000 });
+        if (res.code === 200 && res.data) {
+          const records = res.data.records.map(convertToFrequencyBand);
+          setPlanningRecords(records);
+        }
+      } catch (error) {
+        console.error('Failed to fetch planning data:', error);
+      }
+    };
+    fetchPlanningData();
+  }, []);
 
   const licenseUnits = useMemo(() => ['All', ...Array.from(new Set(licenseRecords.map((item) => item.organization))).sort()], [licenseRecords]);
   const licenseRegions = useMemo(() => ['All', ...Array.from(new Set(stationRecords.map((item) => item.region))).sort()], [stationRecords]);
@@ -343,13 +384,60 @@ export function DataManagement() {
     setPlanningDialogMode('edit');
   };
 
-  const savePlanningEdit = () => {
+  const savePlanningEdit = async () => {
     if (!planningFormRecord) return;
-    setPlanningRecords((prev) => prev.map((item) => (
-      item.id === planningFormRecord.id ? planningFormRecord : item
-    )));
+    try {
+      const vo = convertToPlanningVO(planningFormRecord);
+      if (planningDialogMode === 'add') {
+        await planningApi.create({
+          radioservices: vo.radioservices!,
+          subservices: vo.subservices!,
+          level: vo.level!,
+          segmentname: vo.segmentname!,
+          startfrequency: vo.startfrequency!,
+          stopfrequency: vo.stopfrequency!,
+          step: vo.step!,
+          bandwidth: vo.bandwidth!,
+          remark: vo.remark || '',
+        });
+      } else {
+        await planningApi.update(planningFormRecord.guid, {
+          radioservices: vo.radioservices,
+          subservices: vo.subservices,
+          level: vo.level,
+          segmentname: vo.segmentname,
+          startfrequency: vo.startfrequency,
+          stopfrequency: vo.stopfrequency,
+          step: vo.step,
+          bandwidth: vo.bandwidth,
+          remark: vo.remark,
+        });
+      }
+      const res = await planningApi.page({ pageSize: 1000 });
+      if (res.code === 200 && res.data) {
+        setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+      }
+    } catch (error) {
+      console.error('Failed to save planning data:', error);
+      alert('保存失败');
+      return;
+    }
     setPlanningDialogMode(null);
     setPlanningFormRecord(null);
+  };
+
+  const deletePlanning = async (guid: string) => {
+    if (!confirm('确定要删除这条记录吗？')) return;
+    try {
+      await planningApi.delete(guid);
+      const res = await planningApi.page({ pageSize: 1000 });
+      if (res.code === 200 && res.data) {
+        setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+      }
+    } catch (error) {
+      console.error('Failed to delete planning data:', error);
+      alert('删除失败');
+    }
   };
 
   const openLicenseEdit = (record: LicenseRecord) => {
@@ -486,7 +574,7 @@ export function DataManagement() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Station Name</th><th className="text-left py-3 px-4">Station Type</th><th className="text-left py-3 px-4">Region</th><th className="text-left py-3 px-4">Frequency Range</th><th className="text-center py-3 px-4">Status</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.frequency].some((v) => v.toLowerCase().includes(searchTerm.toLowerCase()))).map((station) => <tr key={station.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{station.name}</td><td className="py-3 px-4">{station.type}</td><td className="py-3 px-4">{station.region}</td><td className="py-3 px-4 text-sm">{station.frequency}</td><td className="text-center py-3 px-4"><span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusClass(station.status)}`}>{statusLabel(station.status)}</span></td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openDetail({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button onClick={() => openEdit({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Station Name</th><th className="text-left py-3 px-4">Station Type</th><th className="text-left py-3 px-4">Region</th><th className="text-left py-3 px-4">Owner Name</th><th className="text-center py-3 px-4">Status</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v.toLowerCase().includes(searchTerm.toLowerCase()))).map((station) => <tr key={station.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{station.name}</td><td className="py-3 px-4">{station.type}</td><td className="py-3 px-4">{station.region}</td><td className="py-3 px-4 text-sm">{station.ownerName}</td><td className="text-center py-3 px-4"><span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusClass(station.status)}`}>{statusLabel(station.status)}</span></td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openDetail({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button onClick={() => openEdit({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button onClick={() => { if (confirm('确定要删除这条记录吗？')) setStationRecords((prev) => prev.filter((item) => item.id !== station.id)); }} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
         </div>
       )}
 
@@ -501,7 +589,7 @@ export function DataManagement() {
             </div>
           </div>
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6"><div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div><select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select><select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select><select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select><select value={licenseStatusFilter} onChange={(e) => setLicenseStatusFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-3">{licenseStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select></div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">License Number</th><th className="text-left py-3 px-4">Organization</th><th className="text-left py-3 px-4">Station</th><th className="text-left py-3 px-4">Frequency Range</th><th className="text-left py-3 px-4">Service Type</th><th className="text-center py-3 px-4">Power</th><th className="text-center py-3 px-4">Period</th><th className="text-center py-3 px-4">Status</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{filteredLicenseData.map((license) => <tr key={license.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium text-sm">{license.number}</td><td className="py-3 px-4">{license.organization}</td><td className="py-3 px-4">{license.station}</td><td className="py-3 px-4 text-sm">{license.frequency}</td><td className="py-3 px-4">{license.type}</td><td className="text-center py-3 px-4">{license.power}</td><td className="text-center py-3 px-4 text-sm"><div>{license.startDate}</div><div className="text-muted-foreground">to {license.endDate}</div></td><td className="text-center py-3 px-4"><span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusClass(license.status)}`}>{statusLabel(license.status)}</span></td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button type="button" onClick={() => openDetail({ type: 'license', data: license })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button type="button" onClick={() => openLicenseEdit(license)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button type="button" onClick={() => setLicenseRecords((prev) => prev.filter((item) => item.id !== license.id))} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">License</th><th className="text-left py-3 px-4">Organization</th><th className="text-left py-3 px-4">Category</th><th className="text-left py-3 px-4">Type</th><th className="text-left py-3 px-4">Start Date</th><th className="text-left py-3 px-4">End Date</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{filteredLicenseData.map((license) => <tr key={license.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium text-sm">{license.licenseAuthorization ?? '-'}</td><td className="py-3 px-4">{license.unit ?? license.organization}</td><td className="py-3 px-4">{license.category ?? license.type}</td><td className="py-3 px-4">{license.type}</td><td className="py-3 px-4 text-sm">{license.startDate}</td><td className="py-3 px-4 text-sm">{license.endDate}</td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button type="button" onClick={() => openDetail({ type: 'license', data: license })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button type="button" onClick={() => openLicenseEdit(license)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button type="button" onClick={() => setLicenseRecords((prev) => prev.filter((item) => item.id !== license.id))} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
         </div>
       )}
 
@@ -512,10 +600,10 @@ export function DataManagement() {
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => { setImportTab('planning'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
               <button type="button" onClick={() => exportToExcel('planning')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setPlanningFormRecord({ id: Date.now(), category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Custom Band</button>
+              <button type="button" onClick={() => { setPlanningFormRecord({ guid: '', category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Custom Band</button>
             </div>
           </div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Frequency Band</th><th className="text-left py-3 px-4">ITU Region 1 Allocation</th><th className="text-left py-3 px-4">National Allocation</th><th className="text-left py-3 px-4">Utilization</th><th className="text-left py-3 px-4">Special Conditions</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{planningRecords.map((plan) => <tr key={plan.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{plan.bandName}</td><td className="py-3 px-4">{plan.subCategory}</td><td className="py-3 px-4">{plan.category}</td><td className="py-3 px-4">{plan.service}</td><td className="py-3 px-4">{plan.note}</td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openPlanningEdit(plan)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button>{plan.category === 'Custom' && <button className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button>}</div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">分类名称</th><th className="text-left py-3 px-4">子类名称</th><th className="text-left py-3 px-4">等级</th><th className="text-left py-3 px-4">频段名称</th><th className="text-left py-3 px-4">起始频率</th><th className="text-left py-3 px-4">结束频率</th><th className="text-left py-3 px-4">步进</th><th className="text-left py-3 px-4">信号带宽</th><th className="text-left py-3 px-4">备注</th><th className="text-center py-3 px-4">操作</th></tr></thead><tbody>{planningRecords.map((plan) => <tr key={plan.guid} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4">{plan.category}</td><td className="py-3 px-4">{plan.subCategory}</td><td className="py-3 px-4">{plan.service}</td><td className="py-3 px-4 font-medium">{plan.bandName}</td><td className="py-3 px-4">{plan.startFreq}</td><td className="py-3 px-4">{plan.endFreq}</td><td className="py-3 px-4">{plan.step}</td><td className="py-3 px-4">{plan.bandwidth}</td><td className="py-3 px-4">{plan.note}</td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openPlanningEdit(plan)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button onClick={() => deletePlanning(plan.guid)} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
         </div>
       )}
 
@@ -526,13 +614,7 @@ export function DataManagement() {
           value={planningFormRecord}
           onChange={(data) => setPlanningFormRecord(data)}
           onClose={() => { setPlanningDialogMode(null); setPlanningFormRecord(null); }}
-          onSubmit={() => {
-            if (planningDialogMode === 'add') {
-              setPlanningRecords((prev) => [...prev, { ...planningFormRecord, id: Date.now() }]);
-            } else {
-              savePlanningEdit();
-            }
-          }}
+          onSubmit={savePlanningEdit}
           submitLabel={planningDialogMode === 'add' ? 'Add Band' : 'Save Changes'}
         />
       )}
@@ -610,8 +692,14 @@ export function DataManagement() {
           onChange={(data) => setStationFormRecord(data)}
           onClose={() => { setStationDialogMode(null); setStationFormRecord(null); }}
           onSubmit={() => {
+            if (!stationFormRecord.name || !stationFormRecord.ownerName || !stationFormRecord.type || !stationFormRecord.province || !stationFormRecord.region) {
+              alert('Please fill in all required fields: Station Name, Owner Name, Station Type, Province, Region');
+              return;
+            }
             if (stationDialogMode === 'add') {
               setStationRecords((prev) => [...prev, { ...stationFormRecord, id: Date.now() }]);
+              setStationDialogMode(null);
+              setStationFormRecord(null);
             } else {
               saveStationEdit();
             }
@@ -628,12 +716,18 @@ export function DataManagement() {
           onClose={() => { setLicenseDialogMode(null); setLicenseFormRecord(null); }}
           onSubmit={() => {
             if (licenseDialogMode === 'add') {
+              if (!licenseFormRecord.licenseAuthorization || !licenseFormRecord.unit || !licenseFormRecord.category || !licenseFormRecord.type || !licenseFormRecord.startDateDisplay || !licenseFormRecord.endDateDisplay) {
+                alert('Please fill in all required fields: License / Authorization, Organization, Category, Type, Start Date, End Date');
+                return;
+              }
               setLicenseRecords((prev) => [...prev, { ...licenseFormRecord, id: Date.now() }]);
+              setLicenseDialogMode(null);
+              setLicenseFormRecord(null);
             } else {
               setLicenseRecords((prev) => prev.map((item) => item.id === licenseFormRecord.id ? licenseFormRecord : item));
+              setLicenseDialogMode(null);
+              setLicenseFormRecord(null);
             }
-            setLicenseDialogMode(null);
-            setLicenseFormRecord(null);
           }}
           submitLabel={licenseDialogMode === 'add' ? 'Add License' : 'Save Changes'}
         />

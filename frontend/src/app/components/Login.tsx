@@ -21,23 +21,41 @@ export function Login({ onLogin }: LoginProps) {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
-    // 简单验证 - 实际应用中应该调用后端API
-    if (username === 'admin' && password === 'admin') {
-      setError('');
+    try {
+      const response = await fetch('http://localhost:8084/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      // 处理"记住我"功能
-      if (rememberMe) {
-        localStorage.setItem('rememberedUsername', username);
+      const data = await response.json();
+
+      if (data.code === 200 && data.data && data.data.token) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('username', data.data.username);
+        localStorage.setItem('guid', data.data.guid || '');
+        localStorage.setItem('name', data.data.name || data.data.username);
+        localStorage.setItem('email', data.data.email || '');
+        localStorage.setItem('phone', data.data.phone || '');
+
+        if (rememberMe) {
+          localStorage.setItem('rememberedUsername', username);
+        } else {
+          localStorage.removeItem('rememberedUsername');
+        }
+
+        onLogin();
       } else {
-        localStorage.removeItem('rememberedUsername');
+        setError(data.message || 'Login failed');
       }
-
-      onLogin();
-    } else {
-      setError('Invalid username or password');
+    } catch (err) {
+      setError('Network error, please try again');
     }
   };
 
@@ -131,7 +149,7 @@ export function Login({ onLogin }: LoginProps) {
           {/* Demo Credentials */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-[10px] text-gray-500 text-center">
-              Demo credentials: <span className="font-medium text-gray-700">admin / admin</span>
+              Demo credentials: <span className="font-medium text-gray-700">admin / admin123</span>
             </p>
           </div>
         </div>

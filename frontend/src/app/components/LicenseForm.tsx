@@ -41,6 +41,7 @@ type LicenseFormProps = {
 
 export function LicenseForm({ title, description, value, onChange, onClose, onSubmit, submitLabel }: LicenseFormProps) {
   const update = <K extends keyof LicenseRecord>(key: K, next: LicenseRecord[K]) => onChange({ ...value, [key]: next });
+  const requiredFields = ['licenseAuthorization', 'unit', 'category', 'type', 'startDateDisplay', 'endDateDisplay'];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-card shadow-2xl border border-border">
@@ -53,14 +54,15 @@ export function LicenseForm({ title, description, value, onChange, onClose, onSu
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            ['License / Authorization', 'licenseAuthorization'], ['Unit', 'unit'], ['Category', 'category'], ['Law', 'law'], ['Type', 'type'], ['Start Date', 'startDateDisplay'], ['End Date', 'endDateDisplay'], ['Coverage Range', 'coverage'], ['Process', 'process'], ['Status', 'status'], ['Code / No.', 'code'], ['Decision Date', 'decisionDate'], ['Decision', 'decision'], ['Description', 'description'], ['Registration', 'registration'], ['Address', 'address'], ['Phone', 'phone'], ['Email', 'email'], ['Administrative Info', 'administrativeInfo'], ['Contact Person', 'contactPerson'],
+            ['License / Authorization', 'licenseAuthorization'], ['Organization', 'unit'], ['Category', 'category'], ['Law', 'law'], ['Type', 'type'], ['Start Date', 'startDateDisplay'], ['End Date', 'endDateDisplay'], ['Coverage Range', 'coverage'], ['Process', 'process'], ['Status', 'status'], ['Code / No.', 'code'], ['Decision Date', 'decisionDate'], ['Decision', 'decision'], ['Description', 'description'], ['Registration', 'registration'], ['Address', 'address'], ['Phone', 'phone'], ['Email', 'email'], ['Administrative Info', 'administrativeInfo'], ['Contact Person', 'contactPerson'],
           ].map(([label, key]) => (
             <div key={key}>
-              <label className="block text-sm font-medium mb-2">{label}</label>
+              <label className="block text-sm font-medium mb-2">{label}{requiredFields.includes(key) && <span className="text-red-500"> *</span>}</label>
               <input
                 value={(value as any)[key] ?? ''}
                 onChange={(e) => update(key as keyof LicenseRecord, e.target.value as any)}
                 className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                required={requiredFields.includes(key)}
               />
             </div>
           ))}
