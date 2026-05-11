@@ -1,15 +1,17 @@
 import { useMemo, useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Edit, Trash2, FileUp, FileDown, X, Upload, Download, Search, Eye, ArrowLeft, ChevronRight, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, FileUp, FileDown, X, Upload, Download, Search, Eye, ArrowLeft, ChevronRight, Info, MapPin } from 'lucide-react';
 import { RecordDetailCard } from './RecordDetailCard';
 import { LicenseForm } from './LicenseForm';
+import { CoordinatePicker } from './CoordinatePicker';
 import { planningApi, PlanningVO } from '../api/planning';
+import { stationApi } from '../api/station';
+import { permitApi, PermitVO } from '../api/permit';
 
 type DataTab = 'station' | 'license' | 'planning';
 
-
 type StationRecord = {
-  id: number;
+  id: string;
   name: string;
   type: string;
   region: string;
@@ -36,7 +38,8 @@ type StationRecord = {
 };
 
 type LicenseRecord = {
-  id: number;
+  guid: string;
+  id: string;
   number: string;
   organization: string;
   station: string;
@@ -105,6 +108,46 @@ const convertToPlanningVO = (fb: FrequencyBand): Partial<PlanningVO> => ({
   remark: fb.note,
 });
 
+function mapPermitVoToLicenseRecord(r: PermitVO): LicenseRecord {
+  const now = new Date();
+  const endDate = r.enddate ? new Date(r.enddate) : null;
+  const warning = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  let status: 'normal' | 'expiring' | 'expired' = 'normal';
+  if (endDate) {
+    if (endDate < now) status = 'expired';
+    else if (endDate < warning) status = 'expiring';
+  }
+  return {
+    guid: r.guid,
+    id: r.guid,
+    number: r.code ?? '',
+    organization: r.interlocutor ?? '',
+    station: r.scope ?? '',
+    frequency: r.scope ?? '',
+    type: r.type ?? '',
+    power: '',
+    status,
+    startDate: r.startdate ?? '',
+    endDate: r.enddate ?? '',
+    licenseAuthorization: r.consent ?? '',
+    unit: r.interlocutor ?? '',
+    category: r.category ?? '',
+    law: r.legal ?? '',
+    coverage: r.scope ?? '',
+    process: r.process ?? '',
+    code: r.code ?? '',
+    decisionDate: r.decisiondate ?? '',
+    decision: r.decision ?? '',
+    description: r.note ?? '',
+    registration: r.register ?? '',
+    address: r.address ?? '',
+    phone: r.phone ?? '',
+    email: r.email ?? '',
+    administrativeInfo: r.administrativeinfo ?? '',
+    contactPerson: r.directorname ?? '',
+  };
+}
+
 type DetailRecord =
   | { type: 'station'; data: StationRecord }
   | { type: 'license'; data: LicenseRecord }
@@ -123,6 +166,72 @@ type PlanningFormProps = {
 const stationFields: (keyof StationRecord)[] = ['name', 'type', 'region', 'province', 'detailedLocation', 'frequency', 'status', 'openDate', 'expireDate', 'latitude', 'longitude', 'power', 'antenna', 'equipmentCount', 'equipmentPower', 'technicalStandard', 'bandwidthProcessingUnitModel', 'ownerName', 'backhaulNetworkAccessMethod', 'stationPurpose', 'modulationType', 'antennaCount', 'equipmentNameAndModel'];
 const licenseFields: (keyof LicenseRecord)[] = ['number', 'organization', 'station', 'frequency', 'type', 'power', 'status', 'startDate', 'endDate', 'licenseAuthorization', 'unit', 'category', 'law', 'coverage', 'process', 'code', 'decisionDate', 'decision', 'description', 'registration', 'address', 'phone', 'email', 'administrativeInfo', 'contactPerson'];
 const planningFields: (keyof FrequencyBand)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note'];
+const stationFieldMap: Record<keyof StationRecord, string> = {
+  name: 'Station Name',
+  type: 'Station Type',
+  region: 'Region',
+  province: 'Province',
+  detailedLocation: 'Detailed Location',
+  frequency: 'Frequency',
+  status: 'Status',
+  openDate: 'Open Date',
+  expireDate: 'Expire Date',
+  latitude: 'Latitude',
+  longitude: 'Longitude',
+  power: 'Power',
+  antenna: 'Antenna Type',
+  equipmentCount: 'Equipment Count',
+  equipmentPower: 'Equipment Output Power',
+  technicalStandard: 'Technical Standard',
+  bandwidthProcessingUnitModel: 'Bandwidth Processing Unit Model',
+  ownerName: 'Owner Name',
+  backhaulNetworkAccessMethod: 'Backhaul Network Access Method',
+  stationPurpose: 'Station Purpose',
+  modulationType: 'Modulation Type',
+  antennaCount: 'Antenna Count',
+  equipmentNameAndModel: 'Equipment Name and Model',
+};
+const licenseFieldMap: Record<keyof LicenseRecord, string> = {
+  id: 'ID',
+  number: 'License Number',
+  organization: 'Organization',
+  station: 'Station',
+  frequency: 'Frequency',
+  type: 'Type',
+  power: 'Power',
+  status: 'Status',
+  startDate: 'Start Date',
+  endDate: 'End Date',
+  licenseAuthorization: 'License',
+  unit: 'Unit',
+  category: 'Category',
+  law: 'Law',
+  coverage: 'Coverage',
+  process: 'Process',
+  code: 'Code',
+  decisionDate: 'Decision Date',
+  decision: 'Decision',
+  description: 'Description',
+  registration: 'Registration',
+  address: 'Address',
+  phone: 'Phone',
+  email: 'Email',
+  administrativeInfo: 'Administrative Info',
+  contactPerson: 'Contact Person',
+};
+const planningFieldMap: Record<keyof FrequencyBand, string> = {
+  guid: 'GUID',
+  category: 'Category',
+  subCategory: 'Subcategory',
+  service: 'Level',
+  bandName: 'Band Name',
+  startFreq: 'Start Frequency',
+  endFreq: 'End Frequency',
+  step: 'Step',
+  bandwidth: 'Signal Bandwidth',
+  status: 'Status',
+  note: 'Notes',
+};
 
 type StationFormProps = {
   title: string;
@@ -132,9 +241,10 @@ type StationFormProps = {
   onClose: () => void;
   onSubmit: () => void;
   submitLabel: string;
+  onOpenCoordinatePicker: () => void;
 };
 
-function StationForm({ title, description, value, onChange, onClose, onSubmit, submitLabel }: StationFormProps) {
+function StationForm({ title, description, value, onChange, onClose, onSubmit, submitLabel, onOpenCoordinatePicker }: StationFormProps) {
   const update = <K extends keyof StationRecord>(key: K, next: StationRecord[K]) => onChange({ ...value, [key]: next });
   const updateMany = (patch: Partial<StationRecord>) => onChange({ ...value, ...patch });
 
@@ -173,8 +283,42 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
             <div><label className="block text-sm font-medium mb-2">Status</label><select value={value.status} onChange={(e) => update('status', e.target.value as StationRecord['status'])} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"><option value="normal">Normal</option><option value="expiring">Expiring</option><option value="expired">Expired</option></select></div>
             <div><label className="block text-sm font-medium mb-2">Open Date</label><input type="date" value={value.openDate ?? ''} onChange={(e) => update('openDate', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Expire Date</label><input type="date" value={value.expireDate} onChange={(e) => update('expireDate', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Latitude</label><input value={value.latitude ?? ''} onChange={(e) => update('latitude', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Longitude</label><input value={value.longitude ?? ''} onChange={(e) => update('longitude', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Latitude</label>
+              <div className="flex gap-2">
+                <input
+                  value={value.latitude ?? ''}
+                  onChange={(e) => update('latitude', e.target.value)}
+                  className="flex-1 w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="e.g. 46.8523"
+                />
+                <button
+                  type="button"
+                  onClick={onOpenCoordinatePicker}
+                  className="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm flex items-center gap-1.5 whitespace-nowrap"
+                  title="从地图选择"
+                >
+                  <MapPin className="w-4 h-4" /> 地图选点
+                </button>
+              </div>
+            </div>
+            <div><label className="block text-sm font-medium mb-2">Longitude</label>
+              <div className="flex gap-2">
+                <input
+                  value={value.longitude ?? ''}
+                  onChange={(e) => update('longitude', e.target.value)}
+                  className="flex-1 w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="e.g. 103.7695"
+                />
+                <button
+                  type="button"
+                  onClick={onOpenCoordinatePicker}
+                  className="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm flex items-center gap-1.5 whitespace-nowrap"
+                  title="从地图选择"
+                >
+                  <MapPin className="w-4 h-4" /> 地图选点
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div className="p-6 border-t border-border flex justify-end gap-3">
@@ -203,15 +347,15 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium mb-2">分类名称</label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">子类名称</label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">等级</label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">频段名称</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">起始频率</label><input type="number" value={value.startFreq} onChange={(e) => update('startFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">结束频率</label><input type="number" value={value.endFreq} onChange={(e) => update('endFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">步进</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">信号带宽</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">备注</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Category<span className="text-red-500"> *</span></label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Subcategory<span className="text-red-500"> *</span></label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Level<span className="text-red-500"> *</span></label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Band Name</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Start Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.startFreq} onChange={(e) => update('startFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">End Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.endFreq} onChange={(e) => update('endFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Step</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Signal Bandwidth</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Notes</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
           </div>
         </div>
         <div className="p-6 border-t border-border flex justify-end gap-3">
@@ -222,6 +366,52 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
     </div>
   );
 }
+
+function buildFrequencyString(ft?: number, fr?: number): string {
+  if (ft && fr) return `${ft}–${fr} MHz`;
+  if (ft) return `${ft} MHz`;
+  if (fr) return `${fr} MHz`;
+  return '';
+}
+
+function computeStatus(expDate?: string): 'normal' | 'expiring' | 'expired' {
+  if (!expDate) return 'normal';
+  const now = new Date();
+  const exp = new Date(expDate);
+  if (exp < now) return 'expired';
+  const warning = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  if (exp < warning) return 'expiring';
+  return 'normal';
+}
+
+function mapVoToStationRecord(r: any): StationRecord {
+  return {
+    id: r.guid,
+    name: r.sitename ?? '',
+    type: r.type ?? '',
+    region: r.district ?? '',
+    province: r.province ?? '',
+    detailedLocation: r.location ?? '',
+    frequency: buildFrequencyString(r.frequencyt, r.frequencyr),
+    status: computeStatus(r.expirationdate),
+    openDate: r.startdate ?? '',
+    expireDate: r.expirationdate ?? '',
+    latitude: r.latitude?.toString() ?? '',
+    longitude: r.longitude?.toString() ?? '',
+    power: r.outputpower ? `${r.outputpower} W` : '',
+    equipmentCount: r.devicequantity?.toString() ?? '',
+    equipmentPower: r.outputpower?.toString() ?? '',
+    technicalStandard: r.technology ?? '',
+    ownerName: r.unit ?? '',
+    backhaulNetworkAccessMethod: r.backbone ?? '',
+    stationPurpose: r.stationpurpose ?? '',
+    modulationType: r.modulation ?? '',
+    antennaCount: r.antquantity?.toString() ?? '',
+    equipmentNameAndModel: r.devicemodel ?? '',
+    antenna: r.anttype ?? '',
+  };
+}
+
 export function DataManagement() {
   const [activeTab, setActiveTab] = useState<DataTab>('station');
   const [searchTerm, setSearchTerm] = useState('');
@@ -243,105 +433,37 @@ export function DataManagement() {
   const [planningFormRecord, setPlanningFormRecord] = useState<FrequencyBand | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [exportOptions, setExportOptions] = useState({ format: 'xlsx', range: 'all', fields: ['all'] });
-  const [newStation, setNewStation] = useState({
-    name: '',
-    type: '',
-    region: '',
-    province: '',
-    detailedLocation: '',
-    frequency: '',
-    status: 'normal',
-    openDate: '',
-    expireDate: '',
-    latitude: '',
-    longitude: '',
-    power: '',
-    antenna: '',
-    equipmentCount: '',
-    equipmentPower: '',
-    technicalStandard: '',
-    bandwidthProcessingUnitModel: '',
-    ownerName: '',
-    backhaulNetworkAccessMethod: '',
-    stationPurpose: '',
-    modulationType: '',
-    antennaCount: '',
-    equipmentNameAndModel: '',
-  });
+  const [coordinatePickerOpen, setCoordinatePickerOpen] = useState(false);
 
-  const [stationRecords, setStationRecords] = useState<StationRecord[]>([
-    {
-      id: 1,
-      name: 'Ulaanbaatar Central A',
-      type: 'Mobile',
-      region: 'Ulaanbaatar',
-      province: 'Ulaanbaatar',
-      detailedLocation: 'Peace Avenue 12, SBD',
-      frequency: '1800-1900 MHz',
-      status: 'normal',
-      openDate: '2024-01-01',
-      expireDate: '2027-12-31',
-      latitude: '47.9189',
-      longitude: '106.9170',
-      power: '50W',
-      antenna: 'Directional',
-      equipmentCount: '12',
-      equipmentPower: '50W',
-      technicalStandard: 'LTE',
-      bandwidthProcessingUnitModel: 'BBU-3900',
-      ownerName: 'Mongolia Telecom',
-      backhaulNetworkAccessMethod: 'Fiber',
-      stationPurpose: 'Public mobile service',
-      modulationType: 'QAM',
-      antennaCount: '4',
-      equipmentNameAndModel: 'Ericsson RBS 6601',
-    },
-    {
-      id: 2,
-      name: 'Dornogovi Station B',
-      type: 'Broadcasting',
-      region: 'Dornogovi',
-      province: 'Dornogovi',
-      detailedLocation: 'Sainshand District North',
-      frequency: '470-862 MHz',
-      status: 'expiring',
-      openDate: '2023-04-15',
-      expireDate: '2026-05-22',
-      latitude: '44.9635',
-      longitude: '110.1502',
-      power: '100W',
-      antenna: 'Omnidirectional',
-      equipmentCount: '8',
-      equipmentPower: '100W',
-      technicalStandard: 'DVB-T2',
-      bandwidthProcessingUnitModel: 'TX-8800',
-      ownerName: 'National Broadcasting',
-      backhaulNetworkAccessMethod: 'Microwave',
-      stationPurpose: 'Regional broadcast coverage',
-      modulationType: 'OFDM',
-      antennaCount: '2',
-      equipmentNameAndModel: 'Rohde & Schwarz NH7300',
-    },
-  ]);
-  const [licenseRecords, setLicenseRecords] = useState<LicenseRecord[]>([
-    { id: 1, number: 'LIC-2024-001580', organization: 'Mongolia Telecom', station: 'Ulaanbaatar Central A', frequency: '1800-1850 MHz', type: 'Mobile', power: '50W', status: 'normal', startDate: '2024-01-01', endDate: '2027-12-31', licenseAuthorization: 'Yes', unit: 'Mongolia Telecom', category: 'Mobile', law: 'Telecom Law', coverage: 'Ulaanbaatar', process: 'Approved', code: '001580', decisionDate: '2024-01-01', decision: 'Granted', description: 'Frequency authorization', registration: 'Mongolia Telecom', address: 'Ulaanbaatar Central A', phone: '-', email: '-', administrativeInfo: '-', contactPerson: '-' },
-    { id: 2, number: 'LIC-2024-000890', organization: 'Mongolia Broadcasting', station: 'Dornogovi Station B', frequency: '470-478 MHz', type: 'Broadcasting', power: '100W', status: 'expiring', startDate: '2023-06-01', endDate: '2026-05-31', licenseAuthorization: 'Yes', unit: 'Mongolia Broadcasting', category: 'Broadcasting', law: 'Broadcast Law', coverage: 'Dornogovi', process: 'Approved', code: '000890', decisionDate: '2023-06-01', decision: 'Granted', description: 'Frequency authorization', registration: 'Mongolia Broadcasting', address: 'Dornogovi Station B', phone: '-', email: '-', administrativeInfo: '-', contactPerson: '-' },
-  ]);
+  const [stationRecords, setStationRecords] = useState<StationRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [licenseRecords, setLicenseRecords] = useState<LicenseRecord[]>([]);
   const [planningRecords, setPlanningRecords] = useState<FrequencyBand[]>([]);
 
   useEffect(() => {
-    const fetchPlanningData = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await planningApi.page({ pageSize: 1000 });
-        if (res.code === 200 && res.data) {
-          const records = res.data.records.map(convertToFrequencyBand);
-          setPlanningRecords(records);
+        const [stationRes, permitRes, planningRes] = await Promise.all([
+          stationApi.page({ pageSize: 1000 }),
+          permitApi.page({ pageSize: 1000 }),
+          planningApi.page({ pageSize: 1000 }),
+        ]);
+        if (stationRes.code === 200 && stationRes.data?.records) {
+          setStationRecords(stationRes.data.records.map(mapVoToStationRecord));
+        }
+        if (permitRes.code === 200 && permitRes.data?.records) {
+          setLicenseRecords(permitRes.data.records.map(mapPermitVoToLicenseRecord));
+        }
+        if (planningRes.code === 200 && planningRes.data) {
+          setPlanningRecords(planningRes.data.records.map(convertToFrequencyBand));
         }
       } catch (error) {
-        console.error('Failed to fetch planning data:', error);
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchPlanningData();
+    fetchAll();
   }, []);
 
   const licenseUnits = useMemo(() => ['All', ...Array.from(new Set(licenseRecords.map((item) => item.organization))).sort()], [licenseRecords]);
@@ -360,13 +482,6 @@ export function DataManagement() {
   }), [licenseBandFilter, licenseRegionFilter, licenseRecords, licenseStatusFilter, licenseUnitFilter, searchTerm, stationRecords]);
 
   const planningSheet = useMemo(() => planningRecords.map((item) => ({ ...item })), [planningRecords]);
-  const planningFieldMap = useMemo(() => ({
-    bandName: 'Frequency Band',
-    subCategory: 'ITU Region 1 Allocation',
-    category: 'National Allocation',
-    service: 'Utilization',
-    note: 'Special Conditions',
-  }), []);
 
   const openDetail = (record: DetailRecord) => {
     setDetailRecord(record);
@@ -386,6 +501,12 @@ export function DataManagement() {
 
   const savePlanningEdit = async () => {
     if (!planningFormRecord) return;
+    if (planningDialogMode === 'add') {
+      if (!planningFormRecord.category || !planningFormRecord.subCategory || !planningFormRecord.service || planningFormRecord.startFreq === 0 || planningFormRecord.endFreq === 0) {
+        alert('Please fill in all required fields: Category, Subcategory, Level, Start Frequency, End Frequency');
+        return;
+      }
+    }
     try {
       const vo = convertToPlanningVO(planningFormRecord);
       if (planningDialogMode === 'add') {
@@ -404,13 +525,13 @@ export function DataManagement() {
         await planningApi.update(planningFormRecord.guid, {
           radioservices: vo.radioservices,
           subservices: vo.subservices,
-          level: vo.level,
-          segmentname: vo.segmentname,
-          startfrequency: vo.startfrequency,
-          stopfrequency: vo.stopfrequency,
+          level: vo.service,
+          segmentname: vo.bandName,
+          startfrequency: vo.startFreq,
+          stopfrequency: vo.endFreq,
           step: vo.step,
           bandwidth: vo.bandwidth,
-          remark: vo.remark,
+          remark: vo.note,
         });
       }
       const res = await planningApi.page({ pageSize: 1000 });
@@ -419,7 +540,7 @@ export function DataManagement() {
       }
     } catch (error) {
       console.error('Failed to save planning data:', error);
-      alert('保存失败');
+      alert('Save failed');
       return;
     }
     setPlanningDialogMode(null);
@@ -427,7 +548,7 @@ export function DataManagement() {
   };
 
   const deletePlanning = async (guid: string) => {
-    if (!confirm('确定要删除这条记录吗？')) return;
+    if (!confirm('Are you sure you want to delete this record?')) return;
     try {
       await planningApi.delete(guid);
       const res = await planningApi.page({ pageSize: 1000 });
@@ -436,7 +557,7 @@ export function DataManagement() {
       }
     } catch (error) {
       console.error('Failed to delete planning data:', error);
-      alert('删除失败');
+      alert('Delete failed');
     }
   };
 
@@ -445,13 +566,66 @@ export function DataManagement() {
     setLicenseDialogMode('edit');
   };
 
-  const saveStationEdit = () => {
+  const refreshStationData = async () => {
+    const res = await stationApi.page({ pageSize: 1000 });
+    if (res.code === 200 && res.data?.records) {
+      setStationRecords(res.data.records.map(mapVoToStationRecord));
+    }
+  };
+
+  const refreshLicenseData = async () => {
+    const res = await permitApi.page({ pageSize: 1000 });
+    if (res.code === 200 && res.data?.records) {
+      setLicenseRecords(res.data.records.map(mapPermitVoToLicenseRecord));
+    }
+  };
+
+  const saveStationEdit = async () => {
     if (!stationFormRecord) return;
-    setStationRecords((prev) => prev.map((item) => (
-      item.id === stationFormRecord.id ? stationFormRecord : item
-    )));
+    try {
+      const payload = {
+        type: stationFormRecord.type,
+        stationtype: stationFormRecord.type,
+        province: stationFormRecord.province ?? '',
+        district: stationFormRecord.region,
+        location: stationFormRecord.detailedLocation ?? '',
+        sitename: stationFormRecord.name,
+        devicemodel: stationFormRecord.equipmentNameAndModel ?? '',
+        devicequantity: stationFormRecord.equipmentCount ? parseInt(stationFormRecord.equipmentCount) : undefined,
+        outputpower: stationFormRecord.equipmentPower ? parseFloat(stationFormRecord.equipmentPower) : undefined,
+        anttype: stationFormRecord.antenna ?? '',
+        antquantity: stationFormRecord.antennaCount ? parseInt(stationFormRecord.antennaCount) : undefined,
+        technology: stationFormRecord.technicalStandard ?? '',
+        backbone: stationFormRecord.backhaulNetworkAccessMethod ?? '',
+        stationpurpose: stationFormRecord.stationPurpose ?? '',
+        modulation: stationFormRecord.modulationType ?? '',
+        startdate: stationFormRecord.openDate || undefined,
+        expirationdate: stationFormRecord.expireDate || undefined,
+        longitude: stationFormRecord.longitude ? parseFloat(stationFormRecord.longitude) : undefined,
+        latitude: stationFormRecord.latitude ? parseFloat(stationFormRecord.latitude) : undefined,
+        unit: stationFormRecord.ownerName ?? '',
+        equipname: '',
+      };
+      await stationApi.update(stationFormRecord.id, payload);
+      await refreshStationData();
+    } catch (error) {
+      console.error('Failed to save station:', error);
+      alert('保存失败');
+      return;
+    }
     setStationDialogMode(null);
     setStationFormRecord(null);
+  };
+
+  const handleDeleteStation = async (id: string) => {
+    if (!confirm('确定要删除这条记录吗？')) return;
+    try {
+      await stationApi.delete(id);
+      setStationRecords((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error('Failed to delete station:', error);
+      alert('删除失败');
+    }
   };
 
   const statusLabel = (status: string) => status === 'normal' ? 'Normal' : status === 'expiring' ? 'Expiring' : 'Expired';
@@ -460,8 +634,9 @@ export function DataManagement() {
   const exportToExcel = (tab: DataTab) => {
     const data = tab === 'station' ? stationRecords : tab === 'license' ? licenseRecords : planningRecords;
     const fields = tab === 'station' ? stationFields : tab === 'license' ? licenseFields : planningFields;
+    const fieldLabelMap = tab === 'station' ? stationFieldMap : tab === 'license' ? licenseFieldMap : planningFieldMap;
     const rows = data.map((item) => fields.map((field) => (item as any)[field] ?? ''));
-    const worksheet = XLSX.utils.aoa_to_sheet([fields.map((field) => tab === 'planning' ? planningFieldMap[field as keyof FrequencyBand] ?? String(field) : String(field)), ...rows]);
+    const worksheet = XLSX.utils.aoa_to_sheet([[...fields.map((field) => fieldLabelMap[field as keyof typeof fieldLabelMap] ?? String(field)), ...rows]]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, tab);
     XLSX.writeFile(workbook, `${tab}-data.xlsx`);
@@ -469,37 +644,64 @@ export function DataManagement() {
 
   const importFromExcel = async () => {
     if (!importFile) return;
+    if (importTab === 'planning') {
+      try {
+        await planningApi.import(importFile);
+        const res = await planningApi.page({ pageSize: 1000 });
+        if (res.code === 200 && res.data) {
+          setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+        }
+      } catch (error) {
+        console.error('Failed to import planning data:', error);
+        alert('Planning data import failed');
+        return;
+      }
+      setShowImportDialog(false);
+      setImportFile(null);
+      return;
+    }
+
     const buffer = await importFile.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: 'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+
     if (importTab === 'station') {
-      setStationRecords(rows.map((row, index) => ({
-        id: Date.now() + index,
-        name: String(row.name ?? row.Name ?? ''),
-        type: String(row.type ?? row.Type ?? ''),
-        region: String(row.region ?? row.Region ?? ''),
-        province: String(row.province ?? row.Province ?? ''),
-        detailedLocation: String(row.detailedLocation ?? row['Detailed Location'] ?? ''),
-        frequency: String(row.frequency ?? row.Frequency ?? ''),
-        status: (String(row.status ?? row.Status ?? 'normal').toLowerCase() as StationRecord['status']),
-        openDate: String(row.openDate ?? row['Open Date'] ?? ''),
-        expireDate: String(row.expireDate ?? row['Expire Date'] ?? ''),
-        latitude: String(row.latitude ?? row.Latitude ?? ''),
-        longitude: String(row.longitude ?? row.Longitude ?? ''),
-        power: String(row.power ?? row.Power ?? ''),
-        antenna: String(row.antenna ?? row['Antenna Type'] ?? ''),
-        equipmentCount: String(row.equipmentCount ?? row['Equipment Count'] ?? ''),
-        equipmentPower: String(row.equipmentPower ?? row['Equipment Output Power'] ?? ''),
-        technicalStandard: String(row.technicalStandard ?? row['Technical Standard'] ?? ''),
-        bandwidthProcessingUnitModel: String(row.bandwidthProcessingUnitModel ?? row['Bandwidth Processing Unit Model'] ?? ''),
-        ownerName: String(row.ownerName ?? row['Owner Name'] ?? ''),
-        backhaulNetworkAccessMethod: String(row.backhaulNetworkAccessMethod ?? row['Backhaul Network Access Method'] ?? ''),
-        stationPurpose: String(row.stationPurpose ?? row['Station Purpose'] ?? ''),
-        modulationType: String(row.modulationType ?? row['Modulation Type'] ?? ''),
-        antennaCount: String(row.antennaCount ?? row['Antenna Count'] ?? ''),
-        equipmentNameAndModel: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
-      })));
+      try {
+        for (const row of rows) {
+          const payload = {
+            type: String(row.type ?? row.Type ?? ''),
+            stationtype: String(row.type ?? row.Type ?? ''),
+            province: String(row.province ?? row.Province ?? ''),
+            district: String(row.region ?? row.Region ?? ''),
+            location: String(row.detailedLocation ?? row['Detailed Location'] ?? ''),
+            sitename: String(row.name ?? row.Name ?? ''),
+            devicemodel: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
+            devicequantity: row.equipmentCount ?? row['Equipment Count'] ? parseInt(String(row.equipmentCount ?? row['Equipment Count'])) : undefined,
+            outputpower: row.equipmentPower ?? row['Equipment Output Power'] ? parseFloat(String(row.equipmentPower ?? row['Equipment Output Power'])) : undefined,
+            anttype: String(row.antenna ?? row['Antenna Type'] ?? ''),
+            antquantity: row.antennaCount ?? row['Antenna Count'] ? parseInt(String(row.antennaCount ?? row['Antenna Count'])) : undefined,
+            technology: String(row.technicalStandard ?? row['Technical Standard'] ?? ''),
+            backbone: String(row.backhaulNetworkAccessMethod ?? row['Backhaul Network Access Method'] ?? ''),
+            stationpurpose: String(row.stationPurpose ?? row['Station Purpose'] ?? ''),
+            modulation: String(row.modulationType ?? row['Modulation Type'] ?? ''),
+            startdate: String(row.openDate ?? row['Open Date'] ?? ''),
+            expirationdate: String(row.expireDate ?? row['Expire Date'] ?? ''),
+            longitude: row.longitude ?? row.Longitude ? parseFloat(String(row.longitude ?? row.Longitude)) : undefined,
+            latitude: row.latitude ?? row.Latitude ? parseFloat(String(row.latitude ?? row.Latitude)) : undefined,
+            unit: String(row.ownerName ?? row['Owner Name'] ?? ''),
+            equipname: '',
+          };
+          await stationApi.create(payload);
+        }
+        await refreshStationData();
+      } catch (error) {
+        console.error('Failed to import station data:', error);
+        alert('导入失败');
+        setShowImportDialog(false);
+        setImportFile(null);
+        return;
+      }
     }
     if (importTab === 'license') {
       setLicenseRecords(rows.map((row, index) => ({
@@ -531,23 +733,20 @@ export function DataManagement() {
         contactPerson: String(row.contactPerson ?? row['Contact Person'] ?? ''),
       })));
     }
-    if (importTab === 'planning') {
-      setPlanningRecords(rows.map((row, index) => ({
-        id: Date.now() + index,
-        category: String(row.category ?? row.Category ?? ''),
-        subCategory: String(row.subCategory ?? row.Subcategory ?? ''),
-        service: String(row.service ?? row.Service ?? ''),
-        bandName: String(row.bandName ?? row['Band Name'] ?? ''),
-        startFreq: Number(row.startFreq ?? row['Start Freq'] ?? 0),
-        endFreq: Number(row.endFreq ?? row['End Freq'] ?? 0),
-        step: Number(row.step ?? row.Step ?? 0),
-        bandwidth: Number(row.bandwidth ?? row.Bandwidth ?? 0),
-        status: String(row.status ?? row.Status ?? 'free') as FrequencyBand['status'],
-        note: String(row.note ?? row.Note ?? ''),
-      })));
-    }
     setShowImportDialog(false);
     setImportFile(null);
+  };
+
+  const downloadImportTemplate = () => {
+    const templateFileName = importTab === 'planning'
+      ? 'frequency-data.xlsx'
+      : 'station-license-data.xlsx';
+    const link = document.createElement('a');
+    link.href = `/docs/${templateFileName}`;
+    link.download = templateFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -570,11 +769,48 @@ export function DataManagement() {
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => { setImportTab('station'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
               <button type="button" onClick={() => exportToExcel('station')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setStationFormRecord({ id: Date.now(), name: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
+              <button type="button" onClick={() => { setStationFormRecord({ id: '', name: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Station Name</th><th className="text-left py-3 px-4">Station Type</th><th className="text-left py-3 px-4">Region</th><th className="text-left py-3 px-4">Owner Name</th><th className="text-center py-3 px-4">Status</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v.toLowerCase().includes(searchTerm.toLowerCase()))).map((station) => <tr key={station.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{station.name}</td><td className="py-3 px-4">{station.type}</td><td className="py-3 px-4">{station.region}</td><td className="py-3 px-4 text-sm">{station.ownerName}</td><td className="text-center py-3 px-4"><span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusClass(station.status)}`}>{statusLabel(station.status)}</span></td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openDetail({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button onClick={() => openEdit({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button onClick={() => { if (confirm('确定要删除这条记录吗？')) setStationRecords((prev) => prev.filter((item) => item.id !== station.id)); }} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading stations...</div>
+            ) : stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No stations found</div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4">Station Name</th>
+                    <th className="text-left py-3 px-4">Station Type</th>
+                    <th className="text-left py-3 px-4">Region</th>
+                    <th className="text-left py-3 px-4">Owner Name</th>
+                    <th className="text-center py-3 px-4">Status</th>
+                    <th className="text-center py-3 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))).map((station) => (
+                    <tr key={station.id} className="border-b border-border hover:bg-muted/50">
+                      <td className="py-3 px-4 font-medium">{station.name}</td>
+                      <td className="py-3 px-4">{station.type}</td>
+                      <td className="py-3 px-4">{station.region}</td>
+                      <td className="py-3 px-4 text-sm">{station.ownerName}</td>
+                      <td className="text-center py-3 px-4"><span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusClass(station.status)}`}>{statusLabel(station.status)}</span></td>
+                      <td className="text-center py-3 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openDetail({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button>
+                          <button onClick={() => openEdit({ type: 'station', data: station })} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button>
+                          <button onClick={() => handleDeleteStation(station.id)} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
 
@@ -585,11 +821,56 @@ export function DataManagement() {
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => { setImportTab('license'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
               <button type="button" onClick={() => exportToExcel('license')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setLicenseFormRecord({ id: Date.now(), number: '', organization: '', station: '', frequency: '', type: '', power: '', status: 'normal', startDate: '', endDate: '', licenseAuthorization: '', unit: '', category: '', law: '', coverage: '', process: '', code: '', decisionDate: '', decision: '', description: '', registration: '', address: '', phone: '', email: '', administrativeInfo: '', contactPerson: '' }); setLicenseDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add License</button>
+              <button type="button" onClick={() => { setLicenseFormRecord({ guid: '', id: '', number: '', organization: '', station: '', frequency: '', type: '', power: '', status: 'normal', startDate: '', endDate: '', licenseAuthorization: '', unit: '', category: '', law: '', coverage: '', process: '', code: '', decisionDate: '', decision: '', description: '', registration: '', address: '', phone: '', email: '', administrativeInfo: '', contactPerson: '' }); setLicenseDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add License</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6"><div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div><select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select><select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select><select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select><select value={licenseStatusFilter} onChange={(e) => setLicenseStatusFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-3">{licenseStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select></div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">License</th><th className="text-left py-3 px-4">Organization</th><th className="text-left py-3 px-4">Category</th><th className="text-left py-3 px-4">Type</th><th className="text-left py-3 px-4">Start Date</th><th className="text-left py-3 px-4">End Date</th><th className="text-center py-3 px-4">Actions</th></tr></thead><tbody>{filteredLicenseData.map((license) => <tr key={license.id} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium text-sm">{license.licenseAuthorization ?? '-'}</td><td className="py-3 px-4">{license.unit ?? license.organization}</td><td className="py-3 px-4">{license.category ?? license.type}</td><td className="py-3 px-4">{license.type}</td><td className="py-3 px-4 text-sm">{license.startDate}</td><td className="py-3 px-4 text-sm">{license.endDate}</td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button type="button" onClick={() => openDetail({ type: 'license', data: license })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button><button type="button" onClick={() => openLicenseEdit(license)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button type="button" onClick={() => setLicenseRecords((prev) => prev.filter((item) => item.id !== license.id))} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
+            <div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select>
+            <select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select>
+            <select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select>
+            <select value={licenseStatusFilter} onChange={(e) => setLicenseStatusFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-3">{licenseStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4">License</th>
+                  <th className="text-left py-3 px-4">Organization</th>
+                  <th className="text-left py-3 px-4">Category</th>
+                  <th className="text-left py-3 px-4">Type</th>
+                  <th className="text-left py-3 px-4">Start Date</th>
+                  <th className="text-left py-3 px-4">End Date</th>
+                  <th className="text-center py-3 px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLicenseData.map((license) => (
+                  <tr key={license.id} className="border-b border-border hover:bg-muted/50">
+                    <td className="py-3 px-4 font-medium text-sm">{license.licenseAuthorization ?? '-'}</td>
+                    <td className="py-3 px-4">{license.unit ?? license.organization}</td>
+                    <td className="py-3 px-4">{license.category ?? license.type}</td>
+                    <td className="py-3 px-4">{license.type}</td>
+                    <td className="py-3 px-4 text-sm">{license.startDate}</td>
+                    <td className="py-3 px-4 text-sm">{license.endDate}</td>
+                    <td className="text-center py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => openDetail({ type: 'license', data: license })} className="p-1 hover:bg-muted rounded" title="Detail"><Eye className="w-4 h-4 text-slate-600" /></button>
+                        <button type="button" onClick={() => openLicenseEdit(license)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button>
+                        <button type="button" onClick={async () => {
+                          if (!confirm('确定要删除这条记录吗？')) return;
+                          try {
+                            await permitApi.delete(license.guid);
+                            setLicenseRecords((prev) => prev.filter((item) => item.guid !== license.guid));
+                          } catch { alert('删除失败'); }
+                        }} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -603,7 +884,45 @@ export function DataManagement() {
               <button type="button" onClick={() => { setPlanningFormRecord({ guid: '', category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Custom Band</button>
             </div>
           </div>
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-border"><th className="text-left py-3 px-4">分类名称</th><th className="text-left py-3 px-4">子类名称</th><th className="text-left py-3 px-4">等级</th><th className="text-left py-3 px-4">频段名称</th><th className="text-left py-3 px-4">起始频率</th><th className="text-left py-3 px-4">结束频率</th><th className="text-left py-3 px-4">步进</th><th className="text-left py-3 px-4">信号带宽</th><th className="text-left py-3 px-4">备注</th><th className="text-center py-3 px-4">操作</th></tr></thead><tbody>{planningRecords.map((plan) => <tr key={plan.guid} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4">{plan.category}</td><td className="py-3 px-4">{plan.subCategory}</td><td className="py-3 px-4">{plan.service}</td><td className="py-3 px-4 font-medium">{plan.bandName}</td><td className="py-3 px-4">{plan.startFreq}</td><td className="py-3 px-4">{plan.endFreq}</td><td className="py-3 px-4">{plan.step}</td><td className="py-3 px-4">{plan.bandwidth}</td><td className="py-3 px-4">{plan.note}</td><td className="text-center py-3 px-4"><div className="flex items-center justify-center gap-2"><button onClick={() => openPlanningEdit(plan)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button><button onClick={() => deletePlanning(plan.guid)} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4">Category</th>
+                  <th className="text-left py-3 px-4">Subcategory</th>
+                  <th className="text-left py-3 px-4">Level</th>
+                  <th className="text-left py-3 px-4">Band Name</th>
+                  <th className="text-left py-3 px-4">Start Frequency</th>
+                  <th className="text-left py-3 px-4">End Frequency</th>
+                  <th className="text-left py-3 px-4">Step</th>
+                  <th className="text-left py-3 px-4">Signal Bandwidth</th>
+                  <th className="text-left py-3 px-4">Notes</th>
+                  <th className="text-center py-3 px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {planningRecords.map((plan) => (
+                  <tr key={plan.guid} className="border-b border-border hover:bg-muted/50">
+                    <td className="py-3 px-4">{plan.category}</td>
+                    <td className="py-3 px-4">{plan.subCategory}</td>
+                    <td className="py-3 px-4">{plan.service}</td>
+                    <td className="py-3 px-4 font-medium">{plan.bandName}</td>
+                    <td className="py-3 px-4">{plan.startFreq}</td>
+                    <td className="py-3 px-4">{plan.endFreq}</td>
+                    <td className="py-3 px-4">{plan.step}</td>
+                    <td className="py-3 px-4">{plan.bandwidth}</td>
+                    <td className="py-3 px-4">{plan.note}</td>
+                    <td className="text-center py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => openPlanningEdit(plan)} className="p-1 hover:bg-muted rounded" title="Edit"><Edit className="w-4 h-4 text-primary" /></button>
+                        <button onClick={() => deletePlanning(plan.guid)} className="p-1 hover:bg-muted rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -691,15 +1010,48 @@ export function DataManagement() {
           value={stationFormRecord}
           onChange={(data) => setStationFormRecord(data)}
           onClose={() => { setStationDialogMode(null); setStationFormRecord(null); }}
+          onOpenCoordinatePicker={() => setCoordinatePickerOpen(true)}
           onSubmit={() => {
             if (!stationFormRecord.name || !stationFormRecord.ownerName || !stationFormRecord.type || !stationFormRecord.province || !stationFormRecord.region) {
               alert('Please fill in all required fields: Station Name, Owner Name, Station Type, Province, Region');
               return;
             }
             if (stationDialogMode === 'add') {
-              setStationRecords((prev) => [...prev, { ...stationFormRecord, id: Date.now() }]);
-              setStationDialogMode(null);
-              setStationFormRecord(null);
+              (async () => {
+                try {
+                  const payload = {
+                    type: stationFormRecord.type,
+                    stationtype: stationFormRecord.type,
+                    province: stationFormRecord.province ?? '',
+                    district: stationFormRecord.region,
+                    location: stationFormRecord.detailedLocation ?? '',
+                    sitename: stationFormRecord.name,
+                    devicemodel: stationFormRecord.equipmentNameAndModel ?? '',
+                    devicequantity: stationFormRecord.equipmentCount ? parseInt(stationFormRecord.equipmentCount) : undefined,
+                    outputpower: stationFormRecord.equipmentPower ? parseFloat(stationFormRecord.equipmentPower) : undefined,
+                    anttype: stationFormRecord.antenna ?? '',
+                    antquantity: stationFormRecord.antennaCount ? parseInt(stationFormRecord.antennaCount) : undefined,
+                    technology: stationFormRecord.technicalStandard ?? '',
+                    backbone: stationFormRecord.backhaulNetworkAccessMethod ?? '',
+                    stationpurpose: stationFormRecord.stationPurpose ?? '',
+                    modulation: stationFormRecord.modulationType ?? '',
+                    startdate: stationFormRecord.openDate || undefined,
+                    expirationdate: stationFormRecord.expireDate || undefined,
+                    longitude: stationFormRecord.longitude ? parseFloat(stationFormRecord.longitude) : undefined,
+                    latitude: stationFormRecord.latitude ? parseFloat(stationFormRecord.latitude) : undefined,
+                    unit: stationFormRecord.ownerName ?? '',
+                    equipname: '',
+                  };
+                  await stationApi.create(payload);
+                  await refreshStationData();
+                } catch (error) {
+                  console.error('Failed to add station:', error);
+                  alert('添加失败');
+                  return;
+                }
+                setStationDialogMode(null);
+                setStationFormRecord(null);
+              })();
             } else {
               saveStationEdit();
             }
@@ -707,6 +1059,26 @@ export function DataManagement() {
           submitLabel={stationDialogMode === 'add' ? 'Add Station' : 'Save Changes'}
         />
       )}
+
+      {stationDialogMode && stationFormRecord && (
+        <CoordinatePicker
+          open={coordinatePickerOpen}
+          value={{
+            lat: stationFormRecord.latitude ? parseFloat(stationFormRecord.latitude) : null,
+            lng: stationFormRecord.longitude ? parseFloat(stationFormRecord.longitude) : null,
+          }}
+          onConfirm={(lat, lng) => {
+            setStationFormRecord(prev => prev ? {
+              ...prev,
+              latitude: lat.toString(),
+              longitude: lng.toString(),
+            } : prev);
+            setCoordinatePickerOpen(false);
+          }}
+          onCancel={() => setCoordinatePickerOpen(false)}
+        />
+      )}
+
       {licenseDialogMode && licenseFormRecord && (
         <LicenseForm
           title={licenseDialogMode === 'add' ? 'Add License' : 'Edit License'}
@@ -716,17 +1088,69 @@ export function DataManagement() {
           onClose={() => { setLicenseDialogMode(null); setLicenseFormRecord(null); }}
           onSubmit={() => {
             if (licenseDialogMode === 'add') {
-              if (!licenseFormRecord.licenseAuthorization || !licenseFormRecord.unit || !licenseFormRecord.category || !licenseFormRecord.type || !licenseFormRecord.startDateDisplay || !licenseFormRecord.endDateDisplay) {
-                alert('Please fill in all required fields: License / Authorization, Organization, Category, Type, Start Date, End Date');
+              if (!licenseFormRecord.unit || !licenseFormRecord.category || !licenseFormRecord.type || !licenseFormRecord.startDate || !licenseFormRecord.endDate) {
+                alert('Please fill in all required fields: Organization, Category, Type, Start Date, End Date');
                 return;
               }
-              setLicenseRecords((prev) => [...prev, { ...licenseFormRecord, id: Date.now() }]);
-              setLicenseDialogMode(null);
-              setLicenseFormRecord(null);
+              (async () => {
+                try {
+                  await permitApi.create({
+                    consent: licenseFormRecord.licenseAuthorization ?? '',
+                    interlocutor: licenseFormRecord.organization || (licenseFormRecord.unit ?? ''),
+                    category: licenseFormRecord.category ?? '',
+                    legal: licenseFormRecord.law ?? '',
+                    type: licenseFormRecord.type ?? '',
+                    startdate: licenseFormRecord.startDate || undefined,
+                    enddate: licenseFormRecord.endDate || undefined,
+                    scope: licenseFormRecord.coverage ?? licenseFormRecord.frequency ?? '',
+                    process: licenseFormRecord.process ?? '',
+                    status: licenseFormRecord.status ?? 'active',
+                    code: licenseFormRecord.code ?? '',
+                    decisiondate: licenseFormRecord.decisionDate || undefined,
+                    decision: licenseFormRecord.decision ?? '',
+                    note: licenseFormRecord.description ?? '',
+                    register: licenseFormRecord.registration ?? '',
+                    address: licenseFormRecord.address ?? '',
+                    phone: licenseFormRecord.phone ?? '',
+                    email: licenseFormRecord.email ?? '',
+                    administrativeinfo: licenseFormRecord.administrativeInfo ?? '',
+                    directorname: licenseFormRecord.contactPerson ?? '',
+                  });
+                  await refreshLicenseData();
+                } catch { alert('添加失败'); return; }
+                setLicenseDialogMode(null);
+                setLicenseFormRecord(null);
+              })();
             } else {
-              setLicenseRecords((prev) => prev.map((item) => item.id === licenseFormRecord.id ? licenseFormRecord : item));
-              setLicenseDialogMode(null);
-              setLicenseFormRecord(null);
+              (async () => {
+                try {
+                  await permitApi.update(licenseFormRecord.guid, {
+                    consent: licenseFormRecord.licenseAuthorization ?? '',
+                    interlocutor: licenseFormRecord.organization || (licenseFormRecord.unit ?? ''),
+                    category: licenseFormRecord.category ?? '',
+                    legal: licenseFormRecord.law ?? '',
+                    type: licenseFormRecord.type ?? '',
+                    startdate: licenseFormRecord.startDate || undefined,
+                    enddate: licenseFormRecord.endDate || undefined,
+                    scope: licenseFormRecord.coverage ?? licenseFormRecord.frequency ?? '',
+                    process: licenseFormRecord.process ?? '',
+                    status: licenseFormRecord.status ?? 'active',
+                    code: licenseFormRecord.code ?? '',
+                    decisiondate: licenseFormRecord.decisionDate || undefined,
+                    decision: licenseFormRecord.decision ?? '',
+                    note: licenseFormRecord.description ?? '',
+                    register: licenseFormRecord.registration ?? '',
+                    address: licenseFormRecord.address ?? '',
+                    phone: licenseFormRecord.phone ?? '',
+                    email: licenseFormRecord.email ?? '',
+                    administrativeinfo: licenseFormRecord.administrativeInfo ?? '',
+                    directorname: licenseFormRecord.contactPerson ?? '',
+                  });
+                  await refreshLicenseData();
+                } catch { alert('保存失败'); return; }
+                setLicenseDialogMode(null);
+                setLicenseFormRecord(null);
+              })();
             }
           }}
           submitLabel={licenseDialogMode === 'add' ? 'Add License' : 'Save Changes'}
@@ -754,6 +1178,19 @@ export function DataManagement() {
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   {importFile ? <div><p className="text-sm font-medium mb-1">{importFile.name}</p><p className="text-xs text-muted-foreground">{(importFile.size / 1024).toFixed(2)} KB</p></div> : <div><p className="text-sm text-muted-foreground mb-1">Click to upload or drag and drop</p><p className="text-xs text-muted-foreground">Excel files only (.xlsx, .xls)</p></div>}
                 </label>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
+                <div className="text-sm text-muted-foreground">
+                  没有模板？先下载导入模板后再填写数据
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadImportTemplate}
+                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  下载导入模板
+                </button>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setShowImportDialog(false); setImportFile(null); }} className="px-5 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Cancel</button>
