@@ -137,13 +137,14 @@ export function Dashboard() {
 
   // ── Province breakdown (threshold-driven) ─────────────────────────────────
   const allProvinceData = useMemo(() => {
-    return BASE_PROVINCE_DATA.map(p => {
+    if (!overview) return [];
+    return overview.provinceStats.map(p => {
       const rawExpiring = Math.round(p.expiring60 * (expiringDays / 60));
       const expiring    = Math.min(rawExpiring, p.total - p.expired);
       const normal      = Math.max(0, p.total - expiring - p.expired);
       return { ...p, stations: p.total, expiring, normal };
     });
-  }, [expiringDays]);
+  }, [overview, expiringDays]);
 
   const provinceStationData: ProvinceStationData[] = allProvinceData.map(p => ({
     id: p.id, name: p.name, stations: p.total,
