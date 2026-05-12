@@ -13,32 +13,6 @@ import {
 } from 'recharts';
 import { MongoliaProvinceMap, ProvinceStationData } from './MongoliaProvinceMap';
 
-// ── Base province data ────────────────────────────────────────────────────────
-const BASE_PROVINCE_DATA = [
-  { id: 'ulaanbaatar',  name: 'Ulaanbaatar',  abbr: 'UB', total: 1245, expiring60: 120, expired: 75 },
-  { id: 'tov',          name: 'Töv',           abbr: 'TV', total: 687,  expiring60: 55,  expired: 32 },
-  { id: 'selenge',      name: 'Selenge',        abbr: 'SL', total: 523,  expiring60: 40,  expired: 23 },
-  { id: 'dornogovi',    name: 'Dornogovi',      abbr: 'DG', total: 432,  expiring60: 35,  expired: 17 },
-  { id: 'khentii',      name: 'Khentii',        abbr: 'KH', total: 345,  expiring60: 25,  expired: 15 },
-  { id: 'khovsgol',     name: 'Khövsgöl',       abbr: 'KS', total: 312,  expiring60: 28,  expired: 14 },
-  { id: 'dornod',       name: 'Dornod',         abbr: 'DN', total: 289,  expiring60: 22,  expired: 12 },
-  { id: 'arkhangai',    name: 'Arkhangai',      abbr: 'AK', total: 267,  expiring60: 20,  expired: 11 },
-  { id: 'bulgan',       name: 'Bulgan',         abbr: 'BL', total: 234,  expiring60: 18,  expired: 9  },
-  { id: 'ovorkhangai',  name: 'Övörkhangai',    abbr: 'OK', total: 198,  expiring60: 16,  expired: 8  },
-  { id: 'sukhbaatar',   name: 'Sükhbaatar',     abbr: 'SB', total: 198,  expiring60: 14,  expired: 9  },
-  { id: 'zavkhan',      name: 'Zavkhan',         abbr: 'ZV', total: 189,  expiring60: 15,  expired: 8  },
-  { id: 'khovd',        name: 'Khovd',           abbr: 'KV', total: 178,  expiring60: 13,  expired: 7  },
-  { id: 'omnogovi',     name: 'Ömnögovi',        abbr: 'OM', total: 167,  expiring60: 12,  expired: 7  },
-  { id: 'bayankhongor', name: 'Bayankhongor',    abbr: 'BK', total: 156,  expiring60: 12,  expired: 6  },
-  { id: 'uvs',          name: 'Uvs',             abbr: 'UV', total: 145,  expiring60: 11,  expired: 6  },
-  { id: 'dundgovi',     name: 'Dundgovi',        abbr: 'DD', total: 143,  expiring60: 10,  expired: 6  },
-  { id: 'bayan-olgii',  name: 'Bayan-Ölgii',    abbr: 'BO', total: 134,  expiring60: 10,  expired: 5  },
-  { id: 'govi-altai',   name: 'Govi-Altai',     abbr: 'GA', total: 112,  expiring60: 8,   expired: 5  },
-  { id: 'darkhan-uul',  name: 'Darkhan-Uul',    abbr: 'DU', total: 89,   expiring60: 7,   expired: 4  },
-  { id: 'orkhon',       name: 'Orkhon',          abbr: 'OR', total: 67,   expiring60: 5,   expired: 3  },
-  { id: 'govisumber',   name: 'Govisümber',      abbr: 'GS', total: 45,   expiring60: 4,   expired: 2  },
-];
-
 // ── Tooltip: license horizontal bar ──────────────────────────────────────────
 const LicenseBarTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -128,7 +102,7 @@ export function Dashboard() {
   // ── Province breakdown (threshold-driven) ─────────────────────────────────
   const allProvinceData = useMemo(() => {
     if (!overview) return [];
-    return overview.provinceStats.map(p => {
+    return (overview.provinceStats ?? []).map(p => {
       const rawExpiring = Math.round(p.expiring60 * (expiringDays / 60));
       const expiring    = Math.min(rawExpiring, p.total - p.expired);
       const normal      = Math.max(0, p.total - expiring - p.expired);
@@ -148,7 +122,7 @@ export function Dashboard() {
   // ── License aggregates ────────────────────────────────────────────────────
   const licenseChartData = useMemo(() => {
     if (!overview) return [];
-    return [...overview.licenseTypeStats]
+    return [...(overview.licenseTypeStats ?? [])]
       .map(d => ({ ...d, total: d.normal + d.expiring + d.expired }))
       .sort((a, b) => b.total - a.total);
   }, [overview]);
@@ -238,7 +212,7 @@ export function Dashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
                   <p className="text-3xl font-semibold">{stat.value}</p>
-                  <p className={`text-sm mt-2 flex items-center gap-1 ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-sm mt-2 flex items-center gap-1 ${stat.change.startsWith('+') && stat.change !== '+0.0%' ? 'text-green-600' : 'text-red-600'}`}>
                     <TrendingUp className="w-4 h-4" />
                     {stat.change}
                   </p>
