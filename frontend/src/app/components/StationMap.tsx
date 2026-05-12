@@ -5,6 +5,7 @@ import {
   Search, MapPin, Layers, Download, RefreshCw, Save, CheckCircle2,
   ChevronDown, ChevronUp, SlidersHorizontal, X, Radio,
 } from 'lucide-react';
+import { stationApi } from '../api/station';
 
 // ─── Zoom thresholds ──────────────────────────────────────────────────────────
 const ZOOM_DOT   = 7;   // < 7  → tiny dot only
@@ -44,64 +45,30 @@ const SERVICE_BANDS: ServiceBand[] = [
 
 const STATION_TYPES = ['All', 'Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
 
-// ─── Station data ─────────────────────────────────────────────────────────────
 interface Station {
-  id: number; name: string; type: string;
+  guid: string; name: string; type: string;
   frequency: string; freqMHz: number;
   lat: number; lng: number;
   status: 'normal' | 'expiring' | 'expired';
   province: string; expiry: string; power: string;
-  unit: string;        // 设台单位
-  equipName: string;   // 设备名称
-  equipModel: string;  // 设备型号
+  unit: string;
+  equipName: string;
+  equipModel: string;
+  // StationForm fields
+  technicalStandard?: string;
+  bandwidthProcessingUnitModel?: string;
+  ownerName?: string;
+  backhaulNetworkAccessMethod?: string;
+  stationPurpose?: string;
+  modulationType?: string;
+  equipmentCount?: string;
+  equipmentPower?: string;
+  antenna?: string;
+  antennaCount?: string;
+  detailedLocation?: string;
+  region?: string;
+  openDate?: string;
 }
-
-const INIT_STATIONS: Station[] = [
-  { id:  1, name: 'UB Central Mobile',      type: 'Mobile',       frequency: '1800–1900 MHz',   freqMHz: 1850,  lat: 47.921, lng: 106.906, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2027-06-30', power: '20 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Ericsson RBS 6601'        },
-  { id:  2, name: 'UB North Broadcast',     type: 'Broadcasting', frequency: '470–862 MHz',     freqMHz: 600,   lat: 47.965, lng: 106.847, status: 'expiring', province: 'Ulaanbaatar',  expiry: '2026-06-15', power: '50 kW', unit: 'Mongolian National Broadcaster', equipName: 'UHF TV Transmitter',        equipModel: 'Rohde & Schwarz NH7300'   },
-  { id:  3, name: 'UB South Fixed Link',    type: 'Fixed',        frequency: '5925–6425 MHz',   freqMHz: 6175,  lat: 47.871, lng: 106.920, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2027-12-31', power: '5 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Ericsson MINI-LINK 6352'  },
-  { id:  4, name: 'UB IMT-2100',            type: 'Mobile',       frequency: '1920–2170 MHz',   freqMHz: 2045,  lat: 47.940, lng: 106.870, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2028-01-01', power: '40 W',  unit: 'Skytel Co., Ltd.',               equipName: 'eNodeB Base Station',       equipModel: 'Huawei eNodeB 3900'       },
-  { id:  5, name: 'UB 5G NR 3500',         type: 'Mobile',       frequency: '3400–3600 MHz',   freqMHz: 3500,  lat: 47.905, lng: 106.935, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2029-06-01', power: '100 W', unit: 'Unitel LLC',                     equipName: 'gNodeB (5G NR)',            equipModel: 'Nokia AirScale AirBTS'    },
-  { id:  6, name: 'UB East Microwave',      type: 'Microwave',    frequency: '7125–7750 MHz',   freqMHz: 7400,  lat: 47.935, lng: 107.120, status: 'expiring', province: 'Ulaanbaatar',  expiry: '2026-03-31', power: '3 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Backhaul Link',   equipModel: 'Huawei RTN 380H'          },
-  { id:  7, name: 'UB VHF Broadcast',       type: 'Broadcasting', frequency: '174–230 MHz',     freqMHz: 200,   lat: 47.950, lng: 106.800, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2027-09-01', power: '20 kW', unit: 'MNTV Broadcasting LLC',          equipName: 'VHF TV Transmitter',        equipModel: 'Harris HT-20EM'           },
-  { id:  8, name: 'UB Airport Navigation',  type: 'Navigation',   frequency: '960–1215 MHz',    freqMHz: 1090,  lat: 47.843, lng: 106.763, status: 'normal',   province: 'Ulaanbaatar',  expiry: '2027-03-01', power: '200 W', unit: 'Civil Aviation Authority (CAAM)', equipName: 'DME Beacon',                equipModel: 'Thales DME 415'           },
-  { id:  9, name: 'Erdenet Mobile 900',     type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 49.028, lng: 104.044, status: 'normal',   province: 'Orkhon',       expiry: '2028-03-01', power: '10 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Ericsson RBS 2206'        },
-  { id: 10, name: 'Erdenet Fixed Link',     type: 'Fixed',        frequency: '10700–11700 MHz', freqMHz: 11200, lat: 49.015, lng: 104.070, status: 'normal',   province: 'Orkhon',       expiry: '2027-06-01', power: '2 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Nokia FlexiPacket MW'     },
-  { id: 11, name: 'Darkhan Microwave',      type: 'Microwave',    frequency: '5925–6425 MHz',   freqMHz: 6175,  lat: 49.493, lng: 105.975, status: 'normal',   province: 'Darkhan-Uul',  expiry: '2027-09-01', power: '2 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Ericsson MINI-LINK 6691'  },
-  { id: 12, name: 'Darkhan IMT-1800',       type: 'Mobile',       frequency: '1710–1880 MHz',   freqMHz: 1795,  lat: 49.510, lng: 105.955, status: 'expiring', province: 'Darkhan-Uul',  expiry: '2026-08-15', power: '20 W',  unit: 'G-Mobile LLC',                   equipName: 'Base Transceiver Station', equipModel: 'ZTE ZXSDR B8200'          },
-  { id: 13, name: 'Choibalsan Satellite',   type: 'Satellite',    frequency: '11.7–12.5 GHz',   freqMHz: 12000, lat: 48.077, lng: 114.535, status: 'expired',  province: 'Dornod',       expiry: '2025-11-30', power: '1 W',   unit: 'Skytel Co., Ltd.',               equipName: 'VSAT Terminal',             equipModel: 'Hughes HN9000'            },
-  { id: 14, name: 'Choibalsan Mobile',      type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 48.090, lng: 114.510, status: 'normal',   province: 'Dornod',       expiry: '2027-12-01', power: '10 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Ericsson RBS 6601'        },
-  { id: 15, name: 'Ölgii VOR Navigation',  type: 'Navigation',   frequency: '108–118 MHz',     freqMHz: 113,   lat: 48.971, lng:  89.967, status: 'normal',   province: 'Bayan-Ölgii',  expiry: '2027-04-01', power: '100 W', unit: 'Civil Aviation Authority (CAAM)', equipName: 'VOR Beacon',                equipModel: 'Thales SD-3000'           },
-  { id: 16, name: 'Ölgii Mobile 700',      type: 'Mobile',       frequency: '694–790 MHz',     freqMHz: 742,   lat: 48.955, lng:  89.990, status: 'normal',   province: 'Bayan-Ölgii',  expiry: '2028-06-01', power: '20 W',  unit: 'Unitel LLC',                     equipName: 'LTE Base Station (700)',    equipModel: 'Nokia AirScale BTS'       },
-  { id: 17, name: 'Khovd Mobile 1800',     type: 'Mobile',       frequency: '1800–1900 MHz',   freqMHz: 1850,  lat: 48.006, lng:  91.641, status: 'expiring', province: 'Khovd',        expiry: '2026-07-01', power: '20 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Huawei BTS3900'           },
-  { id: 18, name: 'Khovd Broadcast UHF',   type: 'Broadcasting', frequency: '470–862 MHz',     freqMHz: 600,   lat: 48.025, lng:  91.610, status: 'normal',   province: 'Khovd',        expiry: '2028-01-01', power: '10 kW', unit: 'Mongolian National Broadcaster', equipName: 'UHF TV Transmitter',        equipModel: 'NEC P5 Series'            },
-  { id: 19, name: 'Ulaangom Broadcast',    type: 'Broadcasting', frequency: '174–230 MHz',     freqMHz: 200,   lat: 49.981, lng:  92.066, status: 'normal',   province: 'Uvs',          expiry: '2028-01-15', power: '20 kW', unit: 'Mongolian National Broadcaster', equipName: 'VHF TV Transmitter',        equipModel: 'Rohde & Schwarz NV7300'   },
-  { id: 20, name: 'Mörön Fixed Link',      type: 'Fixed',        frequency: '5925–6425 MHz',   freqMHz: 6175,  lat: 49.633, lng: 100.157, status: 'normal',   province: 'Khövsgöl',     expiry: '2027-08-01', power: '5 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Ericsson MINI-LINK 6352'  },
-  { id: 21, name: 'Mörön IMT-900',         type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 49.650, lng: 100.140, status: 'normal',   province: 'Khövsgöl',     expiry: '2027-11-01', power: '10 W',  unit: 'Skytel Co., Ltd.',               equipName: 'Base Transceiver Station', equipModel: 'ZTE ZXSDR B8200'          },
-  { id: 22, name: 'Bulgan Microwave',      type: 'Microwave',    frequency: '7125–7750 MHz',   freqMHz: 7400,  lat: 48.813, lng: 103.536, status: 'expired',  province: 'Bulgan',       expiry: '2025-09-01', power: '3 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Backhaul Link',   equipModel: 'Huawei RTN 950A'          },
-  { id: 23, name: 'Sükhbaatar Mobile',     type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 50.234, lng: 106.199, status: 'normal',   province: 'Selenge',      expiry: '2027-11-01', power: '10 W',  unit: 'G-Mobile LLC',                   equipName: 'Base Transceiver Station', equipModel: 'Ericsson RBS 2206'        },
-  { id: 24, name: 'Sükhbaatar Fixed',      type: 'Fixed',        frequency: '10700–11700 MHz', freqMHz: 11200, lat: 50.220, lng: 106.220, status: 'normal',   province: 'Selenge',      expiry: '2028-03-01', power: '2 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Nokia FlexiPacket MW'     },
-  { id: 25, name: 'Tsetserleg VOR',        type: 'Navigation',   frequency: '108–118 MHz',     freqMHz: 113,   lat: 47.478, lng: 101.452, status: 'expiring', province: 'Arkhangai',    expiry: '2026-05-20', power: '100 W', unit: 'Civil Aviation Authority (CAAM)', equipName: 'VOR Beacon',                equipModel: 'Indra NR60'               },
-  { id: 26, name: 'Tsetserleg Mobile',     type: 'Mobile',       frequency: '1710–1880 MHz',   freqMHz: 1795,  lat: 47.495, lng: 101.430, status: 'normal',   province: 'Arkhangai',    expiry: '2027-10-01', power: '20 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Huawei BTS3900'           },
-  { id: 27, name: 'Uliastai Broadcast',    type: 'Broadcasting', frequency: '470–862 MHz',     freqMHz: 600,   lat: 47.743, lng:  96.845, status: 'normal',   province: 'Zavkhan',      expiry: '2028-06-01', power: '10 kW', unit: 'MNTV Broadcasting LLC',          equipName: 'UHF TV Transmitter',        equipModel: 'Rohde & Schwarz NH7300'   },
-  { id: 28, name: 'Altai Fixed Link',      type: 'Fixed',        frequency: '5925–6425 MHz',   freqMHz: 6175,  lat: 46.373, lng:  96.259, status: 'normal',   province: 'Govi-Altai',   expiry: '2027-03-01', power: '5 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Ericsson MINI-LINK 6691'  },
-  { id: 29, name: 'Bayankhongor Satellite',type: 'Satellite',    frequency: '11.7–12.5 GHz',   freqMHz: 12000, lat: 46.194, lng: 100.714, status: 'expiring', province: 'Bayankhongor', expiry: '2026-04-10', power: '1 W',   unit: 'Skytel Co., Ltd.',               equipName: 'VSAT Terminal',             equipModel: 'Advantech SE-60'          },
-  { id: 30, name: 'Bayankhongor Mobile',   type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 46.210, lng: 100.730, status: 'normal',   province: 'Bayankhongor', expiry: '2027-08-01', power: '10 W',  unit: 'Unitel LLC',                     equipName: 'Base Transceiver Station', equipModel: 'Nokia AirScale BTS'       },
-  { id: 31, name: 'Arvaikheer Mobile',     type: 'Mobile',       frequency: '1800–1900 MHz',   freqMHz: 1850,  lat: 46.264, lng: 102.777, status: 'normal',   province: 'Övörkhangai',  expiry: '2027-10-01', power: '20 W',  unit: 'G-Mobile LLC',                   equipName: 'Base Transceiver Station', equipModel: 'Huawei BTS3900'           },
-  { id: 32, name: 'Mandalgovi Microwave',  type: 'Microwave',    frequency: '5925–6425 MHz',   freqMHz: 6175,  lat: 45.770, lng: 106.274, status: 'normal',   province: 'Dundgovi',     expiry: '2028-02-01', power: '2 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Backhaul Link',   equipModel: 'Huawei RTN 380H'          },
-  { id: 33, name: 'Sainshand Broadcast',   type: 'Broadcasting', frequency: '174–230 MHz',     freqMHz: 200,   lat: 44.893, lng: 110.120, status: 'expired',  province: 'Dornogovi',    expiry: '2025-08-15', power: '20 kW', unit: 'Mongolian National Broadcaster', equipName: 'VHF TV Transmitter',        equipModel: 'Harris HT-20EM'           },
-  { id: 34, name: 'Sainshand Mobile 700',  type: 'Mobile',       frequency: '694–790 MHz',     freqMHz: 742,   lat: 44.910, lng: 110.135, status: 'normal',   province: 'Dornogovi',    expiry: '2027-06-01', power: '20 W',  unit: 'Unitel LLC',                     equipName: 'LTE Base Station (700)',    equipModel: 'Nokia AirScale BTS'       },
-  { id: 35, name: 'Öndörkhaan Fixed',      type: 'Fixed',        frequency: '7125–7750 MHz',   freqMHz: 7400,  lat: 47.317, lng: 110.654, status: 'normal',   province: 'Khentii',      expiry: '2027-07-01', power: '5 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Radio Link',      equipModel: 'Ericsson MINI-LINK 6352'  },
-  { id: 36, name: 'Öndörkhaan IMT-2100',   type: 'Mobile',       frequency: '1920–2170 MHz',   freqMHz: 2045,  lat: 47.330, lng: 110.670, status: 'normal',   province: 'Khentii',      expiry: '2028-01-01', power: '20 W',  unit: 'Skytel Co., Ltd.',               equipName: 'eNodeB Base Station',       equipModel: 'Huawei eNodeB 3900'       },
-  { id: 37, name: 'Zuunmod VOR',           type: 'Navigation',   frequency: '108–118 MHz',     freqMHz: 113,   lat: 47.708, lng: 106.954, status: 'normal',   province: 'Töv',          expiry: '2027-05-01', power: '100 W', unit: 'Civil Aviation Authority (CAAM)', equipName: 'VOR Beacon',                equipModel: 'Azimut INM-750'           },
-  { id: 38, name: 'Choir Satellite',       type: 'Satellite',    frequency: '11.7–12.5 GHz',   freqMHz: 12000, lat: 46.364, lng: 108.359, status: 'expiring', province: 'Govisümber',   expiry: '2026-06-30', power: '1 W',   unit: 'Mongolian Telecom JSC',          equipName: 'VSAT Terminal',             equipModel: 'iDirect X1'               },
-  { id: 39, name: 'Baruun-Urt Mobile',     type: 'Mobile',       frequency: '880–960 MHz',     freqMHz: 920,   lat: 46.679, lng: 113.287, status: 'normal',   province: 'Sükhbaatar',   expiry: '2028-01-01', power: '10 W',  unit: 'MobiCom Corporation',            equipName: 'Base Transceiver Station', equipModel: 'Ericsson RBS 2206'        },
-  { id: 40, name: 'Dalanzadgad Broadcast', type: 'Broadcasting', frequency: '470–862 MHz',     freqMHz: 600,   lat: 43.571, lng: 104.425, status: 'normal',   province: 'Ömnögovi',     expiry: '2027-09-15', power: '50 kW', unit: 'MNTV Broadcasting LLC',          equipName: 'UHF TV Transmitter',        equipModel: 'Rohde & Schwarz NH7300'   },
-  { id: 41, name: 'Dalanzadgad Mobile',    type: 'Mobile',       frequency: '1710–1880 MHz',   freqMHz: 1795,  lat: 43.555, lng: 104.445, status: 'normal',   province: 'Ömnögovi',     expiry: '2027-07-01', power: '20 W',  unit: 'G-Mobile LLC',                   equipName: 'Base Transceiver Station', equipModel: 'ZTE ZXSDR B8200'          },
-  { id: 42, name: 'Central MW Hub',        type: 'Microwave',    frequency: '7125–7750 MHz',   freqMHz: 7400,  lat: 47.317, lng: 105.851, status: 'normal',   province: 'Töv',          expiry: '2027-10-01', power: '5 W',   unit: 'Mongolian Telecom JSC',          equipName: 'Microwave Backhaul Link',   equipModel: 'Nokia FlexiPacket MW'     },
-];
-
-const PROVINCES = [...new Set(INIT_STATIONS.map(s => s.province))].sort();
 
 // ─── Tower SVG (high zoom icon) ───────────────────────────────────────────────
 function towerSVG(color: string, selected: boolean): string {
@@ -198,29 +165,34 @@ function makeStationIcon(station: Station, selected: boolean, zoom: number): L.D
 export function StationMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef       = useRef<L.Map | null>(null);
-  const markersRef   = useRef<Map<number, L.Marker>>(new Map());
+  const markersRef   = useRef<Map<string, L.Marker>>(new Map());
 
-  const [stations,    setStations]    = useState<Station[]>(INIT_STATIONS);
-  const [selectedId,  setSelectedId]  = useState<number | null>(null);
+  const [stations,    setStations]    = useState<Station[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [selectedGuid, setSelectedGuid] = useState<string | null>(null);
   const [editForm,    setEditForm]    = useState<Partial<Station>>({});
-  const [savedId,     setSavedId]     = useState<number | null>(null);
+  const [savedId,     setSavedId]     = useState<string | null>(null);
   const [zoom,        setZoom]        = useState(5);
   const [filterOpen,  setFilterOpen]  = useState(true);
 
+  // ── Fetch station data from API ───────────────────────────────────────────
+  useEffect(() => {
+    stationApi.getMapPoints().then((data: Station[]) => {
+      setStations(data);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, []);
+
   // ── Filter state ──────────────────────────────────────────────────────────
-  const [selTypes,    setSelTypes]    = useState<string[]>([]);   // empty = all
+  const [selTypes,    setSelTypes]    = useState<string[]>([]);
   const [stationType, setStationType] = useState('All');
   const [bandId,      setBandId]      = useState('');
   const [freqMin,     setFreqMin]     = useState('');
   const [freqMax,     setFreqMax]     = useState('');
   const [nameSearch,  setNameSearch]  = useState('');
   const [province,    setProvince]    = useState('');
-
-  // derived: bands for selected service in section B
-  const availBands = useMemo(
-    () => SERVICE_BANDS,
-    [],
-  );
 
   const activeFilterCount = [
     stationType !== 'All',
@@ -248,12 +220,14 @@ export function StationMap() {
     });
   }, [stations, stationType, selTypes, bandId, freqMin, freqMax, nameSearch, province]);
 
-  const selected = stations.find(s => s.id === selectedId) ?? null;
+  const selected = stations.find(s => s.guid === selectedGuid) ?? null;
+
+  const provinces = useMemo(() => [...new Set(stations.map(s => s.province))].sort(), [stations]);
 
   // Sync editForm when selection changes
   useEffect(() => {
     setEditForm(selected ? { ...selected } : {});
-  }, [selectedId]);
+  }, [selectedGuid]);
 
   // ── Init Leaflet map ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -286,54 +260,83 @@ export function StationMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const ids = new Set(filtered.map(s => s.id));
+    const guids = new Set(filtered.map(s => s.guid));
 
-    // remove stale
-    markersRef.current.forEach((marker, id) => {
-      if (!ids.has(id)) { marker.remove(); markersRef.current.delete(id); }
+    markersRef.current.forEach((marker, guid) => {
+      if (!guids.has(guid)) { marker.remove(); markersRef.current.delete(guid); }
     });
 
-    // add / refresh
     filtered.forEach(station => {
-      const isSel = station.id === selectedId;
+      const isSel = station.guid === selectedGuid;
       const icon  = makeStationIcon(station, isSel, zoom);
 
       const tooltipHtml = makeTooltipHtml(station);
-      if (markersRef.current.has(station.id)) {
-        const m = markersRef.current.get(station.id)!;
+      if (markersRef.current.has(station.guid)) {
+        const m = markersRef.current.get(station.guid)!;
         m.setIcon(icon);
-        // refresh tooltip content (handles edits after Save)
         m.unbindTooltip();
         m.bindTooltip(tooltipHtml, { direction: 'top', offset: [0, -8], opacity: 0.98, sticky: false });
       } else {
         const marker = L.marker([station.lat, station.lng], { icon });
         marker.bindTooltip(tooltipHtml, { direction: 'top', offset: [0, -8], opacity: 0.98, sticky: false });
-        marker.on('click', () => setSelectedId(prev => prev === station.id ? null : station.id));
+        marker.on('click', () => setSelectedGuid(prev => prev === station.guid ? null : station.guid));
         marker.addTo(map);
-        markersRef.current.set(station.id, marker);
+        markersRef.current.set(station.guid, marker);
       }
     });
-  }, [filtered, selectedId, zoom]);
+  }, [filtered, selectedGuid, zoom]);
 
   // ── Pan to selected ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!selectedId || !mapRef.current) return;
-    const s = stations.find(x => x.id === selectedId);
+    if (!selectedGuid || !mapRef.current) return;
+    const s = stations.find(x => x.guid === selectedGuid);
     if (s) mapRef.current.panTo([s.lat, s.lng], { animate: true });
-  }, [selectedId]);
+  }, [selectedGuid]);
 
   // ── Save ──────────────────────────────────────────────────────────────────
-  const handleSave = () => {
-    if (!selectedId) return;
-    setStations(prev => prev.map(s => s.id === selectedId ? { ...s, ...editForm } as Station : s));
-    setSavedId(selectedId);
-    setTimeout(() => setSavedId(null), 2000);
+  const handleSave = async () => {
+    if (!selectedGuid || !editForm.name) {
+      alert('请填写必填字段：Station Name');
+      return;
+    }
+    try {
+      const payload = {
+        sitename: editForm.name,
+        type: editForm.type,
+        stationtype: editForm.type,
+        province: editForm.province ?? '',
+        district: editForm.region ?? '',
+        location: editForm.detailedLocation ?? '',
+        devicemodel: editForm.equipModel ?? '',
+        devicequantity: editForm.equipmentCount ? parseInt(editForm.equipmentCount) : undefined,
+        outputpower: editForm.equipmentPower ? parseFloat(editForm.equipmentPower) : undefined,
+        anttype: editForm.antenna ?? '',
+        antquantity: editForm.antennaCount ? parseInt(editForm.antennaCount) : undefined,
+        technology: editForm.technicalStandard ?? '',
+        backbone: editForm.backhaulNetworkAccessMethod ?? '',
+        stationpurpose: editForm.stationPurpose ?? '',
+        modulation: editForm.modulationType ?? '',
+        startdate: editForm.openDate || undefined,
+        expirationdate: editForm.expiry || undefined,
+        longitude: editForm.lng,
+        latitude: editForm.lat,
+        unit: editForm.ownerName ?? editForm.unit ?? '',
+        equipname: editForm.equipName ?? '',
+      };
+      await stationApi.update(selectedGuid, payload);
+      setStations(prev => prev.map(s => s.guid === selectedGuid ? { ...s, ...editForm } as Station : s));
+      setSavedId(selectedGuid);
+      setTimeout(() => setSavedId(null), 2000);
+    } catch (error) {
+      console.error('Failed to save station:', error);
+      alert('保存失败，请重试');
+    }
   };
 
   const handleReset = () => {
     setStationType('All'); setSelTypes([]); setBandId('');
     setFreqMin(''); setFreqMax(''); setNameSearch(''); setProvince('');
-    setSelectedId(null);
+    setSelectedGuid(null);
     mapRef.current?.fitBounds([[41.0, 87.0], [52.8, 120.5]]);
   };
 
@@ -427,7 +430,7 @@ export function StationMap() {
                     Service Band
                   </p>
                   {bandId && (
-                    <button onClick={() => { setBandService(''); setBandId(''); }} className="text-xs text-blue-600 hover:underline">Clear</button>
+                    <button onClick={() => { setBandId(''); }} className="text-xs text-blue-600 hover:underline">Clear</button>
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground mb-2 italic">Synced from Frequency Planning module</p>
@@ -506,7 +509,7 @@ export function StationMap() {
                     <label className="block text-xs text-muted-foreground mb-1">Region / Province</label>
                     <select value={province} onChange={e => setProvince(e.target.value)} className={selectCls}>
                       <option value="">All provinces</option>
-                      {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                      {provinces.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                 </div>
@@ -597,87 +600,145 @@ export function StationMap() {
             </p>
           </div>
 
-          {selected ? (
-            <div className="p-4 space-y-3 flex-1 overflow-y-auto">
-
-              {/* Status badge */}
-              <div className="flex items-center justify-between">
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  editForm.status === 'normal'   ? 'bg-green-100 text-green-700 border border-green-200' :
-                  editForm.status === 'expiring' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                                                   'bg-red-100 text-red-700 border border-red-200'
-                }`}>
-                  <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ background: STATUS_COLOR[editForm.status ?? 'normal'] }} />
-                  {(editForm.status ?? '').charAt(0).toUpperCase() + (editForm.status ?? '').slice(1)}
-                </span>
-                <span className="text-[11px] text-muted-foreground">ID: {selected.id}</span>
-              </div>
-
-              {/* Editable text fields */}
-              {([
-                { label: 'Station Name',      key: 'name',       type: 'text'   },
-                { label: 'Operating Unit',    key: 'unit',       type: 'text'   },
-                { label: 'Equipment Name',    key: 'equipName',  type: 'text'   },
-                { label: 'Equipment Model',   key: 'equipModel', type: 'text'   },
-                { label: 'Frequency Range',   key: 'frequency',  type: 'text'   },
-                { label: 'Center Freq (MHz)', key: 'freqMHz',   type: 'number' },
-                { label: 'Transmit Power',    key: 'power',      type: 'text'   },
-                { label: 'License Expiry',    key: 'expiry',     type: 'date'   },
-                { label: 'Latitude',          key: 'lat',        type: 'number' },
-                { label: 'Longitude',         key: 'lng',        type: 'number' },
-              ] as const).map(({ label, key, type }) => (
-                <div key={key}>
-                  <label className="block text-[11px] text-muted-foreground mb-1">{label}</label>
-                  <input
-                    type={type}
-                    step={type === 'number' ? '0.0001' : undefined}
-                    value={String(editForm[key] ?? '')}
-                    onChange={e => setEditForm(f => ({
-                      ...f,
-                      [key]: type === 'number' ? parseFloat(e.target.value) : e.target.value,
-                    }))}
-                    className={inputCls}
-                  />
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-muted-foreground text-sm">Loading stations…</div>
+            </div>
+          ) : selected ? (
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Station Name */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium mb-1">Station Name <span className="text-red-500">*</span></label>
+                  <input type="text" value={editForm.name ?? ''} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
                 </div>
-              ))}
-
-              {/* Type */}
-              <div>
-                <label className="block text-[11px] text-muted-foreground mb-1">Station Type</label>
-                <select value={editForm.type ?? ''} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className={selectCls}>
-                  {STATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-
-              {/* Province */}
-              <div>
-                <label className="block text-[11px] text-muted-foreground mb-1">Province</label>
-                <select value={editForm.province ?? ''} onChange={e => setEditForm(f => ({ ...f, province: e.target.value }))} className={selectCls}>
-                  {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-[11px] text-muted-foreground mb-1">License Status</label>
-                <select value={editForm.status ?? ''} onChange={e => setEditForm(f => ({ ...f, status: e.target.value as Station['status'] }))} className={selectCls}>
-                  {(['normal', 'expiring', 'expired'] as const).map(s => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
+                {/* Technical Standard */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Technical Standard</label>
+                  <input type="text" value={editForm.technicalStandard ?? ''} onChange={e => setEditForm(f => ({ ...f, technicalStandard: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Bandwidth Processing Unit Model */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Bandwidth Processing Unit Model</label>
+                  <input type="text" value={editForm.bandwidthProcessingUnitModel ?? ''} onChange={e => setEditForm(f => ({ ...f, bandwidthProcessingUnitModel: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Owner Name */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Owner Name <span className="text-red-500">*</span></label>
+                  <input type="text" value={editForm.ownerName ?? ''} onChange={e => setEditForm(f => ({ ...f, ownerName: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Backhaul Network Access Method */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Backhaul Network Access Method</label>
+                  <input type="text" value={editForm.backhaulNetworkAccessMethod ?? ''} onChange={e => setEditForm(f => ({ ...f, backhaulNetworkAccessMethod: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Station Purpose */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Station Purpose</label>
+                  <input type="text" value={editForm.stationPurpose ?? ''} onChange={e => setEditForm(f => ({ ...f, stationPurpose: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Modulation Type */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Modulation Type</label>
+                  <input type="text" value={editForm.modulationType ?? ''} onChange={e => setEditForm(f => ({ ...f, modulationType: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Station Type */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Station Type <span className="text-red-500">*</span></label>
+                  <select value={editForm.type ?? ''} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className={selectCls}>
+                    {STATION_TYPES.filter(t => t !== 'All').map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                {/* Frequency */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Frequency</label>
+                  <input type="text" value={editForm.frequency ?? ''} onChange={e => setEditForm(f => ({ ...f, frequency: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Equipment Name and Model */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Equipment Name and Model</label>
+                  <input type="text" value={editForm.equipName ?? ''} onChange={e => setEditForm(f => ({ ...f, equipName: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Equipment Count */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Equipment Count</label>
+                  <input type="text" value={editForm.equipmentCount ?? ''} onChange={e => setEditForm(f => ({ ...f, equipmentCount: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Equipment Output Power */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Equipment Output Power</label>
+                  <input type="text" value={editForm.equipmentPower ?? ''} onChange={e => setEditForm(f => ({ ...f, equipmentPower: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Antenna Type */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Antenna Type</label>
+                  <input type="text" value={editForm.antenna ?? ''} onChange={e => setEditForm(f => ({ ...f, antenna: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Antenna Count */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Antenna Count</label>
+                  <input type="text" value={editForm.antennaCount ?? ''} onChange={e => setEditForm(f => ({ ...f, antennaCount: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Province */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Province <span className="text-red-500">*</span></label>
+                  <select value={editForm.province ?? ''} onChange={e => setEditForm(f => ({ ...f, province: e.target.value }))} className={selectCls}>
+                    <option value="">Select Province</option>
+                    {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                {/* Region */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Region <span className="text-red-500">*</span></label>
+                  <input type="text" value={editForm.region ?? ''} onChange={e => setEditForm(f => ({ ...f, region: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Detailed Location */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium mb-1">Detailed Location</label>
+                  <input type="text" value={editForm.detailedLocation ?? ''} onChange={e => setEditForm(f => ({ ...f, detailedLocation: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Status */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Status</label>
+                  <select value={editForm.status ?? ''} onChange={e => setEditForm(f => ({ ...f, status: e.target.value as Station['status'] }))} className={selectCls}>
+                    <option value="normal">Normal</option>
+                    <option value="expiring">Expiring</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+                {/* Open Date */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Open Date</label>
+                  <input type="date" value={editForm.openDate ?? ''} onChange={e => setEditForm(f => ({ ...f, openDate: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Expire Date */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Expire Date</label>
+                  <input type="date" value={editForm.expiry ?? ''} onChange={e => setEditForm(f => ({ ...f, expiry: e.target.value }))} className={inputCls} />
+                </div>
+                {/* Latitude */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Latitude</label>
+                  <input type="number" step="0.0001" value={editForm.lat ?? ''} onChange={e => setEditForm(f => ({ ...f, lat: parseFloat(e.target.value) }))} className={inputCls} />
+                </div>
+                {/* Longitude */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">Longitude</label>
+                  <input type="number" step="0.0001" value={editForm.lng ?? ''} onChange={e => setEditForm(f => ({ ...f, lng: parseFloat(e.target.value) }))} className={inputCls} />
+                </div>
               </div>
 
               {/* Save */}
-              <div className="pt-1">
+              <div className="pt-4 flex justify-end">
                 <button
                   onClick={handleSave}
-                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                    savedId === selected.id
+                  className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                    savedId === selected.guid
                       ? 'bg-green-600 text-white'
                       : 'bg-primary text-primary-foreground hover:opacity-90'
                   }`}
                 >
-                  {savedId === selected.id
+                  {savedId === selected.guid
                     ? <><CheckCircle2 className="w-4 h-4" /> Saved!</>
                     : <><Save className="w-4 h-4" /> Save</>}
                 </button>
