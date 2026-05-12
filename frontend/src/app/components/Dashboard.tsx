@@ -314,7 +314,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-green-700 font-medium mb-0.5">Normal</p>
                 <p className="text-2xl font-bold text-green-800 tabular-nums">{licNormal.toLocaleString()}</p>
-                <p className="text-xs text-green-600 mt-0.5">{((licNormal / licTotal) * 100).toFixed(1)}% of total</p>
+                <p className="text-xs text-green-600 mt-0.5">{licTotal > 0 ? ((licNormal / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
               </div>
             </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-4">
@@ -324,7 +324,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-amber-700 font-medium mb-0.5">Expiring (≤60 days)</p>
                 <p className="text-2xl font-bold text-amber-800 tabular-nums">{licExpiring.toLocaleString()}</p>
-                <p className="text-xs text-amber-600 mt-0.5">{((licExpiring / licTotal) * 100).toFixed(1)}% of total</p>
+                <p className="text-xs text-amber-600 mt-0.5">{licTotal > 0 ? ((licExpiring / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
               </div>
             </div>
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-4">
@@ -334,7 +334,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-red-700 font-medium mb-0.5">Expired</p>
                 <p className="text-2xl font-bold text-red-800 tabular-nums">{licExpired.toLocaleString()}</p>
-                <p className="text-xs text-red-600 mt-0.5">{((licExpired / licTotal) * 100).toFixed(1)}% of total</p>
+                <p className="text-xs text-red-600 mt-0.5">{licTotal > 0 ? ((licExpired / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
               </div>
             </div>
           </div>
@@ -422,9 +422,9 @@ export function Dashboard() {
               <tbody>
                 {licenseChartData.map((row, idx) => {
                   const total = row.normal + row.expiring + row.expired;
-                  const nPct  = (row.normal   / total) * 100;
-                  const ePct  = (row.expiring / total) * 100;
-                  const xPct  = (row.expired  / total) * 100;
+                  const nPct  = total > 0 ? (row.normal   / total) * 100 : 0;
+                  const ePct  = total > 0 ? (row.expiring / total) * 100 : 0;
+                  const xPct  = total > 0 ? (row.expired  / total) * 100 : 0;
                   return (
                     <tr key={row.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4">
@@ -463,9 +463,9 @@ export function Dashboard() {
                   <td className="text-center py-2.5 px-4 font-semibold text-red-600 tabular-nums">{licExpired.toLocaleString()}</td>
                   <td className="py-2.5 px-4">
                     <div className="flex h-4 rounded overflow-hidden w-full min-w-[100px]">
-                      <div style={{ width: `${(licNormal / licTotal) * 100}%`, background: '#2e7d32' }} />
-                      <div style={{ width: `${(licExpiring / licTotal) * 100}%`, background: '#f59e0b' }} />
-                      <div style={{ width: `${(licExpired / licTotal) * 100}%`, background: '#d32f2f' }} />
+                      <div style={{ width: `${licTotal > 0 ? (licNormal / licTotal) * 100 : 0}%`, background: '#2e7d32' }} />
+                      <div style={{ width: `${licTotal > 0 ? (licExpiring / licTotal) * 100 : 0}%`, background: '#f59e0b' }} />
+                      <div style={{ width: `${licTotal > 0 ? (licExpired / licTotal) * 100 : 0}%`, background: '#d32f2f' }} />
                     </div>
                   </td>
                 </tr>
@@ -622,8 +622,8 @@ export function Dashboard() {
                 </thead>
                 <tbody>
                   {allProvinceData.map(p => {
-                    const expireRate   = ((p.expired / p.total) * 100).toFixed(1);
-                    const expiringRate = ((p.expiring + p.expired) / p.total) * 100;
+                    const expireRate   = p.total > 0 ? ((p.expired / p.total) * 100).toFixed(1) : '0.0';
+                    const expiringRate = p.total > 0 ? ((p.expiring + p.expired) / p.total) * 100 : 0;
                     return (
                       <tr key={p.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                         <td className="py-2.5 px-4 font-medium">{p.name}</td>
@@ -653,7 +653,7 @@ export function Dashboard() {
                     <td className="text-center py-2.5 px-4 font-semibold text-amber-600 tabular-nums">{totalExpiring.toLocaleString()}</td>
                     <td className="text-center py-2.5 px-4 font-semibold text-red-600 tabular-nums">{totalExpired.toLocaleString()}</td>
                     <td className="text-center py-2.5 px-4 font-semibold tabular-nums">
-                      {((totalExpired / totalAll) * 100).toFixed(1)}%
+                      {totalAll > 0 ? ((totalExpired / totalAll) * 100).toFixed(1) : '0.0'}%
                     </td>
                   </tr>
                 </tfoot>
