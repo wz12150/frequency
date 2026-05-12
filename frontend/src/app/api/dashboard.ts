@@ -50,10 +50,10 @@ export interface DashboardOverviewVO {
   expiringSoon: number;
   expired: number;
   // 增长率
-  stationGrowth: number;     // 百分比字符串 e.g. "+2.4%"
-  licenseGrowth: number;
-  expiringGrowth: number;
-  expiredGrowth: number;
+  stationGrowth: string;     // 百分比字符串 e.g. "+2.4%"
+  licenseGrowth: string;
+  expiringGrowth: string;
+  expiredGrowth: string;
   // 省份台站统计列表
   provinceStats: ProvinceStatsVO[];
   // 许可证类型统计列表
