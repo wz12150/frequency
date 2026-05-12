@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { dashboardApi } from '../api/dashboard';
+import { Loader2 } from 'lucide-react';
 import {
   Activity, TrendingUp, AlertTriangle, CheckCircle, Clock,
   Settings2, FileCheck, Radio,
@@ -129,6 +131,9 @@ function SectionDivider({ title }: { title: string }) {
 export function Dashboard() {
   const [expiringDays, setExpiringDays] = useState(60);
   const [inputDays, setInputDays] = useState('60');
+  const [overview, setOverview] = useState<DashboardOverviewVO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Province breakdown (threshold-driven) ─────────────────────────────────
   const allProvinceData = useMemo(() => {
@@ -182,12 +187,49 @@ export function Dashboard() {
     { month: '2026-03', count: 4350 }, { month: '2026-04', count: 4432 },
   ];
 
-  const stats = [
-    { label: 'Total Stations',  value: totalAll.toLocaleString(),     change: '+2.4%', icon: Activity,      color: 'bg-blue-500'   },
-    { label: 'Normal Licenses', value: totalNormal.toLocaleString(),   change: '+1.8%', icon: CheckCircle,   color: 'bg-green-500'  },
-    { label: 'Expiring Soon',   value: totalExpiring.toLocaleString(), change: '+12%',  icon: Clock,         color: 'bg-yellow-500' },
-    { label: 'Expired',         value: totalExpired.toLocaleString(),  change: '-5%',   icon: AlertTriangle, color: 'bg-red-500'    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <AlertTriangle className="w-8 h-8 text-red-500" />
+        <p className="text-red-500">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          重试
+        </button>
+      </div>
+    );
+  }
+
+  const stats = overview ? [
+    { label: 'Total Stations',  value: overview.totalStations.toLocaleString(),   change: overview.stationGrowth,   icon: Activity,      color: 'bg-blue-500'   },
+    { label: 'Normal Licenses', value: overview.normalLicenses.toLocaleString(),   change: overview.licenseGrowth,   icon: CheckCircle,   color: 'bg-green-500'  },
+    { label: 'Expiring Soon',   value: overview.expiringSoon.toLocaleString(),     change: overview.expiringGrowth,  icon: Clock,         color: 'bg-yellow-500' },
+    { label: 'Expired',         value: overview.expired.toLocaleString(),           change: overview.expiredGrowth,   icon: AlertTriangle, color: 'bg-red-500'    },
+  ] : [];
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    dashboardApi.overview()
+      .then((data: DashboardOverviewVO) => {
+        setOverview(data);
+        setLoading(false);
+      })
+      .catch((err: Error) => {
+        setError(err.message || 'Failed to load dashboard data');
+        setLoading(false);
+      });
+  }, []);
 
   const applyDays = () => {
     const v = parseInt(inputDays, 10);
