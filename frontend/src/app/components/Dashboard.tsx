@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { dashboardApi } from '../api/dashboard';
+import { dashboardApi, DashboardOverviewVO } from '../api/dashboard';
 import { Loader2 } from 'lucide-react';
 import {
   Activity, TrendingUp, AlertTriangle, CheckCircle, Clock,
