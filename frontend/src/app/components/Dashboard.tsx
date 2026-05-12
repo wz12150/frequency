@@ -164,22 +164,8 @@ export function Dashboard() {
     { name: 'Expired',  value: licExpired,  color: '#d32f2f' },
   ];
 
-  const stationTypes = [
-    { id: 'mobile',       name: 'Mobile',       value: 1580, color: '#1976d2' },
-    { id: 'broadcasting', name: 'Broadcasting', value: 890,  color: '#42a5f5' },
-    { id: 'fixed',        name: 'Fixed',        value: 650,  color: '#64b5f6' },
-    { id: 'satellite',    name: 'Satellite',    value: 420,  color: '#90caf9' },
-    { id: 'others',       name: 'Others',       value: 340,  color: '#bbdefb' },
-  ];
-
-  const growthData = [
-    { month: '2025-05', count: 3200 }, { month: '2025-06', count: 3350 },
-    { month: '2025-07', count: 3480 }, { month: '2025-08', count: 3620 },
-    { month: '2025-09', count: 3750 }, { month: '2025-10', count: 3850 },
-    { month: '2025-11', count: 3920 }, { month: '2025-12', count: 4020 },
-    { month: '2026-01', count: 4150 }, { month: '2026-02', count: 4280 },
-    { month: '2026-03', count: 4350 }, { month: '2026-04', count: 4432 },
-  ];
+  const stationTypes = overview?.stationTypes ?? [];
+  const growthData = overview?.stationGrowthTrend ?? [];
 
   if (loading) {
     return (
