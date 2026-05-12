@@ -39,16 +39,6 @@ const BASE_PROVINCE_DATA = [
   { id: 'govisumber',   name: 'Govisümber',      abbr: 'GS', total: 45,   expiring60: 4,   expired: 2  },
 ];
 
-// ── Frequency license data ─────────────────────────────────────────────────────
-const LICENSE_TYPE_DATA = [
-  { id: 'mobile',       type: 'Mobile',       normal: 1250, expiring: 210, expired: 120 },
-  { id: 'broadcasting', type: 'Broadcasting', normal: 680,  expiring: 135, expired: 75  },
-  { id: 'fixed',        type: 'Fixed',        normal: 520,  expiring: 85,  expired: 45  },
-  { id: 'satellite',    type: 'Satellite',    normal: 360,  expiring: 40,  expired: 20  },
-  { id: 'microwave',    type: 'Microwave',    normal: 280,  expiring: 35,  expired: 18  },
-  { id: 'navigation',   type: 'Navigation',   normal: 195,  expiring: 22,  expired: 12  },
-];
-
 // ── Tooltip: license horizontal bar ──────────────────────────────────────────
 const LicenseBarTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -156,17 +146,20 @@ export function Dashboard() {
   const totalAll      = totalNormal + totalExpiring + totalExpired;
 
   // ── License aggregates ────────────────────────────────────────────────────
-  const licNormal   = LICENSE_TYPE_DATA.reduce((s, d) => s + d.normal,   0);
-  const licExpiring = LICENSE_TYPE_DATA.reduce((s, d) => s + d.expiring, 0);
-  const licExpired  = LICENSE_TYPE_DATA.reduce((s, d) => s + d.expired,  0);
-  const licTotal    = licNormal + licExpiring + licExpired;
+  const licenseChartData = useMemo(() => {
+    if (!overview) return [];
+    return [...overview.licenseTypeStats]
+      .map(d => ({ ...d, total: d.normal + d.expiring + d.expired }))
+      .sort((a, b) => b.total - a.total);
+  }, [overview]);
 
-  const licenseChartData = [...LICENSE_TYPE_DATA]
-    .map(d => ({ ...d, total: d.normal + d.expiring + d.expired }))
-    .sort((a, b) => b.total - a.total);
+  const licNormal    = overview?.licenseTypeStats.reduce((s, d) => s + d.normal,   0) ?? 0;
+  const licExpiring  = overview?.licenseTypeStats.reduce((s, d) => s + d.expiring, 0) ?? 0;
+  const licExpired   = overview?.licenseTypeStats.reduce((s, d) => s + d.expired,  0) ?? 0;
+  const licTotal     = licNormal + licExpiring + licExpired;
 
   const licDonutData = [
-    { name: 'Normal',   value: licNormal,   color: '#2e7d32' },
+    { name: 'Normal',    value: licNormal,    color: '#2e7d32' },
     { name: 'Expiring', value: licExpiring, color: '#f59e0b' },
     { name: 'Expired',  value: licExpired,  color: '#d32f2f' },
   ];
