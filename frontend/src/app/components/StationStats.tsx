@@ -1,7 +1,29 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, MapPin, Filter } from 'lucide-react';
 import { StationDetailCard } from './StationDetailCard';
+
+const API_BASE = '/api';
+
+async function fetchRegionStats() {
+  const res = await fetch(`${API_BASE}/statistics/station/region-detail`);
+  const json = await res.json();
+  return json.data || [];
+}
+
+async function fetchGrowthTrend(type: string, year: number, province: string) {
+  const params = new URLSearchParams({ type, year: String(year), province });
+  const res = await fetch(`${API_BASE}/statistics/station/growth-trend?${params}`);
+  const json = await res.json();
+  return json.data || [];
+}
+
+async function fetchExpiredStations(year: number, province: string, type: string) {
+  const params = new URLSearchParams({ year: String(year), province, type });
+  const res = await fetch(`${API_BASE}/statistics/station/expired-detail?${params}`);
+  const json = await res.json();
+  return json.data || [];
+}
 
 type StationRecord = {
   type: string;
@@ -49,6 +71,25 @@ export function StationStats() {
   const [selectedExpiredMonth, setSelectedExpiredMonth] = useState<number | null>(8);
   const [selectedExpiredStation, setSelectedExpiredStation] = useState<any | null>(null);
 
+  // API data state
+  const [regionStats, setRegionStats] = useState<any[]>([]);
+  const [growthData, setGrowthData] = useState<any[]>([]);
+  const [expiredData, setExpiredData] = useState<any[]>([]);
+
+  // Load data from API
+  useEffect(() => {
+    if (analysisType === 'regional') {
+      fetchRegionStats().then(setRegionStats).catch(console.error);
+    } else if (analysisType === 'growth') {
+      fetchGrowthTrend(selectedGrowthType, selectedGrowthYear, selectedGrowthProvince)
+        .then(setGrowthData).catch(console.error);
+    } else if (analysisType === 'validity') {
+      fetchExpiredStations(selectedValidityYear, selectedValidityProvince, selectedValidityType)
+        .then(setExpiredData).catch(console.error);
+    }
+  }, [analysisType, selectedGrowthType, selectedGrowthYear, selectedGrowthProvince,
+      selectedValidityYear, selectedValidityProvince, selectedValidityType]);
+
   const regionalData = [
     { region: 'Ulaanbaatar', mobile: 580, broadcast: 320, fixed: 180, satellite: 120, other: 85 },
     { region: 'Dornogovi', mobile: 180, broadcast: 95, fixed: 75, satellite: 52, other: 30 },
@@ -77,15 +118,16 @@ export function StationStats() {
     { type: 'Mobile', province: 'Ulaanbaatar', region: 'Ulaanbaatar', year: 2026, month: 8, count: 9, name: 'Ulaanbaatar South D', longitude: '106.855', latitude: '47.892', technicalStandard: 'LTE', bandwidthProcessingUnitModel: 'BBU-5900', ownerName: 'Unitel LLC', backhaulNetworkAccessMethod: 'Fiber', stationPurpose: 'Public mobile service', modulationType: 'QAM', stationType: 'Mobile', transmitFrequency: '1800-1900 MHz', receiveFrequency: '1710-1785 MHz', bandwidth: '20 MHz', equipmentNameAndModel: 'Huawei BTS3900', equipmentCount: '10', equipmentPower: '40W', antennaType: 'Directional', antennaCount: '4', detailedLocation: 'South district node', openDate: '2024-02-14', expireDate: '2026-08-17' },
   ];
 
-  const regionTotals = useMemo(() => regionalData.map((row) => ({ region: row.region, total: row.mobile + row.broadcast + row.fixed + row.satellite + row.other })).sort((a, b) => b.total - a.total), []);
+  const regionTotals = useMemo(() => (regionStats.length > 0 ? regionStats : regionalData).map((row: any) => ({ region: row.region, total: row.total ?? (row.mobile + row.broadcast + row.fixed + row.satellite + row.other) })).sort((a, b) => b.total - a.total), [regionStats]);
   const totalStations = useMemo(() => regionTotals.reduce((sum, item) => sum + item.total, 0), [regionTotals]);
   const pieData = useMemo(() => regionTotals.map((item, index) => ({ ...item, color: ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'][index % 5] })), [regionTotals]);
   const stationTypeData = useMemo(() => {
-    const totalMobile = regionalData.reduce((sum, r) => sum + r.mobile, 0);
-    const totalBroadcast = regionalData.reduce((sum, r) => sum + r.broadcast, 0);
-    const totalFixed = regionalData.reduce((sum, r) => sum + r.fixed, 0);
-    const totalSatellite = regionalData.reduce((sum, r) => sum + r.satellite, 0);
-    const totalOther = regionalData.reduce((sum, r) => sum + r.other, 0);
+    const data = regionStats.length > 0 ? regionStats : regionalData;
+    const totalMobile = data.reduce((sum: number, r: any) => sum + r.mobile, 0);
+    const totalBroadcast = data.reduce((sum: number, r: any) => sum + r.broadcast, 0);
+    const totalFixed = data.reduce((sum: number, r: any) => sum + r.fixed, 0);
+    const totalSatellite = data.reduce((sum: number, r: any) => sum + r.satellite, 0);
+    const totalOther = data.reduce((sum: number, r: any) => sum + r.other, 0);
     return [
       { type: 'Mobile', count: totalMobile },
       { type: 'Broadcasting', count: totalBroadcast },
@@ -93,7 +135,7 @@ export function StationStats() {
       { type: 'Satellite', count: totalSatellite },
       { type: 'Others', count: totalOther },
     ];
-  }, []);
+  }, [regionStats]);
 
   const growthTypes = useMemo(() => ['All', ...Array.from(new Set(stationRecords.map((item) => item.type)))], [stationRecords]);
   const growthYears = useMemo(() => Array.from(new Set(stationRecords.map((item) => item.year))).sort((a, b) => a - b), [stationRecords]);
@@ -101,16 +143,28 @@ export function StationStats() {
   const filteredGrowthRecords = useMemo(() => stationRecords.filter((item) => (selectedGrowthType === 'All' || item.type === selectedGrowthType) && item.year === selectedGrowthYear && (selectedGrowthProvince === 'All' || item.province === selectedGrowthProvince)), [selectedGrowthProvince, selectedGrowthType, selectedGrowthYear, stationRecords]);
   const monthlyTotals = useMemo(() => Array.from({ length: 12 }, (_, index) => ({ month: index + 1, count: filteredGrowthRecords.filter((item) => item.month === index + 1).reduce((sum, item) => sum + item.count, 0) })), [filteredGrowthRecords]);
   const previousYearTotals = useMemo(() => Array.from({ length: 12 }, (_, index) => ({ month: index + 1, count: stationRecords.filter((item) => item.year === selectedGrowthYear - 1 && item.month === index + 1).filter((item) => (selectedGrowthType === 'All' || item.type === selectedGrowthType) && (selectedGrowthProvince === 'All' || item.province === selectedGrowthProvince)).reduce((sum, item) => sum + item.count, 0) })), [selectedGrowthProvince, selectedGrowthType, selectedGrowthYear, stationRecords]);
-  const yoyGrowthData = useMemo(() => monthlyTotals.map((item, index) => { const prev = previousYearTotals[index]?.count ?? 0; const growthCount = item.count - prev; const growthPercent = prev === 0 ? 0 : Number(((growthCount / prev) * 100).toFixed(1)); return { month: new Date(selectedGrowthYear, item.month - 1).toLocaleString('en-US', { month: 'short' }), current: item.count, previous: prev, growthCount, growthPercent }; }), [monthlyTotals, previousYearTotals, selectedGrowthYear]);
-  const momGrowthData = useMemo(() => monthlyTotals.map((item, index) => { const prev = index === 0 ? 0 : monthlyTotals[index - 1]?.count ?? 0; const growthCount = item.count - prev; const growthPercent = prev === 0 ? 0 : Number(((growthCount / prev) * 100).toFixed(1)); return { month: new Date(selectedGrowthYear, item.month - 1).toLocaleString('en-US', { month: 'short' }), current: item.count, previous: prev, growthCount, growthPercent }; }), [monthlyTotals, selectedGrowthYear]);
+  const yoyGrowthData = growthData.map((item) => ({
+    month: item.month,
+    current: item.current,
+    previous: item.previous,
+    growthCount: item.growthCount,
+    growthPercent: item.growthPercent,
+  }));
+  const momGrowthData = growthData.map((item) => ({
+    month: item.month,
+    current: item.current,
+    previous: item.previous,
+    growthCount: item.momCount,
+    growthPercent: item.momPercent,
+  }));
 
-  const validityYears = useMemo(() => Array.from(new Set(validityStations.map((item) => item.year))).sort((a, b) => b - a), []);
-  const validityProvinces = useMemo(() => ['All', ...Array.from(new Set(validityStations.map((item) => item.province))).sort()], []);
-  const validityTypes = useMemo(() => ['All', ...Array.from(new Set(validityStations.map((item) => item.type)))], []);
+  const validityYears = useMemo(() => [2025, 2026], []);
+  const validityProvinces = useMemo(() => ['All'], []);
+  const validityTypes = useMemo(() => ['All'], []);
   const validityMonths = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), []);
-  const filteredValidityStations = useMemo(() => validityStations.filter((item) => item.year === selectedValidityYear && (selectedValidityProvince === 'All' || item.province === selectedValidityProvince) && (selectedValidityType === 'All' || item.type === selectedValidityType)), [selectedValidityProvince, selectedValidityType, selectedValidityYear]);
-  const monthlyExpiredData = useMemo(() => validityMonths.map((month) => ({ month: new Date(selectedValidityYear, month - 1).toLocaleString('en-US', { month: 'short' }), monthIndex: month, count: filteredValidityStations.filter((item) => item.month === month).reduce((sum, item) => sum + item.expiredCount, 0) })), [filteredValidityStations, selectedValidityYear, validityMonths]);
-  const selectedMonthStations = useMemo(() => filteredValidityStations.filter((item) => item.month === (selectedExpiredMonth ?? -1)), [filteredValidityStations, selectedExpiredMonth]);
+  const filteredValidityStations = expiredData;
+  const monthlyExpiredData = useMemo(() => validityMonths.map((month) => ({ month: new Date(selectedValidityYear, month - 1).toLocaleString('en-US', { month: 'short' }), monthIndex: month, count: expiredData.filter((item) => item.month === month).reduce((sum, item) => sum + (item.expiredCount ?? 1), 0) })), [expiredData, selectedValidityYear, validityMonths]);
+  const selectedMonthStations = useMemo(() => selectedExpiredMonth ? expiredData.filter((item) => item.month === selectedExpiredMonth) : expiredData, [expiredData, selectedExpiredMonth]);
 
   const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(null);
   const validityMapStations = showExpiredOnMap ? selectedMonthStations : [];
@@ -178,7 +232,7 @@ export function StationStats() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Region</th><th className="text-center py-3 px-4">Mobile</th><th className="text-center py-3 px-4">Broadcasting</th><th className="text-center py-3 px-4">Fixed</th><th className="text-center py-3 px-4">Satellite</th><th className="text-center py-3 px-4">Others</th><th className="text-center py-3 px-4">Total</th><th className="text-center py-3 px-4">Percentage</th></tr></thead>
-                <tbody>{regionalData.map((row) => { const total = row.mobile + row.broadcast + row.fixed + row.satellite + row.other; const percentage = ((total / totalStations) * 100).toFixed(1); return (<tr key={row.region} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{row.region}</td><td className="text-center py-3 px-4">{row.mobile}</td><td className="text-center py-3 px-4">{row.broadcast}</td><td className="text-center py-3 px-4">{row.fixed}</td><td className="text-center py-3 px-4">{row.satellite}</td><td className="text-center py-3 px-4">{row.other}</td><td className="text-center py-3 px-4 font-semibold">{total}</td><td className="text-center py-3 px-4">{percentage}%</td></tr>); })}</tbody>
+                <tbody>{(regionStats.length > 0 ? regionStats : regionalData).map((row: any) => { const total = row.total ?? (row.mobile + row.broadcast + row.fixed + row.satellite + row.other); const percentage = ((total / totalStations) * 100).toFixed(1); return (<tr key={row.region} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{row.region}</td><td className="text-center py-3 px-4">{row.mobile}</td><td className="text-center py-3 px-4">{row.broadcast}</td><td className="text-center py-3 px-4">{row.fixed}</td><td className="text-center py-3 px-4">{row.satellite}</td><td className="text-center py-3 px-4">{row.other}</td><td className="text-center py-3 px-4 font-semibold">{total}</td><td className="text-center py-3 px-4">{percentage}%</td></tr>); })}</tbody>
               </table>
             </div>
           </div>
@@ -373,7 +427,7 @@ export function StationStats() {
                 </thead>
                 <tbody>
                   {selectedMonthStations.map((station) => (
-                    <tr key={station.id} className="border-b border-border hover:bg-muted/50">
+                    <tr key={station.guid} className="border-b border-border hover:bg-muted/50">
                       <td className="py-2 px-3 font-medium">{station.name}</td>
                       <td className="py-2 px-3">{station.province}</td>
                       <td className="py-2 px-3">{station.type}</td>
