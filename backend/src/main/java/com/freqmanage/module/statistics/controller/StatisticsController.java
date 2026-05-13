@@ -2,12 +2,14 @@ package com.freqmanage.module.statistics.controller;
 
 import com.freqmanage.common.ApiResponse;
 import com.freqmanage.module.statistics.service.StatisticsService;
+import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -65,5 +67,13 @@ public class StatisticsController {
     @GetMapping("/station/region-detail")
     public ApiResponse<List<StationRegionDetailVO>> stationRegionDetail() {
         return ApiResponse.ok(statisticsService.getRegionStats());
+    }
+
+    @GetMapping("/station/growth-trend")
+    public ApiResponse<List<MonthlyGrowthVO>> stationGrowthTrend(
+            @RequestParam(required = false, defaultValue = "All") String type,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false, defaultValue = "All") String province) {
+        return ApiResponse.ok(statisticsService.getGrowthTrend(type, year, province));
     }
 }

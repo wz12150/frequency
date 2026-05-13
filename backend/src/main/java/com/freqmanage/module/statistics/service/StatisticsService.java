@@ -8,6 +8,7 @@ import com.freqmanage.module.permit.mapper.SpecialPermitMapper;
 import com.freqmanage.module.permit.mapper.SpecialPermitStationMapper;
 import com.freqmanage.module.station.entity.RsbtStation;
 import com.freqmanage.module.station.mapper.StationMapper;
+import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
@@ -196,5 +197,50 @@ public class StatisticsService {
                 })
                 .sorted(Comparator.comparingLong(StationRegionDetailVO::getTotal).reversed())
                 .collect(Collectors.toList());
+    }
+
+    public List<MonthlyGrowthVO> getGrowthTrend(String type, Integer year, String province) {
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+        List<MonthlyGrowthVO> result = new ArrayList<>();
+
+        for (int month = 1; month <= 12; month++) {
+            // 当年当月计数
+            Long current = countStations(targetYear, month, type, province);
+            // 去年同月计数
+            Long previous = countStations(targetYear - 1, month, type, province);
+            // 上月计数（用于环比）
+            Long lastMonth = month > 1 ? countStations(targetYear, month - 1, type, province) : 0L;
+
+            long growthCountVal = current - previous;
+            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;
+            double momPercentVal = lastMonth > 0 ? (momCountVal * 100.0 / lastMonth) : 0.0;
+
+            MonthlyGrowthVO vo = new MonthlyGrowthVO();
+            vo.setMonth(new java.text.SimpleDateFormat("MMM", java.util.Locale.ENGLISH)
+                            .format(new java.util.Date(targetYear - 1900, month - 1, 1)));
+            vo.setCurrent(current);
+            vo.setPrevious(previous);
+            vo.setGrowthCount(growthCountVal);
+            vo.setGrowthPercent(Math.round(growthPercentVal * 10) / 10.0);
+            vo.setMomCount(momCountVal);
+            vo.setMomPercent(Math.round(momPercentVal * 10) / 10.0);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private Long countStations(Integer year, Integer month, String type, String province) {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        if (year != null && month != null) {
+            wrapper.apply("YEAR(startdate) = {0} AND MONTH(startdate) = {1}", year, month);
+        }
+        if (!"All".equals(type) && type != null && !type.isEmpty()) {
+            wrapper.eq(RsbtStation::getStationtype, type);
+        }
+        if (!"All".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.eq(RsbtStation::getProvince, province);
+        }
+        return stationMapper.selectCount(wrapper);
     }
 }
