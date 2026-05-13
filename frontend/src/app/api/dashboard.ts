@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8084/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 const request = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('token');
@@ -65,5 +65,9 @@ export interface DashboardOverviewVO {
 }
 
 export const dashboardApi = {
-  overview: () => request('/dashboard/overview'),
+  overview: async () => {
+    const res = await request('/dashboard/overview');
+    // Handle ApiResponse wrapper: {code, message, data: {...}}
+    return res?.data ?? res;
+  },
 };
