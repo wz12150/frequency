@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Plus, Edit, Trash2, FileUp, FileDown, X, Upload, Download, Search, Eye, ArrowLeft, ChevronRight, Info, MapPin } from 'lucide-react';
 import { RecordDetailCard } from './RecordDetailCard';
@@ -7,6 +7,13 @@ import { CoordinatePicker } from './CoordinatePicker';
 import { planningApi, PlanningVO } from '../api/planning';
 import { stationApi } from '../api/station';
 import { permitApi, PermitVO } from '../api/permit';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from './ui/pagination';
 
 type DataTab = 'station' | 'license' | 'planning';
 
@@ -435,28 +442,61 @@ export function DataManagement() {
   const [exportOptions, setExportOptions] = useState({ format: 'xlsx', range: 'all', fields: ['all'] });
   const [coordinatePickerOpen, setCoordinatePickerOpen] = useState(false);
 
+  // 分页状态
+  const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 10 });
+  const [stationTotal, setStationTotal] = useState(0);
+  const [licensePage, setLicensePage] = useState({ pageNum: 1, pageSize: 10 });
+  const [licenseTotal, setLicenseTotal] = useState(0);
+  const [planningPage, setPlanningPage] = useState({ pageNum: 1, pageSize: 10 });
+  const [planningTotal, setPlanningTotal] = useState(0);
+
   const [stationRecords, setStationRecords] = useState<StationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [licenseRecords, setLicenseRecords] = useState<LicenseRecord[]>([]);
   const [planningRecords, setPlanningRecords] = useState<FrequencyBand[]>([]);
 
+  // 数据获取函数
+  const fetchStationData = useCallback(async () => {
+    try {
+      const res = await stationApi.page({ pageNum: stationPage.pageNum, pageSize: stationPage.pageSize, keyword: searchTerm });
+      if (res.code === 200 && res.data?.records) {
+        setStationRecords(res.data.records.map(mapVoToStationRecord));
+        setStationTotal(res.data.total || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch station data:', error);
+    }
+  }, [stationPage.pageNum, stationPage.pageSize, searchTerm]);
+
+  const fetchLicenseData = useCallback(async () => {
+    try {
+      const res = await permitApi.page({ pageNum: licensePage.pageNum, pageSize: licensePage.pageSize, keyword: searchTerm });
+      if (res.code === 200 && res.data?.records) {
+        setLicenseRecords(res.data.records.map(mapPermitVoToLicenseRecord));
+        setLicenseTotal(res.data.total || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch license data:', error);
+    }
+  }, [licensePage.pageNum, licensePage.pageSize, searchTerm]);
+
+  const fetchPlanningData = useCallback(async () => {
+    try {
+      const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
+      if (res.code === 200 && res.data) {
+        setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+        setPlanningTotal(res.data.total || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch planning data:', error);
+    }
+  }, [planningPage.pageNum, planningPage.pageSize]);
+
   useEffect(() => {
     const fetchAll = async () => {
+      setLoading(true);
       try {
-        const [stationRes, permitRes, planningRes] = await Promise.all([
-          stationApi.page({ pageSize: 1000 }),
-          permitApi.page({ pageSize: 1000 }),
-          planningApi.page({ pageSize: 1000 }),
-        ]);
-        if (stationRes.code === 200 && stationRes.data?.records) {
-          setStationRecords(stationRes.data.records.map(mapVoToStationRecord));
-        }
-        if (permitRes.code === 200 && permitRes.data?.records) {
-          setLicenseRecords(permitRes.data.records.map(mapPermitVoToLicenseRecord));
-        }
-        if (planningRes.code === 200 && planningRes.data) {
-          setPlanningRecords(planningRes.data.records.map(convertToFrequencyBand));
-        }
+        await Promise.all([fetchStationData(), fetchLicenseData(), fetchPlanningData()]);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -464,12 +504,43 @@ export function DataManagement() {
       }
     };
     fetchAll();
-  }, []);
+  }, [fetchStationData, fetchLicenseData, fetchPlanningData]);
 
   const licenseUnits = useMemo(() => ['All', ...Array.from(new Set(licenseRecords.map((item) => item.organization))).sort()], [licenseRecords]);
   const licenseRegions = useMemo(() => ['All', ...Array.from(new Set(stationRecords.map((item) => item.region))).sort()], [stationRecords]);
   const licenseBands = useMemo(() => ['All', '470-862 MHz', '1800-1900 MHz', '3400-3600 MHz', '5925-6425 MHz', '11.7-12.2 GHz'], []);
   const licenseStatuses = useMemo(() => ['All', 'Normal', 'Expiring', 'Expired'], []);
+
+  // 分页处理函数
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setStationPage(prev => ({ ...prev, pageNum: 1 }));
+    setLicensePage(prev => ({ ...prev, pageNum: 1 }));
+  };
+
+  const handleStationPageChange = (newPage: number) => {
+    setStationPage(prev => ({ ...prev, pageNum: newPage }));
+  };
+
+  const handleStationPageSizeChange = (newSize: number) => {
+    setStationPage({ pageNum: 1, pageSize: newSize });
+  };
+
+  const handleLicensePageChange = (newPage: number) => {
+    setLicensePage(prev => ({ ...prev, pageNum: newPage }));
+  };
+
+  const handleLicensePageSizeChange = (newSize: number) => {
+    setLicensePage({ pageNum: 1, pageSize: newSize });
+  };
+
+  const handlePlanningPageChange = (newPage: number) => {
+    setPlanningPage(prev => ({ ...prev, pageNum: newPage }));
+  };
+
+  const handlePlanningPageSizeChange = (newSize: number) => {
+    setPlanningPage({ pageNum: 1, pageSize: newSize });
+  };
 
   const filteredLicenseData = useMemo(() => licenseRecords.filter((license) => {
     const q = searchTerm.toLowerCase();
@@ -534,9 +605,10 @@ export function DataManagement() {
           remark: vo.note,
         });
       }
-      const res = await planningApi.page({ pageSize: 1000 });
+      const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
       if (res.code === 200 && res.data) {
         setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+        setPlanningTotal(res.data.total || 0);
       }
     } catch (error) {
       console.error('Failed to save planning data:', error);
@@ -551,9 +623,10 @@ export function DataManagement() {
     if (!confirm('Are you sure you want to delete this record?')) return;
     try {
       await planningApi.delete(guid);
-      const res = await planningApi.page({ pageSize: 1000 });
+      const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
       if (res.code === 200 && res.data) {
         setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+        setPlanningTotal(res.data.total || 0);
       }
     } catch (error) {
       console.error('Failed to delete planning data:', error);
@@ -567,16 +640,26 @@ export function DataManagement() {
   };
 
   const refreshStationData = async () => {
-    const res = await stationApi.page({ pageSize: 1000 });
+    const res = await stationApi.page({ pageNum: stationPage.pageNum, pageSize: stationPage.pageSize, keyword: searchTerm });
     if (res.code === 200 && res.data?.records) {
       setStationRecords(res.data.records.map(mapVoToStationRecord));
+      setStationTotal(res.data.total || 0);
     }
   };
 
   const refreshLicenseData = async () => {
-    const res = await permitApi.page({ pageSize: 1000 });
+    const res = await permitApi.page({ pageNum: licensePage.pageNum, pageSize: licensePage.pageSize, keyword: searchTerm });
     if (res.code === 200 && res.data?.records) {
       setLicenseRecords(res.data.records.map(mapPermitVoToLicenseRecord));
+      setLicenseTotal(res.data.total || 0);
+    }
+  };
+
+  const refreshPlanningData = async () => {
+    const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
+    if (res.code === 200 && res.data) {
+      setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+      setPlanningTotal(res.data.total || 0);
     }
   };
 
@@ -647,9 +730,10 @@ export function DataManagement() {
     if (importTab === 'planning') {
       try {
         await planningApi.import(importFile);
-        const res = await planningApi.page({ pageSize: 1000 });
+        const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
         if (res.code === 200 && res.data) {
           setPlanningRecords(res.data.records.map(convertToFrequencyBand));
+          setPlanningTotal(res.data.total || 0);
         }
       } catch (error) {
         console.error('Failed to import planning data:', error);
@@ -772,13 +856,14 @@ export function DataManagement() {
               <button type="button" onClick={() => { setStationFormRecord({ id: '', name: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
           <div className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading stations...</div>
             ) : stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">No stations found</div>
             ) : (
+              <>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
@@ -809,6 +894,44 @@ export function DataManagement() {
                   ))}
                 </tbody>
               </table>
+              {stationTotal > 0 && (
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    共 {stationTotal} 条，第 {stationPage.pageNum}/{Math.ceil(stationTotal / stationPage.pageSize) || 1} 页
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={stationPage.pageSize}
+                      onChange={(e) => handleStationPageSizeChange(Number(e.target.value))}
+                      className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                    >
+                      <option value={10}>10 条/页</option>
+                      <option value={20}>20 条/页</option>
+                      <option value={50}>50 条/页</option>
+                    </select>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => handleStationPageChange(stationPage.pageNum - 1)}
+                            className={stationPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <span className="px-3 py-1 text-sm">{stationPage.pageNum}</span>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => handleStationPageChange(stationPage.pageNum + 1)}
+                            className={stationPage.pageNum >= Math.ceil(stationTotal / stationPage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </div>
         </div>
@@ -825,7 +948,7 @@ export function DataManagement() {
             </div>
           </div>
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
-            <div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select>
             <select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select>
             <select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select>
@@ -870,6 +993,43 @@ export function DataManagement() {
                 ))}
               </tbody>
             </table>
+            {licenseTotal > 0 && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  共 {licenseTotal} 条，第 {licensePage.pageNum}/{Math.ceil(licenseTotal / licensePage.pageSize) || 1} 页
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={licensePage.pageSize}
+                    onChange={(e) => handleLicensePageSizeChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                  >
+                    <option value={10}>10 条/页</option>
+                    <option value={20}>20 条/页</option>
+                    <option value={50}>50 条/页</option>
+                  </select>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handleLicensePageChange(licensePage.pageNum - 1)}
+                          className={licensePage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="px-3 py-1 text-sm">{licensePage.pageNum}</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handleLicensePageChange(licensePage.pageNum + 1)}
+                          className={licensePage.pageNum >= Math.ceil(licenseTotal / licensePage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -922,6 +1082,43 @@ export function DataManagement() {
                 ))}
               </tbody>
             </table>
+            {planningTotal > 0 && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  共 {planningTotal} 条，第 {planningPage.pageNum}/{Math.ceil(planningTotal / planningPage.pageSize) || 1} 页
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={planningPage.pageSize}
+                    onChange={(e) => handlePlanningPageSizeChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                  >
+                    <option value={10}>10 条/页</option>
+                    <option value={20}>20 条/页</option>
+                    <option value={50}>50 条/页</option>
+                  </select>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handlePlanningPageChange(planningPage.pageNum - 1)}
+                          className={planningPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="px-3 py-1 text-sm">{planningPage.pageNum}</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handlePlanningPageChange(planningPage.pageNum + 1)}
+                          className={planningPage.pageNum >= Math.ceil(planningTotal / planningPage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
