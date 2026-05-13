@@ -75,17 +75,28 @@ export function StationStats() {
   const [regionStats, setRegionStats] = useState<any[]>([]);
   const [growthData, setGrowthData] = useState<any[]>([]);
   const [expiredData, setExpiredData] = useState<any[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Load data from API
   useEffect(() => {
+    setApiError(null);
     if (analysisType === 'regional') {
-      fetchRegionStats().then(setRegionStats).catch(console.error);
+      fetchRegionStats().then(setRegionStats).catch(err => {
+        console.error('Failed to fetch region stats:', err);
+        setApiError('Failed to load regional statistics');
+      });
     } else if (analysisType === 'growth') {
       fetchGrowthTrend(selectedGrowthType, selectedGrowthYear, selectedGrowthProvince)
-        .then(setGrowthData).catch(console.error);
+        .then(setGrowthData).catch(err => {
+          console.error('Failed to fetch growth trend:', err);
+          setApiError('Failed to load growth trend data');
+        });
     } else if (analysisType === 'validity') {
       fetchExpiredStations(selectedValidityYear, selectedValidityProvince, selectedValidityType)
-        .then(setExpiredData).catch(console.error);
+        .then(setExpiredData).catch(err => {
+          console.error('Failed to fetch expired stations:', err);
+          setApiError('Failed to load validity period data');
+        });
     }
   }, [analysisType, selectedGrowthType, selectedGrowthYear, selectedGrowthProvince,
       selectedValidityYear, selectedValidityProvince, selectedValidityType]);
@@ -143,20 +154,36 @@ export function StationStats() {
   const filteredGrowthRecords = useMemo(() => stationRecords.filter((item) => (selectedGrowthType === 'All' || item.type === selectedGrowthType) && item.year === selectedGrowthYear && (selectedGrowthProvince === 'All' || item.province === selectedGrowthProvince)), [selectedGrowthProvince, selectedGrowthType, selectedGrowthYear, stationRecords]);
   const monthlyTotals = useMemo(() => Array.from({ length: 12 }, (_, index) => ({ month: index + 1, count: filteredGrowthRecords.filter((item) => item.month === index + 1).reduce((sum, item) => sum + item.count, 0) })), [filteredGrowthRecords]);
   const previousYearTotals = useMemo(() => Array.from({ length: 12 }, (_, index) => ({ month: index + 1, count: stationRecords.filter((item) => item.year === selectedGrowthYear - 1 && item.month === index + 1).filter((item) => (selectedGrowthType === 'All' || item.type === selectedGrowthType) && (selectedGrowthProvince === 'All' || item.province === selectedGrowthProvince)).reduce((sum, item) => sum + item.count, 0) })), [selectedGrowthProvince, selectedGrowthType, selectedGrowthYear, stationRecords]);
-  const yoyGrowthData = growthData.map((item) => ({
-    month: item.month,
-    current: item.current,
-    previous: item.previous,
-    growthCount: item.growthCount,
-    growthPercent: item.growthPercent,
-  }));
-  const momGrowthData = growthData.map((item) => ({
-    month: item.month,
-    current: item.current,
-    previous: item.previous,
-    growthCount: item.momCount,
-    growthPercent: item.momPercent,
-  }));
+  const yoyGrowthData = growthData.length > 0
+    ? growthData.map((item) => ({
+        month: item.month,
+        current: item.current,
+        previous: item.previous,
+        growthCount: item.growthCount,
+        growthPercent: item.growthPercent,
+      }))
+    : monthlyTotals.map((item, index) => ({
+        month: item.month,
+        current: item.count,
+        previous: previousYearTotals[index]?.count ?? 0,
+        growthCount: item.count - (previousYearTotals[index]?.count ?? 0),
+        growthPercent: previousYearTotals[index]?.count ? ((item.count - previousYearTotals[index].count) / previousYearTotals[index].count * 100) : 0,
+      }));
+  const momGrowthData = growthData.length > 0
+    ? growthData.map((item) => ({
+        month: item.month,
+        current: item.current,
+        previous: item.previous,
+        growthCount: item.momCount,
+        growthPercent: item.momPercent,
+      }))
+    : monthlyTotals.map((item, index) => ({
+        month: item.month,
+        current: item.count,
+        previous: index > 0 ? monthlyTotals[index - 1].count : 0,
+        growthCount: index > 0 ? item.count - monthlyTotals[index - 1].count : 0,
+        growthPercent: index > 0 && monthlyTotals[index - 1].count ? ((item.count - monthlyTotals[index - 1].count) / monthlyTotals[index - 1].count * 100) : 0,
+      }));
 
   const validityYears = useMemo(() => [2025, 2026], []);
   const validityProvinces = useMemo(() => ['All'], []);
@@ -171,6 +198,11 @@ export function StationStats() {
 
   return (
     <div className="space-y-6">
+      {apiError && (
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
+          {apiError}
+        </div>
+      )}
       <div>
         <h2 className="text-2xl font-semibold mb-2">Station Statistics Analysis</h2>
         <p className="text-muted-foreground">Multi-dimensional station data statistics and trend analysis</p>
