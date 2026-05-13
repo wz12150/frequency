@@ -7,6 +7,7 @@ import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
+import com.freqmanage.module.statistics.vo.ExpiredStationVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -75,5 +76,13 @@ public class StatisticsController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false, defaultValue = "All") String province) {
         return ApiResponse.ok(statisticsService.getGrowthTrend(type, year, province));
+    }
+
+    @GetMapping("/station/expired-detail")
+    public ApiResponse<List<ExpiredStationVO>> expiredStationDetail(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false, defaultValue = "All") String province,
+            @RequestParam(required = false, defaultValue = "All") String type) {
+        return ApiResponse.ok(statisticsService.getExpiredStations(year, province, type));
     }
 }

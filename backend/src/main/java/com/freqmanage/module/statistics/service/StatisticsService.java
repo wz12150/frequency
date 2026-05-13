@@ -13,6 +13,7 @@ import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
+import com.freqmanage.module.statistics.vo.ExpiredStationVO;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -242,5 +243,82 @@ public class StatisticsService {
             wrapper.eq(RsbtStation::getProvince, province);
         }
         return stationMapper.selectCount(wrapper);
+    }
+
+    public List<ExpiredStationVO> getExpiredStations(Integer year, String province, String type) {
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtStation::getDeleted, 0);
+
+        if (!"All".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.eq(RsbtStation::getProvince, province);
+        }
+        if (!"All".equals(type) && type != null && !type.isEmpty()) {
+            wrapper.eq(RsbtStation::getStationtype, type);
+        }
+
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        LocalDate now = LocalDate.now();
+        LocalDate threeMonthsLater = now.plusMonths(3);
+
+        return stations.stream()
+                .filter(s -> s.getExpirationdate() != null
+                        && s.getExpirationdate().getYear() == targetYear)
+                .filter(s -> s.getExpirationdate().isBefore(now)
+                        || s.getExpirationdate().isBefore(threeMonthsLater))
+                .map(this::convertToExpiredVO)
+                .sorted(Comparator.comparing(ExpiredStationVO::getMonth))
+                .collect(Collectors.toList());
+    }
+
+    private ExpiredStationVO convertToExpiredVO(RsbtStation s) {
+        ExpiredStationVO vo = new ExpiredStationVO();
+        vo.setGuid(s.getGuid());
+        vo.setName(s.getSitename());
+        vo.setProvince(s.getProvince());
+        vo.setType(s.getStationtype());
+        vo.setExpiredCount(1);
+        vo.setExpireDate(s.getExpirationdate() != null ? s.getExpirationdate().toString() : "");
+        vo.setTechnicalStandard(s.getTechnology());
+        vo.setBandwidthProcessingUnitModel(s.getBbumodel());
+        vo.setOwnerName(s.getUnit());
+        vo.setBackhaulNetworkAccessMethod(s.getBackbone());
+        vo.setStationPurpose(s.getStationpurpose());
+        vo.setModulationType(s.getModulation());
+        vo.setStationType(s.getStationtype());
+        if (s.getFrequencyt() != null) {
+            vo.setTransmitFrequency(s.getFrequencyt().stripTrailingZeros().toPlainString() + " MHz");
+        }
+        if (s.getFrequencyr() != null) {
+            vo.setReceiveFrequency(s.getFrequencyr().stripTrailingZeros().toPlainString() + " MHz");
+        }
+        if (s.getBandwidth() != null) {
+            vo.setBandwidth(s.getBandwidth().stripTrailingZeros().toPlainString() + " MHz");
+        }
+        vo.setEquipmentNameAndModel(s.getDevicemodel());
+        if (s.getDevicequantity() != null) {
+            vo.setEquipmentCount(String.valueOf(s.getDevicequantity()));
+        }
+        if (s.getOutputpower() != null) {
+            vo.setEquipmentPower(s.getOutputpower().stripTrailingZeros().toPlainString() + " W");
+        }
+        vo.setAntennaType(s.getAnttype());
+        if (s.getAntquantity() != null) {
+            vo.setAntennaCount(String.valueOf(s.getAntquantity()));
+        }
+        vo.setRegion(s.getProvince());
+        vo.setDetailedLocation(s.getLocation());
+        if (s.getLongitude() != null) {
+            vo.setLongitude(s.getLongitude().stripTrailingZeros().toPlainString());
+        }
+        if (s.getLatitude() != null) {
+            vo.setLatitude(s.getLatitude().stripTrailingZeros().toPlainString());
+        }
+        vo.setOpenDate(s.getStartdate() != null ? s.getStartdate().toString() : "");
+        if (s.getExpirationdate() != null) {
+            vo.setMonth(s.getExpirationdate().getMonthValue());
+        }
+        return vo;
     }
 }
