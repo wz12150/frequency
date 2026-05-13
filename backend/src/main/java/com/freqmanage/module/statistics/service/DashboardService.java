@@ -20,7 +20,6 @@ public class DashboardService {
 
     private static final long EXPIRING_DAYS = 60;
 
-    // 台站类型颜色映射
     private static final Map<String, String> STATION_TYPE_COLORS = new LinkedHashMap<>();
     static {
         STATION_TYPE_COLORS.put("mobile", "#1976d2");
@@ -30,7 +29,6 @@ public class DashboardService {
         STATION_TYPE_COLORS.put("others", "#bbdefb");
     }
 
-    // 省份名称映射
     private static final Map<String, String[]> PROVINCE_NAMES = new LinkedHashMap<>();
     static {
         PROVINCE_NAMES.put("ulaanbaatar", new String[]{"Ulaanbaatar", "UB"});
@@ -57,6 +55,17 @@ public class DashboardService {
         PROVINCE_NAMES.put("govisumber", new String[]{"Govisümber", "GS"});
     }
 
+    // 数据库省份名 → PROVINCE_NAMES key 的映射
+    private static final Map<String, String> DB_PROVINCE_TO_KEY = new LinkedHashMap<>();
+    static {
+        DB_PROVINCE_TO_KEY.put("Ulaanbaatar", "ulaanbaatar");
+        DB_PROVINCE_TO_KEY.put("Darkhan", "darkhan-uul");
+        DB_PROVINCE_TO_KEY.put("Erdenet", "orkhon");
+        DB_PROVINCE_TO_KEY.put("Morsy", "khovsgol");
+        DB_PROVINCE_TO_KEY.put("Ulgii", "bayan-olgii");
+        DB_PROVINCE_TO_KEY.put("Arvayheer", "ovorkhangai");
+    }
+
     public DashboardService(StationMapper stationMapper, SpecialPermitMapper permitMapper) {
         this.stationMapper = stationMapper;
         this.permitMapper = permitMapper;
@@ -64,15 +73,10 @@ public class DashboardService {
 
     public DashboardOverviewVO getOverview() {
         DashboardOverviewVO vo = new DashboardOverviewVO();
-
         LocalDate now = LocalDate.now();
         LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
 
-        // ── KPI: 台站总数 ─────────────────────────────────────────────────
-        Long totalStations = stationMapper.selectCount(null);
-        vo.setTotalStations(totalStations);
-
-        // ── KPI: 许可证统计 ───────────────────────────────────────────────
+        vo.setTotalStations(stationMapper.selectCount(null));
         Long totalPermits = permitMapper.selectCount(null);
 
         LambdaQueryWrapper<RsbtSpecialPermit> validWrapper = new LambdaQueryWrapper<>();
@@ -93,207 +97,158 @@ public class DashboardService {
         vo.setNormalLicenses(normalPermits);
         vo.setExpiringSoon(expiringPermits);
         vo.setExpired(expiredPermits);
-
-        // ── 增长率 ───────────────────────────────────────────────────────
-        // 计算月度环比增长率
-        LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1);
-        LocalDate lastMonthEnd = lastMonthStart.withDayOfMonth(lastMonthStart.lengthOfMonth());
-
-        LambdaQueryWrapper<RsbtStation> stationWrapper = new LambdaQueryWrapper<>();
-        List<RsbtStation> allStations = stationMapper.selectList(stationWrapper);
-
-        long thisMonthCount = allStations.stream()
-                .filter(s -> s.getCreateTime() != null)
-                .filter(s -> {
-                    LocalDate d = s.getCreateTime().toLocalDate();
-                    return d.getMonth() == now.getMonth() && d.getYear() == now.getYear();
-                })
-                .count();
-
-        long lastMonthCount = allStations.stream()
-                .filter(s -> s.getCreateTime() != null)
-                .filter(s -> {
-                    LocalDate d = s.getCreateTime().toLocalDate();
-                    return d.getMonth() == lastMonthStart.getMonth() && d.getYear() == lastMonthStart.getYear();
-                })
-                .count();
-
-        String stationGrowthStr = calcGrowthRate(thisMonthCount, lastMonthCount);
-
-        // 许可证增长率计算同理
-        long thisMonthPermits = permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>()
-                .ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1)));
-        long lastMonthPermits = permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>()
-                .ge(RsbtSpecialPermit::getCreateTime, lastMonthStart)
-                .lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1)));
-
-        String licenseGrowthStr = calcGrowthRate(validPermits, lastMonthCount > 0 ? lastMonthCount : 1);
-
-        vo.setStationGrowth(stationGrowthStr);
-        vo.setLicenseGrowth(licenseGrowthStr);
+        vo.setStationGrowth(calcGrowthRate(countThisMonthStations(now), countLastMonthStations(now)));
+        vo.setLicenseGrowth(calcGrowthRate(countThisMonthPermits(now), countLastMonthPermits(now)));
         vo.setExpiringGrowth("+0.0%");
         vo.setExpiredGrowth("-0.0%");
-
-        // ── 省份台站统计 ──────────────────────────────────────────────────
-        vo.setProvinceStats(buildProvinceStats(allStations, expiringThreshold));
-
-        // ── 许可证类型统计（按type分组）───────────────────────────────────
+        vo.setProvinceStats(buildProvinceStats());
         vo.setLicenseTypeStats(buildLicenseTypeStats());
-
-        // ── 台站类型分布 ─────────────────────────────────────────────────
         vo.setStationTypes(buildStationTypes());
-
-        // ── 台站增长趋势 ──────────────────────────────────────────────────
         vo.setStationGrowthTrend(buildStationGrowthTrend());
-
         return vo;
     }
 
-    private List<ProvinceStationVO> buildProvinceStats(List<RsbtStation> allStations, LocalDate expiringThreshold) {
+    public Map<String, Long> getStationTypeDistribution() {
+        return buildStationTypes().stream().collect(Collectors.toMap(StationTypeVO::getName, StationTypeVO::getValue, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    public Map<String, Long> getPermitStatusDistribution() {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getStatus);
+        return permitMapper.selectList(wrapper).stream()
+                .filter(p -> p.getStatus() != null && !p.getStatus().isEmpty())
+                .collect(Collectors.groupingBy(RsbtSpecialPermit::getStatus, LinkedHashMap::new, Collectors.counting()));
+    }
+
+    public Map<String, Long> getProvinceStationCount() {
+        return buildProvinceStats().stream().collect(Collectors.toMap(ProvinceStationVO::getName, ProvinceStationVO::getTotal, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    public StationGrowthVO getStationGrowth() {
+        List<StationGrowthVO> trend = buildStationGrowthTrend();
+        StationGrowthVO vo = new StationGrowthVO();
+        if (!trend.isEmpty()) {
+            vo.setMonth(trend.get(trend.size() - 1).getMonth());
+            vo.setCount(trend.get(trend.size() - 1).getCount());
+        }
+        Map<String, Long> monthlyData = trend.stream().collect(Collectors.toMap(StationGrowthVO::getMonth, StationGrowthVO::getCount, (a, b) -> a, LinkedHashMap::new));
+        vo.setMonthlyData(monthlyData);
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            long last = values.get(values.size() - 1);
+            long prev = values.get(values.size() - 2);
+            vo.setGrowthRate(prev > 0 ? (last - prev) * 100.0 / prev : 0.0);
+        } else {
+            vo.setGrowthRate(0.0);
+        }
+        return vo;
+    }
+
+    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+
+    private List<ProvinceStationVO> buildProvinceStats() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
         Map<String, Long> provinceTotal = new HashMap<>();
         Map<String, Long> provinceExpiring = new HashMap<>();
         Map<String, Long> provinceExpired = new HashMap<>();
-
+        LocalDate expiringThreshold = LocalDate.now().plusDays(EXPIRING_DAYS);
         for (RsbtStation s : allStations) {
-            String province = s.getProvince();
-            if (province == null || province.isEmpty()) continue;
-
-            provinceTotal.merge(province, 1L, Long::sum);
-
+            if (s.getProvince() == null || s.getProvince().isEmpty()) continue;
+            // 将数据库省份名映射到标准 key
+            String provinceKey = DB_PROVINCE_TO_KEY.getOrDefault(s.getProvince(), s.getProvince().toLowerCase().replace(" ", "-"));
+            provinceTotal.merge(provinceKey, 1L, Long::sum);
             if (s.getExpirationdate() != null) {
-                LocalDate expDate = s.getExpirationdate();
-                if (expDate.isBefore(LocalDate.now())) {
-                    provinceExpired.merge(province, 1L, Long::sum);
-                } else if (!expDate.isAfter(expiringThreshold)) {
-                    provinceExpiring.merge(province, 1L, Long::sum);
-                }
+                if (s.getExpirationdate().isBefore(LocalDate.now())) provinceExpired.merge(provinceKey, 1L, Long::sum);
+                else if (!s.getExpirationdate().isAfter(expiringThreshold)) provinceExpiring.merge(provinceKey, 1L, Long::sum);
             }
         }
-
         List<ProvinceStationVO> result = new ArrayList<>();
         for (Map.Entry<String, String[]> entry : PROVINCE_NAMES.entrySet()) {
-            String id = entry.getKey();
-            String name = entry.getValue()[0];
-            String abbr = entry.getValue()[1];
-            Long total = provinceTotal.getOrDefault(id, 0L);
-            Long expiring = provinceExpiring.getOrDefault(id, 0L);
-            Long expired = provinceExpired.getOrDefault(id, 0L);
-
             ProvinceStationVO pvo = new ProvinceStationVO();
-            pvo.setId(id);
-            pvo.setName(name);
-            pvo.setAbbr(abbr);
-            pvo.setTotal(total);
-            pvo.setExpiring60(expiring);
-            pvo.setExpired(expired);
+            pvo.setId(entry.getKey());
+            pvo.setName(entry.getValue()[0]);
+            pvo.setAbbr(entry.getValue()[1]);
+            pvo.setTotal(provinceTotal.getOrDefault(entry.getKey(), 0L));
+            pvo.setExpiring60(provinceExpiring.getOrDefault(entry.getKey(), 0L));
+            pvo.setExpired(provinceExpired.getOrDefault(entry.getKey(), 0L));
             result.add(pvo);
         }
         return result;
     }
 
     private List<LicenseTypeStatsVO> buildLicenseTypeStats() {
-        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
-        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
-
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();
+        Map<String, Long> typeExpired = new HashMap<>();
         LocalDate now = LocalDate.now();
         LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
-
-        Map<String, Long> normalCounts = new HashMap<>();
-        Map<String, Long> expiringCounts = new HashMap<>();
-        Map<String, Long> expiredCounts = new HashMap<>();
-
-        for (RsbtSpecialPermit p : permits) {
-            String type = p.getType() != null ? p.getType() : "Unknown";
-            if (p.getEnddate() == null) {
-                normalCounts.merge(type, 1L, Long::sum);
-            } else if (p.getEnddate().isBefore(now)) {
-                expiredCounts.merge(type, 1L, Long::sum);
-            } else if (!p.getEnddate().isAfter(expiringThreshold)) {
-                expiringCounts.merge(type, 1L, Long::sum);
+        for (RsbtStation s : allStations) {
+            String t = s.getType() != null ? s.getType() : "Unknown";
+            if (s.getExpirationdate() == null) {
+                typeNormal.merge(t, 1L, Long::sum);
+            } else if (s.getExpirationdate().isBefore(now)) {
+                typeExpired.merge(t, 1L, Long::sum);
+            } else if (!s.getExpirationdate().isAfter(expiringThreshold)) {
+                typeExpiring.merge(t, 1L, Long::sum);
             } else {
-                normalCounts.merge(type, 1L, Long::sum);
+                typeNormal.merge(t, 1L, Long::sum);
             }
         }
-
-        // 按许可证类型排序输出
         List<LicenseTypeStatsVO> result = new ArrayList<>();
-        Set<String> types = new LinkedHashSet<>();
-        types.addAll(normalCounts.keySet());
-        types.addAll(expiringCounts.keySet());
-        types.addAll(expiredCounts.keySet());
-
-        for (String type : types) {
-            LicenseTypeStatsVO lvo = new LicenseTypeStatsVO();
-            lvo.setId(type.toLowerCase().replace(" ", "-"));
-            lvo.setType(type);
-            lvo.setNormal(normalCounts.getOrDefault(type, 0L));
-            lvo.setExpiring(expiringCounts.getOrDefault(type, 0L));
-            lvo.setExpired(expiredCounts.getOrDefault(type, 0L));
-            result.add(lvo);
+        for (String type : typeNormal.keySet()) {
+            LicenseTypeStatsVO vo = new LicenseTypeStatsVO();
+            vo.setId(type.toLowerCase());
+            vo.setType(type);
+            vo.setNormal(typeNormal.getOrDefault(type, 0L));
+            vo.setExpiring(typeExpiring.getOrDefault(type, 0L));
+            vo.setExpired(typeExpired.getOrDefault(type, 0L));
+            result.add(vo);
         }
         return result;
     }
 
     private List<StationTypeVO> buildStationTypes() {
-        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.select(RsbtStation::getStationtype);
-        List<RsbtStation> stations = stationMapper.selectList(wrapper);
-
-        Map<String, Long> typeCounts = stations.stream()
-                .filter(s -> s.getStationtype() != null && !s.getStationtype().isEmpty())
-                .collect(Collectors.groupingBy(RsbtStation::getStationtype, Collectors.counting()));
-
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeCount = new HashMap<>();
+        for (RsbtStation s : allStations) {
+            String t = s.getType() != null ? s.getType() : "Unknown";
+            typeCount.merge(t, 1L, Long::sum);
+        }
         List<StationTypeVO> result = new ArrayList<>();
         int idx = 0;
-        for (Map.Entry<String, Long> entry : typeCounts.entrySet()) {
-            StationTypeVO svo = new StationTypeVO();
-            svo.setId(entry.getKey().toLowerCase().replace(" ", "-"));
-            svo.setName(entry.getKey());
-            svo.setValue(entry.getValue());
-            String color = STATION_TYPE_COLORS.values().stream()
-                    .skip(idx % STATION_TYPE_COLORS.size())
-                    .findFirst()
-                    .orElse("#1976d2");
-            svo.setColor(color);
-            result.add(svo);
+        String[] COLORS = {"#1976d2", "#42a5f5", "#64b5f6", "#90caf9", "#bbdefb"};
+        for (Map.Entry<String, Long> e : typeCount.entrySet()) {
+            StationTypeVO vo = new StationTypeVO();
+            vo.setId(e.getKey().toLowerCase());
+            vo.setName(e.getKey());
+            vo.setValue(e.getValue());
+            vo.setColor(COLORS[idx % COLORS.length]);
+            result.add(vo);
             idx++;
         }
         return result;
     }
 
     private List<StationGrowthVO> buildStationGrowthTrend() {
-        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByAsc(RsbtStation::getCreateTime);
-        List<RsbtStation> stations = stationMapper.selectList(wrapper);
-
-        Map<String, Long> monthlyCounts = new HashMap<>();
-        for (RsbtStation s : stations) {
-            if (s.getCreateTime() != null) {
-                String month = s.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-                monthlyCounts.merge(month, 1L, Long::sum);
-            }
-        }
-
-        // 最近12个月
-        LocalDate now = LocalDate.now();
         List<StationGrowthVO> result = new ArrayList<>();
+        LocalDate now = LocalDate.now();
         for (int i = 11; i >= 0; i--) {
-            LocalDate month = now.minusMonths(i);
-            String monthStr = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);
+            LambdaQueryWrapper<RsbtStation> w = new LambdaQueryWrapper<>();
+            w.ge(RsbtStation::getCreateTime, month.atStartOfDay());
+            w.lt(RsbtStation::getCreateTime, nextMonth.atStartOfDay());
+            long count = stationMapper.selectCount(w);
             StationGrowthVO vo = new StationGrowthVO();
-            vo.setMonth(monthStr);
-            vo.setCount(monthlyCounts.getOrDefault(monthStr, 0L));
+            vo.setMonth(month.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+            vo.setCount(count);
             result.add(vo);
         }
         return result;
     }
-
-    private String calcGrowthRate(long current, long previous) {
-        if (previous == 0) {
-            return current > 0 ? "+100.0%" : "+0.0%";
-        }
-        double rate = ((double) (current - previous) / previous) * 100;
-        String sign = rate >= 0 ? "+" : "";
-        return sign + String.format("%.1f", rate) + "%";
-    }
+    private String calcGrowthRate(long current, long previous) { if (previous == 0) return current > 0 ? "+100.0%" : "+0.0%"; double rate = ((double) (current - previous) / previous) * 100; return (rate >= 0 ? "+" : "") + String.format("%.1f", rate) + "%"; }
 }
