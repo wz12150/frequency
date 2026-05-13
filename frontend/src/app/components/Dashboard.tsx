@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
-import { dashboardApi, DashboardOverviewVO } from '../api/dashboard';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Activity, TrendingUp, AlertTriangle, CheckCircle, Clock,
   Settings2, FileCheck, Radio,
 } from 'lucide-react';
+import { dashboardApi, DashboardOverviewVO } from '../api/dashboard';
 import {
   PieChart, Pie, Cell,
   BarChart, Bar,
@@ -95,24 +94,27 @@ function SectionDivider({ title }: { title: string }) {
 export function Dashboard() {
   const [expiringDays, setExpiringDays] = useState(60);
   const [inputDays, setInputDays] = useState('60');
-  const [overview, setOverview] = useState<DashboardOverviewVO | null>(null);
+
+  // ── API data state ─────────────────────────────────────────────────────────
+  const [apiData, setApiData] = useState<DashboardOverviewVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // ── Province breakdown (threshold-driven) ─────────────────────────────────
   const allProvinceData = useMemo(() => {
-    if (!overview) return [];
-    return (overview.provinceStats ?? []).map(p => {
+    if (!apiData?.provinceStats) return [];
+    return apiData.provinceStats.map(p => {
       const rawExpiring = Math.round(p.expiring60 * (expiringDays / 60));
       const expiring    = Math.min(rawExpiring, p.total - p.expired);
       const normal      = Math.max(0, p.total - expiring - p.expired);
       return { ...p, stations: p.total, expiring, normal };
     });
-  }, [overview, expiringDays]);
+  }, [apiData?.provinceStats, expiringDays]);
 
-  const provinceStationData: ProvinceStationData[] = allProvinceData.map(p => ({
-    id: p.id, name: p.name, stations: p.total,
-  }));
+  const provinceStationData: ProvinceStationData[] =
+    apiData?.provinceStats?.map(p => ({
+      id: p.id, name: p.name, stations: p.total,
+    })) ?? [];
 
   const totalNormal   = allProvinceData.reduce((s, p) => s + p.normal,   0);
   const totalExpiring = allProvinceData.reduce((s, p) => s + p.expiring, 0);
@@ -120,63 +122,74 @@ export function Dashboard() {
   const totalAll      = totalNormal + totalExpiring + totalExpired;
 
   // ── License aggregates ────────────────────────────────────────────────────
-  const licenseChartData = useMemo(() => {
-    if (!overview) return [];
-    return [...(overview.licenseTypeStats ?? [])]
-      .map(d => ({ ...d, total: d.normal + d.expiring + d.expired }))
-      .sort((a, b) => b.total - a.total);
-  }, [overview]);
+  const licNormal    = apiData?.licenseTypeStats?.reduce((s, d) => s + d.normal,   0)   ?? 0;
+  const licExpiring = apiData?.licenseTypeStats?.reduce((s, d) => s + d.expiring, 0)   ?? 0;
+  const licExpired  = apiData?.licenseTypeStats?.reduce((s, d) => s + d.expired,  0)   ?? 0;
+  const licTotal    = licNormal + licExpiring + licExpired;
 
-  const licNormal    = overview?.licenseTypeStats.reduce((s, d) => s + d.normal,   0) ?? 0;
-  const licExpiring  = overview?.licenseTypeStats.reduce((s, d) => s + d.expiring, 0) ?? 0;
-  const licExpired   = overview?.licenseTypeStats.reduce((s, d) => s + d.expired,  0) ?? 0;
-  const licTotal     = licNormal + licExpiring + licExpired;
+  const licenseChartData = [...(apiData?.licenseTypeStats ?? [])]
+    .map(d => ({ ...d, total: d.normal + d.expiring + d.expired }))
+    .sort((a, b) => b.total - a.total);
 
   const licDonutData = [
-    { name: 'Normal',    value: licNormal,    color: '#2e7d32' },
+    { name: 'Normal',   value: licNormal,   color: '#2e7d32' },
     { name: 'Expiring', value: licExpiring, color: '#f59e0b' },
     { name: 'Expired',  value: licExpired,  color: '#d32f2f' },
   ];
 
-  const stationTypes = overview?.stationTypes ?? [];
-  const growthData = overview?.stationGrowthTrend ?? [];
+  const stationTypes = apiData?.stationTypes?.map(t => ({
+    id: t.id,
+    name: t.name,
+    value: t.value,
+    color: t.color,
+  })) ?? [];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+  const growthData = apiData?.stationGrowthTrend ?? [];
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <AlertTriangle className="w-8 h-8 text-red-500" />
-        <p className="text-red-500">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          重试
-        </button>
-      </div>
-    );
-  }
+  const stats = [
+    {
+      label: 'Total Stations',
+      value: (apiData?.totalStations ?? 0).toLocaleString(),
+      change: apiData?.stationGrowth ?? '+0%',
+      icon: Activity,
+      color: 'bg-blue-500',
+    },
+    {
+      label: 'Normal Licenses',
+      value: (apiData?.normalLicenses ?? 0).toLocaleString(),
+      change: apiData?.licenseGrowth ?? '+0%',
+      icon: CheckCircle,
+      color: 'bg-green-500',
+    },
+    {
+      label: 'Expiring Soon',
+      value: (apiData?.expiringSoon ?? 0).toLocaleString(),
+      change: apiData?.expiringGrowth ?? '+0%',
+      icon: Clock,
+      color: 'bg-yellow-500',
+    },
+    {
+      label: 'Expired',
+      value: (apiData?.expired ?? 0).toLocaleString(),
+      change: apiData?.expiredGrowth ?? '+0%',
+      icon: AlertTriangle,
+      color: 'bg-red-500',
+    },
+  ];
 
-  const stats = overview ? [
-    { label: 'Total Stations',  value: overview.totalStations.toLocaleString(),   change: overview.stationGrowth,   icon: Activity,      color: 'bg-blue-500'   },
-    { label: 'Normal Licenses', value: overview.normalLicenses.toLocaleString(),   change: overview.licenseGrowth,   icon: CheckCircle,   color: 'bg-green-500'  },
-    { label: 'Expiring Soon',   value: overview.expiringSoon.toLocaleString(),     change: overview.expiringGrowth,  icon: Clock,         color: 'bg-yellow-500' },
-    { label: 'Expired',         value: overview.expired.toLocaleString(),           change: overview.expiredGrowth,   icon: AlertTriangle, color: 'bg-red-500'    },
-  ] : [];
+  const applyDays = () => {
+    const v = parseInt(inputDays, 10);
+    if (!isNaN(v) && v > 0 && v <= 365) setExpiringDays(v);
+    else setInputDays(String(expiringDays));
+  };
 
+  // ── Fetch Dashboard data ────────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     setError(null);
     dashboardApi.overview()
       .then((data: DashboardOverviewVO) => {
-        setOverview(data);
+        setApiData(data);
         setLoading(false);
       })
       .catch((err: Error) => {
@@ -185,14 +198,27 @@ export function Dashboard() {
       });
   }, []);
 
-  const applyDays = () => {
-    const v = parseInt(inputDays, 10);
-    if (!isNaN(v) && v > 0 && v <= 365) setExpiringDays(v);
-    else setInputDays(String(expiringDays));
-  };
-
   return (
-    <div className="space-y-6">
+    <>
+      {loading && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading dashboard data...</div>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex flex-col items-center justify-center h-64 space-y-3">
+          <AlertTriangle className="w-8 h-8 text-red-500" />
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >Reload</button>
+        </div>
+      )}
+
+      {!loading && !error && (
+      <div className="space-y-6">
 
       {/* Page title */}
       <div>
@@ -212,7 +238,7 @@ export function Dashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
                   <p className="text-3xl font-semibold">{stat.value}</p>
-                  <p className={`text-sm mt-2 flex items-center gap-1 ${stat.change.startsWith('+') && stat.change !== '+0.0%' ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-sm mt-2 flex items-center gap-1 ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
                     <TrendingUp className="w-4 h-4" />
                     {stat.change}
                   </p>
@@ -274,7 +300,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-green-700 font-medium mb-0.5">Normal</p>
                 <p className="text-2xl font-bold text-green-800 tabular-nums">{licNormal.toLocaleString()}</p>
-                <p className="text-xs text-green-600 mt-0.5">{licTotal > 0 ? ((licNormal / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
+                <p className="text-xs text-green-600 mt-0.5">{((licNormal / licTotal) * 100).toFixed(1)}% of total</p>
               </div>
             </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-4">
@@ -284,7 +310,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-amber-700 font-medium mb-0.5">Expiring (≤60 days)</p>
                 <p className="text-2xl font-bold text-amber-800 tabular-nums">{licExpiring.toLocaleString()}</p>
-                <p className="text-xs text-amber-600 mt-0.5">{licTotal > 0 ? ((licExpiring / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
+                <p className="text-xs text-amber-600 mt-0.5">{((licExpiring / licTotal) * 100).toFixed(1)}% of total</p>
               </div>
             </div>
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-4">
@@ -294,7 +320,7 @@ export function Dashboard() {
               <div>
                 <p className="text-xs text-red-700 font-medium mb-0.5">Expired</p>
                 <p className="text-2xl font-bold text-red-800 tabular-nums">{licExpired.toLocaleString()}</p>
-                <p className="text-xs text-red-600 mt-0.5">{licTotal > 0 ? ((licExpired / licTotal) * 100).toFixed(1) : '0.0'}% of total</p>
+                <p className="text-xs text-red-600 mt-0.5">{((licExpired / licTotal) * 100).toFixed(1)}% of total</p>
               </div>
             </div>
           </div>
@@ -382,9 +408,9 @@ export function Dashboard() {
               <tbody>
                 {licenseChartData.map((row, idx) => {
                   const total = row.normal + row.expiring + row.expired;
-                  const nPct  = total > 0 ? (row.normal   / total) * 100 : 0;
-                  const ePct  = total > 0 ? (row.expiring / total) * 100 : 0;
-                  const xPct  = total > 0 ? (row.expired  / total) * 100 : 0;
+                  const nPct  = (row.normal   / total) * 100;
+                  const ePct  = (row.expiring / total) * 100;
+                  const xPct  = (row.expired  / total) * 100;
                   return (
                     <tr key={row.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4">
@@ -423,9 +449,9 @@ export function Dashboard() {
                   <td className="text-center py-2.5 px-4 font-semibold text-red-600 tabular-nums">{licExpired.toLocaleString()}</td>
                   <td className="py-2.5 px-4">
                     <div className="flex h-4 rounded overflow-hidden w-full min-w-[100px]">
-                      <div style={{ width: `${licTotal > 0 ? (licNormal / licTotal) * 100 : 0}%`, background: '#2e7d32' }} />
-                      <div style={{ width: `${licTotal > 0 ? (licExpiring / licTotal) * 100 : 0}%`, background: '#f59e0b' }} />
-                      <div style={{ width: `${licTotal > 0 ? (licExpired / licTotal) * 100 : 0}%`, background: '#d32f2f' }} />
+                      <div style={{ width: `${(licNormal / licTotal) * 100}%`, background: '#2e7d32' }} />
+                      <div style={{ width: `${(licExpiring / licTotal) * 100}%`, background: '#f59e0b' }} />
+                      <div style={{ width: `${(licExpired / licTotal) * 100}%`, background: '#d32f2f' }} />
                     </div>
                   </td>
                 </tr>
@@ -582,8 +608,8 @@ export function Dashboard() {
                 </thead>
                 <tbody>
                   {allProvinceData.map(p => {
-                    const expireRate   = p.total > 0 ? ((p.expired / p.total) * 100).toFixed(1) : '0.0';
-                    const expiringRate = p.total > 0 ? ((p.expiring + p.expired) / p.total) * 100 : 0;
+                    const expireRate   = ((p.expired / p.total) * 100).toFixed(1);
+                    const expiringRate = ((p.expiring + p.expired) / p.total) * 100;
                     return (
                       <tr key={p.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                         <td className="py-2.5 px-4 font-medium">{p.name}</td>
@@ -613,7 +639,7 @@ export function Dashboard() {
                     <td className="text-center py-2.5 px-4 font-semibold text-amber-600 tabular-nums">{totalExpiring.toLocaleString()}</td>
                     <td className="text-center py-2.5 px-4 font-semibold text-red-600 tabular-nums">{totalExpired.toLocaleString()}</td>
                     <td className="text-center py-2.5 px-4 font-semibold tabular-nums">
-                      {totalAll > 0 ? ((totalExpired / totalAll) * 100).toFixed(1) : '0.0'}%
+                      {((totalExpired / totalAll) * 100).toFixed(1)}%
                     </td>
                   </tr>
                 </tfoot>
@@ -625,5 +651,7 @@ export function Dashboard() {
       </div>
 
     </div>
+      )}
+    </>
   );
 }
