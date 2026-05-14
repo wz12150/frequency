@@ -182,6 +182,7 @@ public class StatisticsService {
     public List<StationRegionDetailVO> getRegionStats() {
         LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(RsbtStation::getProvince, RsbtStation::getStationtype);
+        wrapper.eq(RsbtStation::getDeleted, 0);
         List<RsbtStation> stations = stationMapper.selectList(wrapper);
 
         // 按 province 分组
@@ -418,34 +419,19 @@ public class StatisticsService {
     }
 
     public List<LicenseCountByTypeVO> getLicenseCountByType(String province, String date) {
-        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
-        wrapper.select(RsbtSpecialPermit::getCategory, RsbtSpecialPermit::getProvince);
-        if (!"All".equals(province) && province != null && !province.isEmpty()) {
-            wrapper.eq(RsbtSpecialPermit::getProvince, province);
-        }
-        if (date != null && !date.isEmpty()) {
-            wrapper.apply("DATE(startdate) <= {0}", date);
-        }
-        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+        List<Map<String, Object>> results = permitMapper.countByCategoryAndProvince(province, date);
 
-        return permits.stream()
-                .filter(p -> p.getCategory() != null && !p.getCategory().isEmpty())
-                .collect(Collectors.groupingBy(p -> p.getCategory() + "|" + nvl(p.getProvince(), "Unknown")))
-                .entrySet().stream()
-                .map(entry -> {
-                    String[] parts = entry.getKey().split("\\|");
+        return results.stream()
+                .filter(r -> r.get("category") != null)
+                .map(r -> {
                     LicenseCountByTypeVO vo = new LicenseCountByTypeVO();
-                    vo.setType(parts[0]);
-                    vo.setProvince(parts[1]);
-                    vo.setCount((long) entry.getValue().size());
+                    vo.setType(String.valueOf(r.get("category")));
+                    vo.setProvince(r.get("province") != null ? String.valueOf(r.get("province")) : "Unknown");
+                    vo.setCount(((Number) r.get("cnt")).longValue());
                     vo.setDate(date != null ? date : LocalDate.now().toString());
                     vo.setPeriod("day");
                     return vo;
                 })
                 .collect(Collectors.toList());
-    }
-
-    private String nvl(String val, String defaultVal) {
-        return val != null && !val.isEmpty() ? val : defaultVal;
     }
 }
