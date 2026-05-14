@@ -11,6 +11,7 @@ import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
 import com.freqmanage.module.statistics.vo.ExpiredStationVO;
 import com.freqmanage.module.statistics.vo.StationCountDetailVO;
+import com.freqmanage.module.statistics.vo.ValidityForecastVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -100,6 +101,13 @@ public class StatisticsController {
     @GetMapping("/permit/expiry")
     public ApiResponse<Map<String, Long>> permitExpiry() {
         return ApiResponse.ok(statisticsService.getPermitExpiryStats());
+    }
+
+    @GetMapping("/permit/validity-forecast")
+    public ApiResponse<List<ValidityForecastVO>> permitValidityForecast(
+            @RequestParam(required = false, defaultValue = "All") String province,
+            @RequestParam(required = false, defaultValue = "12") Integer months) {
+        return ApiResponse.ok(statisticsService.getValidityForecast(province, months));
     }
 
     @GetMapping("/station/region-detail")

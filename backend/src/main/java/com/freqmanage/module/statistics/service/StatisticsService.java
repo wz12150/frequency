@@ -17,6 +17,7 @@ import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
 import com.freqmanage.module.statistics.vo.ExpiredStationVO;
 import com.freqmanage.module.statistics.vo.StationCountDetailVO;
+import com.freqmanage.module.statistics.vo.ValidityForecastVO;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -202,6 +203,39 @@ public class StatisticsService {
         stats.put("valid", permits.stream().filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(threeMonthsLater)).count());
 
         return stats;
+    }
+
+    public List<ValidityForecastVO> getValidityForecast(String province, Integer months) {
+        List<ValidityForecastVO> result = new ArrayList<>();
+        int count = months != null ? months : 12;
+        LocalDate now = LocalDate.now();
+        LocalDate warningDate = now.plusDays(60);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (!"All".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.like(RsbtSpecialPermit::getScope, province);
+        }
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+
+        for (int i = 0; i < count; i++) {
+            YearMonth ym = YearMonth.from(now.plusMonths(i));
+
+            long normal = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isAfter(warningDate)).count();
+            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isAfter(warningDate) && p.getEnddate().isAfter(now)).count();
+            long expired = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isAfter(now)).count();
+
+            ValidityForecastVO vo = new ValidityForecastVO();
+            vo.setMonth(ym.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+            vo.setProvince(province != null ? province : "All");
+            vo.setNormal(normal);
+            vo.setExpiring(expiring);
+            vo.setExpired(expired);
+            result.add(vo);
+        }
+        return result;
     }
 
     public List<StationRegionDetailVO> getRegionStats() {
