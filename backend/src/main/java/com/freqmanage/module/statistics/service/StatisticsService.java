@@ -209,7 +209,6 @@ public class StatisticsService {
         List<ValidityForecastVO> result = new ArrayList<>();
         int count = months != null ? months : 12;
         LocalDate now = LocalDate.now();
-        LocalDate warningDate = now.plusDays(60);
 
         LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
         if (!"All".equals(province) && province != null && !province.isEmpty()) {
@@ -219,13 +218,15 @@ public class StatisticsService {
 
         for (int i = 0; i < count; i++) {
             YearMonth ym = YearMonth.from(now.plusMonths(i));
+            LocalDate monthEnd = ym.atEndOfMonth();
+            LocalDate warningDate = monthEnd.plusDays(60);
 
+            long expired = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count();
+            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && !p.getEnddate().isAfter(warningDate)).count();
             long normal = permits.stream()
                     .filter(p -> p.getEnddate() != null && p.getEnddate().isAfter(warningDate)).count();
-            long expiring = permits.stream()
-                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isAfter(warningDate) && p.getEnddate().isAfter(now)).count();
-            long expired = permits.stream()
-                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isAfter(now)).count();
 
             ValidityForecastVO vo = new ValidityForecastVO();
             vo.setMonth(ym.format(DateTimeFormatter.ofPattern("yyyy-MM")));
