@@ -179,7 +179,8 @@ public class StatisticsService {
                     vo.setType(entry.getKey());
                     vo.setStations((long) entry.getValue().size());
                     vo.setLicenses((long) entry.getValue().size()); // permits are 1:1 with stations in current model
-                    vo.setRatio(entry.getValue().size() > 0 ? 1.0 : 0.0);
+                    // Ratio is a placeholder - stations and licenses are 1:1 in current model, no meaningful ratio can be calculated
+                    vo.setRatio(null);
                     vo.setProvince(province != null ? province : "All");
                     vo.setDate(date != null ? date : LocalDate.now().toString());
                     return vo;

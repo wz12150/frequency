@@ -78,6 +78,18 @@ public class StatisticsController {
         return ApiResponse.ok(statisticsService.getPermitStationCount());
     }
 
+    /**
+     * Get permit station count detail grouped by station type.
+     * <p>
+     * Note: The {@code province} and {@code date} parameters are accepted for API consistency
+     * but are not used for filtering due to data model limitations. The underlying entity
+     * RsbtSpecialPermitStation does not contain province or date fields, so all matching
+     * records are returned regardless of these parameter values.
+     *
+     * @param province not used for filtering (accepted for API compatibility)
+     * @param date not used for filtering (accepted for API compatibility)
+     * @return list of station count details by type
+     */
     @GetMapping("/permit/station-count-detail")
     public ApiResponse<List<StationCountDetailVO>> permitStationCountDetail(
             @RequestParam(required = false, defaultValue = "All") String province,
