@@ -2,26 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, MapPin, Filter } from 'lucide-react';
 import { StationDetailCard } from './StationDetailCard';
-
-const API_BASE = '/api';
+import { request } from '../api/request';
 
 async function fetchRegionStats() {
-  const res = await fetch(`${API_BASE}/statistics/station/region-detail`);
-  const json = await res.json();
+  const json = await request('/statistics/station/region-detail');
   return json.data || [];
 }
 
 async function fetchGrowthTrend(type: string, year: number, province: string) {
   const params = new URLSearchParams({ type, year: String(year), province });
-  const res = await fetch(`${API_BASE}/statistics/station/growth-trend?${params}`);
-  const json = await res.json();
+  const json = await request(`/statistics/station/growth-trend?${params}`);
   return json.data || [];
 }
 
 async function fetchExpiredStations(year: number, province: string, type: string) {
   const params = new URLSearchParams({ year: String(year), province, type });
-  const res = await fetch(`${API_BASE}/statistics/station/expired-detail?${params}`);
-  const json = await res.json();
+  const json = await request(`/statistics/station/expired-detail?${params}`);
   return json.data || [];
 }
 

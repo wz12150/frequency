@@ -1,12 +1,11 @@
 package com.freqmanage.module.statistics.vo;
 
 import lombok.Data;
+
 import java.util.Map;
 
 @Data
-public class StationGrowthVO {
-    private String month;
-    private Long count;
+public class PermitUsageGrowthVO {
     private Map<String, Long> monthlyData;
     private Double growthRate;
 }

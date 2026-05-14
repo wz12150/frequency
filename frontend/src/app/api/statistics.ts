@@ -81,6 +81,7 @@ export interface PermitVO {
   email: string;
   administrativeinfo: string;
   directorname: string;
+  province: string;
 }
 
 export interface PageResponse<T> {

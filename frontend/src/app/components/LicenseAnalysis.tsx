@@ -44,7 +44,8 @@ export function LicenseAnalysis() {
     organization: string;
     region: string;
     frequency: string;
-    period: string;
+    startDate: string;
+    endDate: string;
     status: string;
     stationCount?: number;
   } | null>(null);
@@ -53,7 +54,8 @@ export function LicenseAnalysis() {
     organization: string;
     region: string;
     frequency: string;
-    period: string;
+    startDate: string;
+    endDate: string;
     status: string;
     stationCount?: number;
   } | null>(null);
@@ -62,7 +64,8 @@ export function LicenseAnalysis() {
     organization: string;
     region: string;
     frequency: string;
-    period: string;
+    startDate: string;
+    endDate: string;
     status: string;
     stationCount?: number;
   } | null>(null);
@@ -88,6 +91,20 @@ export function LicenseAnalysis() {
   const businessTypes = ['Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
   const provinces = ['All', 'Ulaanbaatar', 'Dornogovi', 'Central', 'Selenge', 'Khentii'];
   const years = ['2024', '2025', '2026'];
+
+  // Filter state - declared before useEffect that references them
+  const [selectedLicenseType, setSelectedLicenseType] = useState('Mobile');
+  const [countDateFilter, setCountDateFilter] = useState('2026-05');
+  const [countProvinceFilter, setCountProvinceFilter] = useState('All');
+  const [detailStartDate, setDetailStartDate] = useState('');
+  const [detailEndDate, setDetailEndDate] = useState('');
+  const [detailRegion, setDetailRegion] = useState('All');
+  const [detailBusinessType, setDetailBusinessType] = useState('All');
+  const [stationCountDateFilter, setStationCountDateFilter] = useState('2026-05');
+  const [stationCountProvinceFilter, setStationCountProvinceFilter] = useState('All');
+  const [validityDateFilter, setValidityDateFilter] = useState('2026-05');
+  const [validityProvinceFilter, setValidityProvinceFilter] = useState('All');
+  const [includeExpired, setIncludeExpired] = useState(true);
 
   // ====== 数据获取函数 ======
 
@@ -207,10 +224,12 @@ export function LicenseAnalysis() {
     return {
       number: p.code || p.consent || p.guid,
       organization: p.interlocutor || '',
-      region: p.province || '',
-      frequency: p.scope || '',
-      period: p.enddate || '',
+      region: p.address || '',
+      frequency: p.category || '',
+      startDate: p.startdate || '',
+      endDate: p.enddate || '',
       status: computeStatus(p.enddate),
+      province: p.address || '',
     };
   }
 
@@ -218,11 +237,13 @@ export function LicenseAnalysis() {
     return {
       number: p.code || p.consent || p.guid,
       organization: p.interlocutor || '',
-      region: p.province || '',
-      frequency: p.scope || '',
-      period: p.enddate || '',
+      region: p.address || '',
+      frequency: p.category || '',
+      startDate: p.startdate || '',
+      endDate: p.enddate || '',
       status: computeStatus(p.enddate),
       stationCount: 0,
+      province: p.address || '',
     };
   }
 
@@ -288,19 +309,6 @@ export function LicenseAnalysis() {
 
   // Station count data is loaded from API via stationCountByType state
 
-  const [selectedLicenseType, setSelectedLicenseType] = useState('Mobile');
-  const [countDateFilter, setCountDateFilter] = useState('2026-05');
-  const [countProvinceFilter, setCountProvinceFilter] = useState('All');
-  const [detailStartDate, setDetailStartDate] = useState('');
-  const [detailEndDate, setDetailEndDate] = useState('');
-  const [detailRegion, setDetailRegion] = useState('All');
-  const [detailBusinessType, setDetailBusinessType] = useState('All');
-  const [stationCountDateFilter, setStationCountDateFilter] = useState('2026-05');
-  const [stationCountProvinceFilter, setStationCountProvinceFilter] = useState('All');
-  const [validityDateFilter, setValidityDateFilter] = useState('2026-05');
-  const [validityProvinceFilter, setValidityProvinceFilter] = useState('All');
-  const [includeExpired, setIncludeExpired] = useState(true);
-
   // Validity data is loaded from API via validityForecast and validityLicenseRecords states
 
   const countBusinessTypes = Array.from(new Set(licenseCountData.map((item) => item.type)));
@@ -310,8 +318,9 @@ export function LicenseAnalysis() {
   const validityMonthOptions = Array.from(new Set(validityForecast.map((item) => item.month))).sort().reverse();
   const validityProvinceOptions = ['All', ...Array.from(new Set(validityForecast.map((item) => item.province))).sort()];
   const validityStartIndex = validityMonthOptions.indexOf(validityDateFilter);
-  const validityStartMonth = validityStartIndex >= 0 ? validityMonthOptions[validityStartIndex] : validityMonthOptions[0];
+  const validityStartMonth = validityStartIndex >= 0 ? validityMonthOptions[validityStartIndex] : (validityMonthOptions[0] ?? '2026-01');
   const validityFutureMonths = Array.from({ length: 12 }, (_, index) => {
+    if (!validityStartMonth) return '2026-01';
     const [year, month] = validityStartMonth.split('-').map(Number);
     const date = new Date(year, month - 1 + index, 1);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -351,7 +360,7 @@ export function LicenseAnalysis() {
   }));
   const selectedStationDetails = selectedStationType?.details ?? [];
   const filteredDetailRecords = licenseDetailRecords.filter((record) => {
-    const recordDate = record.period;
+    const recordDate = record.endDate;
     const matchesStart = !detailStartDate || recordDate >= detailStartDate;
     const matchesEnd = !detailEndDate || recordDate <= detailEndDate;
     return matchesStart
@@ -606,7 +615,8 @@ export function LicenseAnalysis() {
                       <th className="text-left py-3 px-4">Organization</th>
                       <th className="text-left py-3 px-4">Region</th>
                       <th className="text-left py-3 px-4">Frequency</th>
-                      <th className="text-left py-3 px-4">Period</th>
+                      <th className="text-left py-3 px-4">Start Date</th>
+                      <th className="text-left py-3 px-4">End Date</th>
                       <th className="text-center py-3 px-4">Status</th>
                       <th className="text-center py-3 px-4">View</th>
                     </tr>
@@ -618,7 +628,8 @@ export function LicenseAnalysis() {
                         <td className="py-3 px-4">{record.organization}</td>
                         <td className="py-3 px-4">{record.region}</td>
                         <td className="py-3 px-4">{record.frequency}</td>
-                        <td className="py-3 px-4">{record.period}</td>
+                        <td className="py-3 px-4">{record.startDate}</td>
+                        <td className="py-3 px-4">{record.endDate}</td>
                         <td className="text-center py-3 px-4">
                           <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
                             record.status === 'normal' ? 'bg-green-100 text-green-700' :
@@ -636,7 +647,8 @@ export function LicenseAnalysis() {
                               organization: record.organization,
                               region: record.region,
                               frequency: record.frequency,
-                              period: record.period,
+                              startDate: record.startDate,
+                              endDate: record.endDate,
                               status: record.status,
                             })}
                             className="text-primary hover:text-orange-500 underline underline-offset-2"
@@ -726,7 +738,8 @@ export function LicenseAnalysis() {
                     <th className="text-left py-3 px-4">Organization</th>
                     <th className="text-left py-3 px-4">Region</th>
                     <th className="text-left py-3 px-4">Frequency</th>
-                    <th className="text-left py-3 px-4">Period</th>
+                    <th className="text-left py-3 px-4">Start Date</th>
+                    <th className="text-left py-3 px-4">End Date</th>
                     <th className="text-center py-3 px-4">Status</th>
                     <th className="text-center py-3 px-4">Station Count</th>
                     <th className="text-center py-3 px-4">Detail</th>
@@ -739,7 +752,8 @@ export function LicenseAnalysis() {
                       <td className="py-3 px-4">{detail.organization}</td>
                       <td className="py-3 px-4">{detail.region}</td>
                       <td className="py-3 px-4">{detail.frequency}</td>
-                      <td className="py-3 px-4">{detail.period}</td>
+                      <td className="py-3 px-4">{detail.startDate}</td>
+                      <td className="py-3 px-4">{detail.endDate}</td>
                       <td className="text-center py-3 px-4">
                         <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${detail.status === 'normal' ? 'bg-green-100 text-green-700' : detail.status === 'expiring' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
                           {detail.status === 'normal' ? 'Normal' : detail.status === 'expiring' ? 'Expiring' : 'Expired'}
@@ -752,7 +766,8 @@ export function LicenseAnalysis() {
                           organization: detail.organization,
                           region: detail.region,
                           frequency: detail.frequency,
-                          period: detail.period,
+                          startDate: detail.startDate,
+                          endDate: detail.endDate,
                           status: detail.status,
                           stationCount: detail.stationCount,
                         })} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
@@ -777,13 +792,13 @@ export function LicenseAnalysis() {
             ['Category', selectedLicenseDetail.frequency],
             ['Law', selectedLicenseDetail.region],
             ['Type', selectedLicenseDetail.status],
-            ['Start Date', selectedLicenseDetail.period],
-            ['End Date', selectedLicenseDetail.period],
+            ['Start Date', selectedLicenseDetail.startDate],
+            ['End Date', selectedLicenseDetail.endDate],
             ['Coverage Area', selectedLicenseDetail.frequency],
             ['Process', 'Approved'],
             ['Status', selectedLicenseDetail.status],
             ['Code / No.', selectedLicenseDetail.number.replace('LIC-', '')],
-            ['Decision Date', selectedLicenseDetail.period],
+            ['Decision Date', selectedLicenseDetail.endDate],
             ['Decision', 'Granted'],
             ['Description', 'Frequency authorization detail view'],
             ['Registration', selectedLicenseDetail.organization],
@@ -808,13 +823,13 @@ export function LicenseAnalysis() {
             ['Category', selectedStationDetail.frequency],
             ['Law', selectedStationDetail.region],
             ['Type', selectedStationDetail.status],
-            ['Start Date', selectedStationDetail.period],
-            ['End Date', selectedStationDetail.period],
+            ['Start Date', selectedStationDetail.startDate],
+            ['End Date', selectedStationDetail.endDate],
             ['Coverage Area', selectedStationDetail.frequency],
             ['Process', 'Approved'],
             ['Status', selectedStationDetail.status],
             ['Code / No.', selectedStationDetail.number.replace('LIC-', '')],
-            ['Decision Date', selectedStationDetail.period],
+            ['Decision Date', selectedStationDetail.endDate],
             ['Decision', 'Granted'],
             ['Description', 'Station authorization detail view'],
             ['Registration', selectedStationDetail.organization],
@@ -839,13 +854,13 @@ export function LicenseAnalysis() {
             ['Category', selectedValidityLicense.frequency],
             ['Law', selectedValidityLicense.region],
             ['Type', selectedValidityLicense.status],
-            ['Start Date', selectedValidityLicense.period],
-            ['End Date', selectedValidityLicense.period],
+            ['Start Date', selectedValidityLicense.startDate],
+            ['End Date', selectedValidityLicense.endDate],
             ['Coverage Area', selectedValidityLicense.frequency],
             ['Process', 'Approved'],
             ['Status', selectedValidityLicense.status],
             ['Code / No.', selectedValidityLicense.number.replace('VL-', '')],
-            ['Decision Date', selectedValidityLicense.period],
+            ['Decision Date', selectedValidityLicense.endDate],
             ['Decision', 'Granted'],
             ['Description', 'Frequency authorization detail view'],
             ['Registration', selectedValidityLicense.organization],
@@ -955,14 +970,15 @@ export function LicenseAnalysis() {
                           {record.status === 'normal' ? 'Normal' : record.status === 'expiring' ? 'Expiring' : 'Expired'}
                         </span>
                       </td>
-                      <td className="text-center py-3 px-4">{record.period}</td>
+                      <td className="text-center py-3 px-4">{record.endDate}</td>
                       <td className="text-center py-3 px-4">
                         <button onClick={() => setSelectedValidityLicense({
                           number: record.number,
                           organization: record.organization,
                           region: record.region,
                           frequency: record.frequency,
-                          period: record.period,
+                          startDate: record.startDate,
+                          endDate: record.endDate,
                           status: record.status,
                           stationCount: record.stationCount,
                         })} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
