@@ -8,6 +8,7 @@ import com.freqmanage.module.permit.mapper.SpecialPermitMapper;
 import com.freqmanage.module.permit.mapper.SpecialPermitStationMapper;
 import com.freqmanage.module.station.entity.RsbtStation;
 import com.freqmanage.module.station.mapper.StationMapper;
+import com.freqmanage.module.statistics.vo.LicenseCountByTypeVO;
 import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageByMonthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
@@ -414,5 +415,37 @@ public class StatisticsService {
             wrapper.like(RsbtSpecialPermit::getScope, province);
         }
         return permitMapper.selectList(wrapper);
+    }
+
+    public List<LicenseCountByTypeVO> getLicenseCountByType(String province, String date) {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getCategory, RsbtSpecialPermit::getProvince);
+        if (!"All".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.eq(RsbtSpecialPermit::getProvince, province);
+        }
+        if (date != null && !date.isEmpty()) {
+            wrapper.apply("DATE(startdate) <= {0}", date);
+        }
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+
+        return permits.stream()
+                .filter(p -> p.getCategory() != null && !p.getCategory().isEmpty())
+                .collect(Collectors.groupingBy(p -> p.getCategory() + "|" + nvl(p.getProvince(), "Unknown")))
+                .entrySet().stream()
+                .map(entry -> {
+                    String[] parts = entry.getKey().split("\\|");
+                    LicenseCountByTypeVO vo = new LicenseCountByTypeVO();
+                    vo.setType(parts[0]);
+                    vo.setProvince(parts[1]);
+                    vo.setCount((long) entry.getValue().size());
+                    vo.setDate(date != null ? date : LocalDate.now().toString());
+                    vo.setPeriod("day");
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String nvl(String val, String defaultVal) {
+        return val != null && !val.isEmpty() ? val : defaultVal;
     }
 }

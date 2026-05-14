@@ -2,6 +2,7 @@ package com.freqmanage.module.statistics.controller;
 
 import com.freqmanage.common.ApiResponse;
 import com.freqmanage.module.statistics.service.StatisticsService;
+import com.freqmanage.module.statistics.vo.LicenseCountByTypeVO;
 import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageByMonthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
@@ -62,6 +63,13 @@ public class StatisticsController {
     @GetMapping("/permit/count")
     public ApiResponse<Map<String, Long>> permitCount() {
         return ApiResponse.ok(statisticsService.getPermitCountByStatus());
+    }
+
+    @GetMapping("/permit/count-by-type")
+    public ApiResponse<List<LicenseCountByTypeVO>> permitCountByType(
+            @RequestParam(required = false, defaultValue = "All") String province,
+            @RequestParam(required = false) String date) {
+        return ApiResponse.ok(statisticsService.getLicenseCountByType(province, date));
     }
 
     @GetMapping("/permit/station-count")
