@@ -442,12 +442,12 @@ export function DataManagement() {
   const [exportOptions, setExportOptions] = useState({ format: 'xlsx', range: 'all', fields: ['all'] });
   const [coordinatePickerOpen, setCoordinatePickerOpen] = useState(false);
 
-  // 分页状态
-  const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 10 });
+  // 分页状态 - pageSize 9999 for fetching all data, display uses actual pagination
+  const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 9999 });
   const [stationTotal, setStationTotal] = useState(0);
-  const [licensePage, setLicensePage] = useState({ pageNum: 1, pageSize: 10 });
+  const [licensePage, setLicensePage] = useState({ pageNum: 1, pageSize: 9999 });
   const [licenseTotal, setLicenseTotal] = useState(0);
-  const [planningPage, setPlanningPage] = useState({ pageNum: 1, pageSize: 10 });
+  const [planningPage, setPlanningPage] = useState({ pageNum: 1, pageSize: 9999 });
   const [planningTotal, setPlanningTotal] = useState(0);
 
   const [stationRecords, setStationRecords] = useState<StationRecord[]>([]);
@@ -458,7 +458,7 @@ export function DataManagement() {
   // 数据获取函数
   const fetchStationData = useCallback(async () => {
     try {
-      const res = await stationApi.page({ pageNum: stationPage.pageNum, pageSize: stationPage.pageSize, keyword: searchTerm });
+      const res = await stationApi.page({ pageNum: 1, pageSize: 9999, keyword: searchTerm });
       if (res.code === 200 && res.data?.records) {
         setStationRecords(res.data.records.map(mapVoToStationRecord));
         setStationTotal(res.data.total || 0);
@@ -466,11 +466,11 @@ export function DataManagement() {
     } catch (error) {
       console.error('Failed to fetch station data:', error);
     }
-  }, [stationPage.pageNum, stationPage.pageSize, searchTerm]);
+  }, [searchTerm]);
 
   const fetchLicenseData = useCallback(async () => {
     try {
-      const res = await permitApi.page({ pageNum: licensePage.pageNum, pageSize: licensePage.pageSize, keyword: searchTerm });
+      const res = await permitApi.page({ pageNum: 1, pageSize: 9999, keyword: searchTerm });
       if (res.code === 200 && res.data?.records) {
         setLicenseRecords(res.data.records.map(mapPermitVoToLicenseRecord));
         setLicenseTotal(res.data.total || 0);
@@ -478,11 +478,11 @@ export function DataManagement() {
     } catch (error) {
       console.error('Failed to fetch license data:', error);
     }
-  }, [licensePage.pageNum, licensePage.pageSize, searchTerm]);
+  }, [searchTerm]);
 
   const fetchPlanningData = useCallback(async () => {
     try {
-      const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
+      const res = await planningApi.page({ pageNum: 1, pageSize: 9999 });
       if (res.code === 200 && res.data) {
         setPlanningRecords(res.data.records.map(convertToFrequencyBand));
         setPlanningTotal(res.data.total || 0);
@@ -490,7 +490,7 @@ export function DataManagement() {
     } catch (error) {
       console.error('Failed to fetch planning data:', error);
     }
-  }, [planningPage.pageNum, planningPage.pageSize]);
+  }, []);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -551,6 +551,27 @@ export function DataManagement() {
     const matchesStatus = licenseStatusFilter === 'All' || license.status.toLowerCase() === licenseStatusFilter.toLowerCase();
     return matchesSearch && matchesUnit && matchesRegion && matchesBand && matchesStatus;
   }), [licenseBandFilter, licenseRegionFilter, licenseRecords, licenseStatusFilter, licenseUnitFilter, searchTerm, stationRecords]);
+
+  const filteredStationData = useMemo(() => stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))), [searchTerm, stationRecords]);
+
+  const filteredPlanningData = useMemo(() => planningRecords, [planningRecords]);
+
+  // Client-side pagination for display (10 items per page)
+  const DISPLAY_PAGE_SIZE = 10;
+  const paginatedStations = useMemo(() => {
+    const start = (stationPage.pageNum - 1) * DISPLAY_PAGE_SIZE;
+    return filteredStationData.slice(start, start + DISPLAY_PAGE_SIZE);
+  }, [filteredStationData, stationPage.pageNum]);
+
+  const paginatedLicenses = useMemo(() => {
+    const start = (licensePage.pageNum - 1) * DISPLAY_PAGE_SIZE;
+    return filteredLicenseData.slice(start, start + DISPLAY_PAGE_SIZE);
+  }, [filteredLicenseData, licensePage.pageNum]);
+
+  const paginatedPlans = useMemo(() => {
+    const start = (planningPage.pageNum - 1) * DISPLAY_PAGE_SIZE;
+    return filteredPlanningData.slice(start, start + DISPLAY_PAGE_SIZE);
+  }, [filteredPlanningData, planningPage.pageNum]);
 
   const planningSheet = useMemo(() => planningRecords.map((item) => ({ ...item })), [planningRecords]);
 
@@ -860,7 +881,7 @@ export function DataManagement() {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading stations...</div>
-            ) : stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))).length === 0 ? (
+            ) : filteredStationData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">No stations found</div>
             ) : (
               <>
@@ -875,8 +896,8 @@ export function DataManagement() {
                     <th className="text-center py-3 px-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))).map((station) => (
+                <tbody key={stationPage.pageNum}>
+                  {paginatedStations.map((station) => (
                     <tr key={station.id} className="border-b border-border hover:bg-muted/50">
                       <td className="py-3 px-4 font-medium">{station.name}</td>
                       <td className="py-3 px-4">{station.type}</td>
@@ -894,10 +915,10 @@ export function DataManagement() {
                   ))}
                 </tbody>
               </table>
-              {stationTotal > 0 && (
+              {filteredStationData.length > 0 && (
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    共 {stationTotal} 条，第 {stationPage.pageNum}/{Math.ceil(stationTotal / stationPage.pageSize) || 1} 页
+                    Total {filteredStationData.length} items
                   </div>
                   <div className="flex items-center gap-2">
                     <select
@@ -923,7 +944,7 @@ export function DataManagement() {
                         <PaginationItem>
                           <PaginationNext
                             onClick={() => handleStationPageChange(stationPage.pageNum + 1)}
-                            className={stationPage.pageNum >= Math.ceil(stationTotal / stationPage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            className={stationPage.pageNum >= Math.ceil(filteredStationData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                           />
                         </PaginationItem>
                       </PaginationContent>
@@ -967,8 +988,8 @@ export function DataManagement() {
                   <th className="text-center py-3 px-4">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredLicenseData.map((license) => (
+              <tbody key={licensePage.pageNum}>
+                {paginatedLicenses.map((license) => (
                   <tr key={license.id} className="border-b border-border hover:bg-muted/50">
                     <td className="py-3 px-4 font-medium text-sm">{license.licenseAuthorization ?? '-'}</td>
                     <td className="py-3 px-4">{license.unit ?? license.organization}</td>
@@ -993,10 +1014,10 @@ export function DataManagement() {
                 ))}
               </tbody>
             </table>
-            {licenseTotal > 0 && (
+            {filteredLicenseData.length > 0 && (
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  共 {licenseTotal} 条，第 {licensePage.pageNum}/{Math.ceil(licenseTotal / licensePage.pageSize) || 1} 页
+                  Total {filteredLicenseData.length} items
                 </div>
                 <div className="flex items-center gap-2">
                   <select
@@ -1022,7 +1043,7 @@ export function DataManagement() {
                       <PaginationItem>
                         <PaginationNext
                           onClick={() => handleLicensePageChange(licensePage.pageNum + 1)}
-                          className={licensePage.pageNum >= Math.ceil(licenseTotal / licensePage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          className={licensePage.pageNum >= Math.ceil(filteredLicenseData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                         />
                       </PaginationItem>
                     </PaginationContent>
@@ -1060,8 +1081,8 @@ export function DataManagement() {
                   <th className="text-center py-3 px-4">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {planningRecords.map((plan) => (
+              <tbody key={planningPage.pageNum}>
+                {paginatedPlans.map((plan) => (
                   <tr key={plan.guid} className="border-b border-border hover:bg-muted/50">
                     <td className="py-3 px-4">{plan.category}</td>
                     <td className="py-3 px-4">{plan.subCategory}</td>
@@ -1082,10 +1103,10 @@ export function DataManagement() {
                 ))}
               </tbody>
             </table>
-            {planningTotal > 0 && (
+            {filteredPlanningData.length > 0 && (
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  共 {planningTotal} 条，第 {planningPage.pageNum}/{Math.ceil(planningTotal / planningPage.pageSize) || 1} 页
+                  Total {filteredPlanningData.length} items
                 </div>
                 <div className="flex items-center gap-2">
                   <select
@@ -1111,7 +1132,7 @@ export function DataManagement() {
                       <PaginationItem>
                         <PaginationNext
                           onClick={() => handlePlanningPageChange(planningPage.pageNum + 1)}
-                          className={planningPage.pageNum >= Math.ceil(planningTotal / planningPage.pageSize) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          className={planningPage.pageNum >= Math.ceil(filteredPlanningData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                         />
                       </PaginationItem>
                     </PaginationContent>
