@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { statisticsApi, PermitUsageByMonthVO, LicenseCountByTypeVO, StationCountDetailVO, ValidityForecastVO, PermitQuery, PermitVO } from '../api/statistics';
 
 type DetailModalProps = {
   title: string;
@@ -66,38 +67,178 @@ export function LicenseAnalysis() {
     stationCount?: number;
   } | null>(null);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Usage Rate Analysis data (loaded from API)
+  const [usageMonthlyData, setUsageMonthlyData] = useState<PermitUsageByMonthVO[]>([]);
+
+  // License Count Statistics data
+  const [licenseCountData, setLicenseCountData] = useState<LicenseCountByTypeVO[]>([]);
+  const [licenseCountTrend, setLicenseCountTrend] = useState<{ month: string; count: number }[]>([]);
+  const [licenseDetailRecords, setLicenseDetailRecords] = useState<any[]>([]);
+
+  // Licensed Station Count data
+  const [stationCountByType, setStationCountByType] = useState<StationCountDetailVO[]>([]);
+
+  // Validity Period Statistics data
+  const [validityForecast, setValidityForecast] = useState<ValidityForecastVO[]>([]);
+  const [validityLicenseRecords, setValidityLicenseRecords] = useState<any[]>([]);
+
   const businessTypes = ['Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
   const provinces = ['All', 'Ulaanbaatar', 'Dornogovi', 'Central', 'Selenge', 'Khentii'];
   const years = ['2024', '2025', '2026'];
 
-  const usageMonthlyData = [
-    { month: '01', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 68.2, yoyGrowth: 6.1, momGrowth: 1.2, prevYearRate: 64.3, prevMonthRate: 67.4 },
-    { month: '02', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 69.4, yoyGrowth: 5.8, momGrowth: 1.8, prevYearRate: 65.6, prevMonthRate: 68.2 },
-    { month: '03', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 70.1, yoyGrowth: 5.6, momGrowth: 1.0, prevYearRate: 66.4, prevMonthRate: 69.4 },
-    { month: '04', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 71.3, yoyGrowth: 5.3, momGrowth: 1.7, prevYearRate: 67.7, prevMonthRate: 70.1 },
-    { month: '05', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 72.0, yoyGrowth: 5.0, momGrowth: 1.0, prevYearRate: 68.5, prevMonthRate: 71.3 },
-    { month: '06', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 72.8, yoyGrowth: 4.8, momGrowth: 1.1, prevYearRate: 69.4, prevMonthRate: 72.0 },
-    { month: '07', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 73.6, yoyGrowth: 4.5, momGrowth: 1.1, prevYearRate: 70.4, prevMonthRate: 72.8 },
-    { month: '08', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 74.1, yoyGrowth: 4.3, momGrowth: 0.7, prevYearRate: 71.0, prevMonthRate: 73.6 },
-    { month: '09', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 74.8, yoyGrowth: 4.2, momGrowth: 0.9, prevYearRate: 71.6, prevMonthRate: 74.1 },
-    { month: '10', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 75.2, yoyGrowth: 4.0, momGrowth: 0.5, prevYearRate: 72.2, prevMonthRate: 74.8 },
-    { month: '11', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 75.7, yoyGrowth: 3.9, momGrowth: 0.7, prevYearRate: 72.8, prevMonthRate: 75.2 },
-    { month: '12', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2026', usageRate: 76.3, yoyGrowth: 3.8, momGrowth: 0.8, prevYearRate: 73.4, prevMonthRate: 75.7 },
-    { month: '01', businessType: 'Broadcasting', province: 'Dornogovi', year: '2026', usageRate: 55.1, yoyGrowth: 2.4, momGrowth: 0.8, prevYearRate: 53.8, prevMonthRate: 54.7 },
-    { month: '02', businessType: 'Broadcasting', province: 'Dornogovi', year: '2026', usageRate: 55.6, yoyGrowth: 2.2, momGrowth: 0.9, prevYearRate: 54.4, prevMonthRate: 55.1 },
-    { month: '01', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 64.3, yoyGrowth: 5.4, momGrowth: 0.0, prevYearRate: 60.8, prevMonthRate: 63.8 },
-    { month: '02', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 65.6, yoyGrowth: 5.1, momGrowth: 2.0, prevYearRate: 62.4, prevMonthRate: 64.3 },
-    { month: '03', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 66.4, yoyGrowth: 4.9, momGrowth: 1.2, prevYearRate: 63.1, prevMonthRate: 65.6 },
-    { month: '04', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 67.7, yoyGrowth: 4.7, momGrowth: 2.0, prevYearRate: 64.5, prevMonthRate: 66.4 },
-    { month: '05', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 68.5, yoyGrowth: 4.5, momGrowth: 1.2, prevYearRate: 65.1, prevMonthRate: 67.7 },
-    { month: '06', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 69.4, yoyGrowth: 4.3, momGrowth: 1.3, prevYearRate: 65.9, prevMonthRate: 68.5 },
-    { month: '07', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 70.4, yoyGrowth: 4.1, momGrowth: 1.4, prevYearRate: 66.8, prevMonthRate: 69.4 },
-    { month: '08', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 71.0, yoyGrowth: 4.0, momGrowth: 0.9, prevYearRate: 67.3, prevMonthRate: 70.4 },
-    { month: '09', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 71.6, yoyGrowth: 3.8, momGrowth: 0.8, prevYearRate: 67.9, prevMonthRate: 71.0 },
-    { month: '10', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 72.2, yoyGrowth: 3.7, momGrowth: 0.8, prevYearRate: 68.4, prevMonthRate: 71.6 },
-    { month: '11', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 72.8, yoyGrowth: 3.6, momGrowth: 0.8, prevYearRate: 69.0, prevMonthRate: 72.2 },
-    { month: '12', businessType: 'Mobile', province: 'Ulaanbaatar', year: '2025', usageRate: 73.4, yoyGrowth: 3.5, momGrowth: 0.8, prevYearRate: 69.6, prevMonthRate: 72.8 },
-  ];
+  // ====== 数据获取函数 ======
+
+  const fetchUsageData = async (businessType: string, province: string, year: string) => {
+    try {
+      setLoading(true);
+      const res = await statisticsApi.permitUsageByMonth({
+        businessType: businessType === 'All' ? undefined : businessType,
+        province: province === 'All' ? undefined : province,
+        year: parseInt(year),
+      });
+      if (res.code === 200) {
+        setUsageMonthlyData(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch usage data:', err);
+      setError('Failed to load usage rate data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLicenseCountData = async (province: string, date: string) => {
+    try {
+      const res = await statisticsApi.permitCountByType({ province, date });
+      if (res.code === 200) {
+        setLicenseCountData(res.data || []);
+        // Generate trend data based on total count
+        const total = (res.data || []).reduce((sum: number, item: LicenseCountByTypeVO) => sum + item.count, 0);
+        const trend = Array.from({ length: 12 }, (_, i) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - 11 + i);
+          return {
+            month: d.toISOString().slice(0, 7),
+            count: total,
+          };
+        });
+        setLicenseCountTrend(trend);
+      }
+    } catch (err) {
+      console.error('Failed to fetch license count:', err);
+    }
+  };
+
+  const fetchLicenseDetails = async (startDate: string, endDate: string, region: string, businessType: string) => {
+    try {
+      const query: PermitQuery = { pageSize: 1000 };
+      if (region && region !== 'All') query.province = region;
+      if (businessType && businessType !== 'All') query.type = businessType;
+      if (startDate) query.startDate = startDate;
+      if (endDate) query.endDate = endDate;
+      const res = await statisticsApi.permitPage(query);
+      if (res.code === 200 && res.data?.records) {
+        const records = res.data.records.map((p: PermitVO) => mapPermitToLicenseDetail(p));
+        setLicenseDetailRecords(records);
+      }
+    } catch (err) {
+      console.error('Failed to fetch license details:', err);
+    }
+  };
+
+  const fetchStationCountData = async (province: string, date: string) => {
+    try {
+      const res = await statisticsApi.permitStationCountDetail({ province, date });
+      if (res.code === 200) {
+        setStationCountByType(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch station count:', err);
+    }
+  };
+
+  const fetchValidityForecast = async (province: string) => {
+    try {
+      const res = await statisticsApi.permitValidityForecast({ province, months: 12 });
+      if (res.code === 200) {
+        setValidityForecast(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch validity forecast:', err);
+    }
+  };
+
+  const fetchValidityDetails = async (date: string, province: string, includeExpired: boolean) => {
+    try {
+      const query: PermitQuery = { pageSize: 1000 };
+      if (province && province !== 'All') query.province = province;
+      const res = await statisticsApi.permitPage(query);
+      if (res.code === 200 && res.data?.records) {
+        const records = (res.data.records as PermitVO[])
+          .filter((p: PermitVO) => {
+            const endDate = p.enddate ? new Date(p.enddate) : null;
+            const now = new Date();
+            if (!includeExpired && endDate && endDate < now) return false;
+            return true;
+          })
+          .map((p: PermitVO) => mapPermitToValidityRecord(p));
+        setValidityLicenseRecords(records);
+      }
+    } catch (err) {
+      console.error('Failed to fetch validity details:', err);
+    }
+  };
+
+  // 辅助函数：计算状态
+  function computeStatus(enddate: string | null): 'normal' | 'expiring' | 'expired' {
+    if (!enddate) return 'normal';
+    const end = new Date(enddate);
+    const now = new Date();
+    const warning = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+    if (end < now) return 'expired';
+    if (end < warning) return 'expiring';
+    return 'normal';
+  }
+
+  function mapPermitToLicenseDetail(p: PermitVO) {
+    return {
+      number: p.code || p.consent || p.guid,
+      organization: p.interlocutor || '',
+      region: p.province || '',
+      frequency: p.scope || '',
+      period: p.enddate || '',
+      status: computeStatus(p.enddate),
+    };
+  }
+
+  function mapPermitToValidityRecord(p: PermitVO) {
+    return {
+      number: p.code || p.consent || p.guid,
+      organization: p.interlocutor || '',
+      region: p.province || '',
+      frequency: p.scope || '',
+      period: p.enddate || '',
+      status: computeStatus(p.enddate),
+      stationCount: 0,
+    };
+  }
+
+  useEffect(() => {
+    if (analysisType === 'usage') {
+      fetchUsageData(selectedBusinessType, selectedProvince, selectedYear);
+    } else if (analysisType === 'count') {
+      fetchLicenseCountData(countProvinceFilter, countDateFilter);
+      fetchLicenseDetails(detailStartDate, detailEndDate, detailRegion, detailBusinessType);
+    } else if (analysisType === 'station') {
+      fetchStationCountData(stationCountProvinceFilter, stationCountDateFilter);
+    } else if (analysisType === 'validity') {
+      fetchValidityForecast(validityProvinceFilter);
+      fetchValidityDetails(validityDateFilter, validityProvinceFilter, includeExpired);
+    }
+  }, [analysisType, selectedBusinessType, selectedProvince, selectedYear, countProvinceFilter, countDateFilter, detailStartDate, detailEndDate, detailRegion, detailBusinessType, stationCountProvinceFilter, stationCountDateFilter, validityDateFilter, validityProvinceFilter, includeExpired]);
 
   const filteredUsageData = useMemo(() => usageMonthlyData.filter((item) => (
     (selectedBusinessType === 'All' || item.businessType === selectedBusinessType)
@@ -143,103 +284,9 @@ export function LicenseAnalysis() {
       });
   }, [filteredUsageData, selectedYear]);
 
-  const licenseCountData = [
-    { type: 'Mobile', count: 1580, province: 'Ulaanbaatar', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-001580', organization: 'Mongolia Telecom', region: 'Ulaanbaatar', frequency: '1800-1850 MHz', period: '2026-05-02', status: 'normal' },
-      { number: 'LIC-2024-001581', organization: 'Mongolia Telecom', region: 'Ulaanbaatar', frequency: '1850-1900 MHz', period: '2026-05-02', status: 'normal' },
-    ] },
-    { type: 'Broadcasting', count: 890, province: 'Dornogovi', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-000890', organization: 'Mongolia Broadcasting', region: 'Dornogovi', frequency: '470-478 MHz', period: '2026-05-02', status: 'expiring' },
-    ] },
-    { type: 'Fixed', count: 650, province: 'Central', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-000650', organization: 'National Communications', region: 'Central', frequency: '5925-5965 MHz', period: '2026-05-02', status: 'normal' },
-    ] },
-    { type: 'Satellite', count: 420, province: 'Khentii', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-000420', organization: 'Satellite Communications Co', region: 'Khentii', frequency: '11700-11750 MHz', period: '2026-05-02', status: 'expired' },
-    ] },
-    { type: 'Microwave', count: 333, province: 'Selenge', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-000333', organization: 'Network Infra Ltd', region: 'Selenge', frequency: '5925-6425 MHz', period: '2026-05-02', status: 'normal' },
-    ] },
-    { type: 'Navigation', count: 229, province: 'Ulaanbaatar', date: '2026-05-02', period: 'day', details: [
-      { number: 'LIC-2024-000229', organization: 'Aviation Authority', region: 'Ulaanbaatar', frequency: '108-118 MHz', period: '2026-05-02', status: 'normal' },
-    ] },
-  ];
+  // License Count data is loaded from API via licenseCountData state
 
-  const licenseCountTrend = [
-    { month: '2025-05', count: 4020 },
-    { month: '2025-06', count: 4050 },
-    { month: '2025-07', count: 4085 },
-    { month: '2025-08', count: 4120 },
-    { month: '2025-09', count: 4155 },
-    { month: '2025-10', count: 4185 },
-    { month: '2025-11', count: 4215 },
-    { month: '2025-12', count: 4242 },
-    { month: '2026-01', count: 4265 },
-    { month: '2026-02', count: 4280 },
-    { month: '2026-03', count: 4295 },
-    { month: '2026-04', count: 4310 },
-  ];
-
-  const licenseDetailRecords = licenseCountData.flatMap((item) => item.details);
-
-  const stationCountByType = [
-    {
-      type: 'Mobile',
-      licenses: 1580,
-      stations: 1245,
-      ratio: 0.79,
-      province: 'Ulaanbaatar',
-      date: '2026-05',
-      details: [
-        { number: 'LIC-2024-001580', organization: 'Mongolia Telecom', region: 'Ulaanbaatar', frequency: '1800-1850 MHz', period: '2026-05-02', status: 'normal', stationCount: 1245 },
-        { number: 'LIC-2024-001581', organization: 'Mongolia Telecom', region: 'Ulaanbaatar', frequency: '1850-1900 MHz', period: '2026-05-02', status: 'normal', stationCount: 1245 },
-      ],
-    },
-    {
-      type: 'Broadcasting',
-      licenses: 890,
-      stations: 790,
-      ratio: 0.89,
-      province: 'Dornogovi',
-      date: '2026-05',
-      details: [
-        { number: 'LIC-2024-000890', organization: 'Mongolia Broadcasting', region: 'Dornogovi', frequency: '470-478 MHz', period: '2026-05-02', status: 'expiring', stationCount: 790 },
-      ],
-    },
-    {
-      type: 'Fixed',
-      licenses: 650,
-      stations: 508,
-      ratio: 0.78,
-      province: 'Central',
-      date: '2026-05',
-      details: [
-        { number: 'LIC-2024-000650', organization: 'National Communications', region: 'Central', frequency: '5925-5965 MHz', period: '2026-05-02', status: 'normal', stationCount: 508 },
-      ],
-    },
-    {
-      type: 'Satellite',
-      licenses: 420,
-      stations: 314,
-      ratio: 0.75,
-      province: 'Khentii',
-      date: '2026-05',
-      details: [
-        { number: 'LIC-2024-000420', organization: 'Satellite Communications Co', region: 'Khentii', frequency: '11700-11750 MHz', period: '2026-05-02', status: 'expired', stationCount: 314 },
-      ],
-    },
-    {
-      type: 'Microwave',
-      licenses: 333,
-      stations: 280,
-      ratio: 0.84,
-      province: 'Selenge',
-      date: '2026-05',
-      details: [
-        { number: 'LIC-2024-000333', organization: 'Network Infra Ltd', region: 'Selenge', frequency: '5925-6425 MHz', period: '2026-05-02', status: 'normal', stationCount: 280 },
-      ],
-    },
-  ];
+  // Station count data is loaded from API via stationCountByType state
 
   const [selectedLicenseType, setSelectedLicenseType] = useState('Mobile');
   const [countDateFilter, setCountDateFilter] = useState('2026-05');
@@ -254,40 +301,14 @@ export function LicenseAnalysis() {
   const [validityProvinceFilter, setValidityProvinceFilter] = useState('All');
   const [includeExpired, setIncludeExpired] = useState(true);
 
-  const validityStatus = [
-    { month: '2026-05', province: 'Ulaanbaatar', normal: 3985, expiring: 42, expired: 18 },
-    { month: '2026-06', province: 'Dornogovi', normal: 3920, expiring: 58, expired: 25 },
-    { month: '2026-07', province: 'Central', normal: 3855, expiring: 67, expired: 32 },
-    { month: '2026-08', province: 'Selenge', normal: 3770, expiring: 85, expired: 45 },
-    { month: '2026-09', province: 'Khentii', normal: 3698, expiring: 72, expired: 38 },
-    { month: '2026-10', province: 'Ulaanbaatar', normal: 3603, expiring: 95, expired: 52 },
-    { month: '2026-11', province: 'Dornogovi', normal: 3555, expiring: 88, expired: 48 },
-    { month: '2026-12', province: 'Central', normal: 3435, expiring: 120, expired: 65 },
-    { month: '2027-01', province: 'Selenge', normal: 3365, expiring: 98, expired: 42 },
-    { month: '2027-02', province: 'Khentii', normal: 3308, expiring: 104, expired: 50 },
-    { month: '2027-03', province: 'Ulaanbaatar', normal: 3244, expiring: 110, expired: 56 },
-    { month: '2027-04', province: 'Dornogovi', normal: 3190, expiring: 96, expired: 61 },
-    { month: '2027-05', province: 'Central', normal: 3142, expiring: 102, expired: 58 },
-    { month: '2027-06', province: 'Selenge', normal: 3098, expiring: 118, expired: 64 },
-    { month: '2027-07', province: 'Khentii', normal: 3036, expiring: 125, expired: 70 },
-    { month: '2027-08', province: 'Ulaanbaatar', normal: 2985, expiring: 132, expired: 75 },
-    { month: '2027-09', province: 'Dornogovi', normal: 2924, expiring: 120, expired: 68 },
-    { month: '2027-10', province: 'Central', normal: 2876, expiring: 128, expired: 72 },
-    { month: '2027-11', province: 'Selenge', normal: 2819, expiring: 134, expired: 77 },
-    { month: '2027-12', province: 'Khentii', normal: 2765, expiring: 140, expired: 81 },
-  ];
-  const validityLicenseRecords = validityStatus.flatMap((row, index) => [
-    { month: row.month, province: row.province, number: `VL-${row.month.replace('-', '')}-${String(index + 1).padStart(3, '0')}`, organization: 'Mongolia Telecom', region: row.province, frequency: '1800-1850 MHz', period: `${row.month}-15`, status: 'normal', stationCount: 1200 },
-    { month: row.month, province: row.province, number: `VL-${row.month.replace('-', '')}-${String(index + 101).padStart(3, '0')}`, organization: 'National Communications', region: row.province, frequency: '470-478 MHz', period: `${row.month}-20`, status: 'expiring', stationCount: 790 },
-    { month: row.month, province: row.province, number: `VL-${row.month.replace('-', '')}-${String(index + 201).padStart(3, '0')}`, organization: 'Aviation Authority', region: row.province, frequency: '5925-5965 MHz', period: `${row.month}-25`, status: 'expired', stationCount: 508 },
-  ]);
+  // Validity data is loaded from API via validityForecast and validityLicenseRecords states
 
   const countBusinessTypes = Array.from(new Set(licenseCountData.map((item) => item.type)));
   const countProvinces = ['All', ...Array.from(new Set(licenseCountData.map((item) => item.province)))];
   const detailRegions = ['All', 'Ulaanbaatar', 'Dornogovi', 'Central', 'Selenge', 'Khentii'];
   const detailTypes = ['All', ...businessTypes];
-  const validityMonthOptions = Array.from(new Set(validityStatus.map((item) => item.month))).sort().reverse();
-  const validityProvinceOptions = ['All', ...Array.from(new Set(validityStatus.map((item) => item.province))).sort()];
+  const validityMonthOptions = Array.from(new Set(validityForecast.map((item) => item.month))).sort().reverse();
+  const validityProvinceOptions = ['All', ...Array.from(new Set(validityForecast.map((item) => item.province))).sort()];
   const validityStartIndex = validityMonthOptions.indexOf(validityDateFilter);
   const validityStartMonth = validityStartIndex >= 0 ? validityMonthOptions[validityStartIndex] : validityMonthOptions[0];
   const validityFutureMonths = Array.from({ length: 12 }, (_, index) => {
@@ -295,10 +316,10 @@ export function LicenseAnalysis() {
     const date = new Date(year, month - 1 + index, 1);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   });
-  const filteredValidityStatus = validityFutureMonths.flatMap((month) => validityStatus.filter((row) => row.month === month && (validityProvinceFilter === 'All' || row.province === validityProvinceFilter) && (includeExpired || row.expired === 0)));
+  const filteredValidityStatus = validityFutureMonths.flatMap((month) => validityForecast.filter((row) => row.month === month && (validityProvinceFilter === 'All' || row.province === validityProvinceFilter) && (includeExpired || row.expired === 0)));
   const monthlyValidityRecords = validityLicenseRecords.filter((record) => record.month === validityDateFilter && (validityProvinceFilter === 'All' || record.province === validityProvinceFilter) && (includeExpired || record.status !== 'expired'));
   const validityChartData = validityFutureMonths.map((month) => {
-    const rows = validityStatus.filter((row) => row.month === month && (validityProvinceFilter === 'All' || row.province === validityProvinceFilter));
+    const rows = validityForecast.filter((row) => row.month === month && (validityProvinceFilter === 'All' || row.province === validityProvinceFilter));
     return {
       month,
       normal: rows.reduce((sum, row) => sum + row.normal, 0),
