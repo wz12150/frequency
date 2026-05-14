@@ -10,6 +10,7 @@ import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
 import com.freqmanage.module.statistics.vo.ExpiredStationVO;
+import com.freqmanage.module.statistics.vo.StationCountDetailVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -75,6 +76,13 @@ public class StatisticsController {
     @GetMapping("/permit/station-count")
     public ApiResponse<Map<String, Long>> permitStationCount() {
         return ApiResponse.ok(statisticsService.getPermitStationCount());
+    }
+
+    @GetMapping("/permit/station-count-detail")
+    public ApiResponse<List<StationCountDetailVO>> permitStationCountDetail(
+            @RequestParam(required = false, defaultValue = "All") String province,
+            @RequestParam(required = false) String date) {
+        return ApiResponse.ok(statisticsService.getStationCountDetail(province, date));
     }
 
     @GetMapping("/permit/expiry")

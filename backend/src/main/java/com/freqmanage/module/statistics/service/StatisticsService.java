@@ -16,6 +16,7 @@ import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
 import com.freqmanage.module.statistics.vo.StationRegionDetailVO;
 import com.freqmanage.module.statistics.vo.ExpiredStationVO;
+import com.freqmanage.module.statistics.vo.StationCountDetailVO;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -161,6 +162,29 @@ public class StatisticsService {
         return stations.stream()
                 .filter(s -> s.getType() != null && !s.getType().isEmpty())
                 .collect(Collectors.groupingBy(RsbtSpecialPermitStation::getType, Collectors.counting()));
+    }
+
+    public List<StationCountDetailVO> getStationCountDetail(String province, String date) {
+        LambdaQueryWrapper<RsbtSpecialPermitStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermitStation::getType);
+        // Note: RsbtSpecialPermitStation does not have a province field
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(wrapper);
+
+        return stations.stream()
+                .filter(s -> s.getType() != null && !s.getType().isEmpty())
+                .collect(Collectors.groupingBy(s -> s.getType()))
+                .entrySet().stream()
+                .map(entry -> {
+                    StationCountDetailVO vo = new StationCountDetailVO();
+                    vo.setType(entry.getKey());
+                    vo.setStations((long) entry.getValue().size());
+                    vo.setLicenses((long) entry.getValue().size()); // permits are 1:1 with stations in current model
+                    vo.setRatio(entry.getValue().size() > 0 ? 1.0 : 0.0);
+                    vo.setProvince(province != null ? province : "All");
+                    vo.setDate(date != null ? date : LocalDate.now().toString());
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     public Map<String, Long> getPermitExpiryStats() {
