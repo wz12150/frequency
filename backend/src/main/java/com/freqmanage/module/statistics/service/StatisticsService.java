@@ -359,48 +359,51 @@ public class StatisticsService {
         List<RsbtSpecialPermit> prevYearPermits = fetchPermitsByYear(targetYear - 1, businessType, province);
 
         LocalDate now = LocalDate.now();
+        final int currentYearVal = targetYear;
+        final LocalDate nowVal = now;
 
         for (int month = 1; month <= 12; month++) {
+            final int monthVal = month;
             // Count current month active and total from cached data
             long activeCount = currentYearPermits.stream()
                     .filter(p -> p.getStartdate() != null
-                            && p.getStartdate().getYear() == targetYear
-                            && p.getStartdate().getMonthValue() == month
-                            && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
                     .count();
             long totalCount = currentYearPermits.stream()
                     .filter(p -> p.getStartdate() != null
-                            && p.getStartdate().getYear() == targetYear
-                            && p.getStartdate().getMonthValue() == month)
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal)
                     .count();
 
             // Count previous year same month
             long prevYearActive = prevYearPermits.stream()
                     .filter(p -> p.getStartdate() != null
-                            && p.getStartdate().getYear() == targetYear - 1
-                            && p.getStartdate().getMonthValue() == month
-                            && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
                     .count();
             long prevYearTotal = prevYearPermits.stream()
                     .filter(p -> p.getStartdate() != null
-                            && p.getStartdate().getYear() == targetYear - 1
-                            && p.getStartdate().getMonthValue() == month)
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal)
                     .count();
 
             // Count previous month
             long prevMonthActive = 0;
             long prevMonthTotal = 0;
-            if (month > 1) {
+            if (monthVal > 1) {
                 prevMonthActive = currentYearPermits.stream()
                         .filter(p -> p.getStartdate() != null
-                                && p.getStartdate().getYear() == targetYear
-                                && p.getStartdate().getMonthValue() == month - 1
-                                && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                                && p.getStartdate().getYear() == currentYearVal
+                                && p.getStartdate().getMonthValue() == monthVal - 1
+                                && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
                         .count();
                 prevMonthTotal = currentYearPermits.stream()
                         .filter(p -> p.getStartdate() != null
-                                && p.getStartdate().getYear() == targetYear
-                                && p.getStartdate().getMonthValue() == month - 1)
+                                && p.getStartdate().getYear() == currentYearVal
+                                && p.getStartdate().getMonthValue() == monthVal - 1)
                         .count();
             }
 
@@ -409,10 +412,10 @@ public class StatisticsService {
             double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
 
             double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;
-            double momGrowth = month > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
+            double momGrowth = monthVal > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
 
             PermitUsageByMonthVO vo = new PermitUsageByMonthVO();
-            vo.setMonth(String.format("%02d", month));
+            vo.setMonth(String.format("%02d", monthVal));
             vo.setBusinessType(businessType != null ? businessType : "All");
             vo.setProvince(province != null ? province : "All");
             vo.setYear(String.valueOf(targetYear));
@@ -420,7 +423,7 @@ public class StatisticsService {
             vo.setYoyGrowth(Math.round(yoyGrowth * 10) / 10.0);
             vo.setMomGrowth(Math.round(momGrowth * 10) / 10.0);
             vo.setPrevYearRate(Math.round(prevYearRate * 10) / 10.0);
-            vo.setPrevMonthRate(month > 1 ? Math.round(prevMonthRateVal * 10) / 10.0 : 0.0);
+            vo.setPrevMonthRate(monthVal > 1 ? Math.round(prevMonthRateVal * 10) / 10.0 : 0.0);
             vo.setTotalCount(totalCount);
             vo.setActiveCount(activeCount);
             result.add(vo);
