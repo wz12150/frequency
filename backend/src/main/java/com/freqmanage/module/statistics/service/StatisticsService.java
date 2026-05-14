@@ -9,6 +9,7 @@ import com.freqmanage.module.permit.mapper.SpecialPermitStationMapper;
 import com.freqmanage.module.station.entity.RsbtStation;
 import com.freqmanage.module.station.mapper.StationMapper;
 import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
+import com.freqmanage.module.statistics.vo.PermitUsageByMonthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
@@ -320,5 +321,98 @@ public class StatisticsService {
             vo.setMonth(s.getExpirationdate().getMonthValue());
         }
         return vo;
+    }
+
+    public List<PermitUsageByMonthVO> getPermitUsageByMonth(String businessType, String province, Integer year) {
+        List<PermitUsageByMonthVO> result = new ArrayList<>();
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+
+        // Fetch all permits for target year and previous year in bulk to avoid N+1 queries
+        // 2 queries instead of 48+
+        List<RsbtSpecialPermit> currentYearPermits = fetchPermitsByYear(targetYear, businessType, province);
+        List<RsbtSpecialPermit> prevYearPermits = fetchPermitsByYear(targetYear - 1, businessType, province);
+
+        LocalDate now = LocalDate.now();
+
+        for (int month = 1; month <= 12; month++) {
+            // Count current month active and total from cached data
+            long activeCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == targetYear
+                            && p.getStartdate().getMonthValue() == month
+                            && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                    .count();
+            long totalCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == targetYear
+                            && p.getStartdate().getMonthValue() == month)
+                    .count();
+
+            // Count previous year same month
+            long prevYearActive = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == targetYear - 1
+                            && p.getStartdate().getMonthValue() == month
+                            && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                    .count();
+            long prevYearTotal = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == targetYear - 1
+                            && p.getStartdate().getMonthValue() == month)
+                    .count();
+
+            // Count previous month
+            long prevMonthActive = 0;
+            long prevMonthTotal = 0;
+            if (month > 1) {
+                prevMonthActive = currentYearPermits.stream()
+                        .filter(p -> p.getStartdate() != null
+                                && p.getStartdate().getYear() == targetYear
+                                && p.getStartdate().getMonthValue() == month - 1
+                                && p.getEnddate() != null && p.getEnddate().isAfter(now))
+                        .count();
+                prevMonthTotal = currentYearPermits.stream()
+                        .filter(p -> p.getStartdate() != null
+                                && p.getStartdate().getYear() == targetYear
+                                && p.getStartdate().getMonthValue() == month - 1)
+                        .count();
+            }
+
+            double usageRate = totalCount > 0 ? (activeCount * 100.0 / totalCount) : 0.0;
+            double prevYearRate = prevYearTotal > 0 ? (prevYearActive * 100.0 / prevYearTotal) : 0.0;
+            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
+
+            double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;
+            double momGrowth = month > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
+
+            PermitUsageByMonthVO vo = new PermitUsageByMonthVO();
+            vo.setMonth(String.format("%02d", month));
+            vo.setBusinessType(businessType != null ? businessType : "All");
+            vo.setProvince(province != null ? province : "All");
+            vo.setYear(String.valueOf(targetYear));
+            vo.setUsageRate(Math.round(usageRate * 10) / 10.0);
+            vo.setYoyGrowth(Math.round(yoyGrowth * 10) / 10.0);
+            vo.setMomGrowth(Math.round(momGrowth * 10) / 10.0);
+            vo.setPrevYearRate(Math.round(prevYearRate * 10) / 10.0);
+            vo.setPrevMonthRate(month > 1 ? Math.round(prevMonthRateVal * 10) / 10.0 : 0.0);
+            vo.setTotalCount(totalCount);
+            vo.setActiveCount(activeCount);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private List<RsbtSpecialPermit> fetchPermitsByYear(Integer year, String businessType, String province) {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (year != null) {
+            wrapper.apply("YEAR(startdate) = {0}", year);
+        }
+        if (!"All".equals(businessType) && businessType != null && !businessType.isEmpty()) {
+            wrapper.eq(RsbtSpecialPermit::getCategory, businessType);
+        }
+        if (!"All".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.like(RsbtSpecialPermit::getScope, province);
+        }
+        return permitMapper.selectList(wrapper);
     }
 }

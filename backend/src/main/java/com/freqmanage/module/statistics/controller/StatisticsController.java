@@ -3,6 +3,7 @@ package com.freqmanage.module.statistics.controller;
 import com.freqmanage.common.ApiResponse;
 import com.freqmanage.module.statistics.service.StatisticsService;
 import com.freqmanage.module.statistics.vo.MonthlyGrowthVO;
+import com.freqmanage.module.statistics.vo.PermitUsageByMonthVO;
 import com.freqmanage.module.statistics.vo.PermitUsageGrowthVO;
 import com.freqmanage.module.statistics.vo.ProvinceStationVO;
 import com.freqmanage.module.statistics.vo.StationGrowthVO;
@@ -48,6 +49,14 @@ public class StatisticsController {
     @GetMapping("/permit/usage-growth")
     public ApiResponse<PermitUsageGrowthVO> permitUsageGrowth() {
         return ApiResponse.ok(statisticsService.getPermitUsageGrowth());
+    }
+
+    @GetMapping("/permit/usage-by-month")
+    public ApiResponse<List<PermitUsageByMonthVO>> permitUsageByMonth(
+            @RequestParam(required = false) String businessType,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) Integer year) {
+        return ApiResponse.ok(statisticsService.getPermitUsageByMonth(businessType, province, year));
     }
 
     @GetMapping("/permit/count")
