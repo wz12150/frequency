@@ -180,26 +180,30 @@ public class DashboardService {
     }
 
     private List<LicenseTypeStatsVO> buildLicenseTypeStats() {
-        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        List<RsbtSpecialPermit> allPermits = permitMapper.selectList(new LambdaQueryWrapper<>());
         Map<String, Long> typeNormal = new HashMap<>();
         Map<String, Long> typeExpiring = new HashMap<>();
         Map<String, Long> typeExpired = new HashMap<>();
         LocalDate now = LocalDate.now();
         LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
-        for (RsbtStation s : allStations) {
-            String t = s.getType() != null ? s.getType() : "Unknown";
-            if (s.getExpirationdate() == null) {
+        for (RsbtSpecialPermit p : allPermits) {
+            String t = p.getType() != null ? p.getType() : "Unknown";
+            if (p.getEnddate() == null) {
                 typeNormal.merge(t, 1L, Long::sum);
-            } else if (s.getExpirationdate().isBefore(now)) {
+            } else if (p.getEnddate().isBefore(now)) {
                 typeExpired.merge(t, 1L, Long::sum);
-            } else if (!s.getExpirationdate().isAfter(expiringThreshold)) {
+            } else if (!p.getEnddate().isAfter(expiringThreshold)) {
                 typeExpiring.merge(t, 1L, Long::sum);
             } else {
                 typeNormal.merge(t, 1L, Long::sum);
             }
         }
         List<LicenseTypeStatsVO> result = new ArrayList<>();
-        for (String type : typeNormal.keySet()) {
+        Set<String> allTypes = new HashSet<>();
+        allTypes.addAll(typeNormal.keySet());
+        allTypes.addAll(typeExpiring.keySet());
+        allTypes.addAll(typeExpired.keySet());
+        for (String type : allTypes) {
             LicenseTypeStatsVO vo = new LicenseTypeStatsVO();
             vo.setId(type.toLowerCase());
             vo.setType(type);
