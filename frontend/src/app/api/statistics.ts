@@ -142,7 +142,11 @@ export const statisticsApi = {
   permitPage: (query: PermitQuery = {}) => {
     const searchParams = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') searchParams.append(key, String(value));
+      if (value !== undefined && value !== '') {
+        if (key === 'startDate') searchParams.append('startDateFrom', String(value));
+        else if (key === 'endDate') searchParams.append('endDateTo', String(value));
+        else searchParams.append(key, String(value));
+      }
     });
     return request(`/permit/page?${searchParams}`);
   },

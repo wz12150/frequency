@@ -991,7 +991,7 @@ export function DataManagement() {
               <tbody key={licensePage.pageNum}>
                 {paginatedLicenses.map((license) => (
                   <tr key={license.id} className="border-b border-border hover:bg-muted/50">
-                    <td className="py-3 px-4 font-medium text-sm">{license.licenseAuthorization ?? '-'}</td>
+                    <td className="py-3 px-4 font-medium text-sm">{license.number || '-'}</td>
                     <td className="py-3 px-4">{license.unit ?? license.organization}</td>
                     <td className="py-3 px-4">{license.category ?? license.type}</td>
                     <td className="py-3 px-4">{license.type}</td>

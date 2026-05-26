@@ -129,7 +129,7 @@ export function LicenseAnalysis() {
 
   const fetchLicenseCountData = async (province: string, date: string) => {
     try {
-      const res = await statisticsApi.permitCountByType({ province, date });
+      const res = await statisticsApi.permitCountByType({ province, date: date ? `${date}-01` : undefined });
       if (res.code === 200) {
         setLicenseCountData(res.data || []);
         // Generate trend data based on total count
@@ -153,7 +153,7 @@ export function LicenseAnalysis() {
     try {
       const query: PermitQuery = { pageSize: 1000 };
       if (region && region !== 'All') query.province = region;
-      if (businessType && businessType !== 'All') query.type = businessType;
+      if (businessType && businessType !== 'All') (query as any).category = businessType;
       if (startDate) query.startDate = startDate;
       if (endDate) query.endDate = endDate;
       const res = await statisticsApi.permitPage(query);
@@ -345,10 +345,13 @@ export function LicenseAnalysis() {
     && (!countDateFilter || item.date.startsWith(countDateFilter))
   ));
   const selectedCountItem = filteredCountData.find((item) => item.type === selectedLicenseType) ?? filteredCountData[0] ?? licenseCountData[0];
-  const countChartRows = filteredCountData.map((item) => ({
-    ...item,
-    value: item.count,
-  }));
+  const countChartRows = (() => {
+    const grouped = filteredCountData.reduce((acc: Record<string, number>, item: LicenseCountByTypeVO) => {
+      acc[item.type] = (acc[item.type] || 0) + item.count;
+      return acc;
+    }, {});
+    return Object.entries(grouped).map(([type, count]) => ({ type, count, value: count }));
+  })();
   const filteredStationCountData = stationCountByType.filter((item) => (
     (stationCountProvinceFilter === 'All' || item.province === stationCountProvinceFilter)
     && (!stationCountDateFilter || item.date.startsWith(stationCountDateFilter))
@@ -454,22 +457,6 @@ export function LicenseAnalysis() {
               </div>
             </div>
 
-            {/* Summary card */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-card p-4 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground">Selected Business Type</div>
-                <div className="text-xl font-semibold mt-1">{selectedBusinessType}</div>
-              </div>
-              <div className="bg-card p-4 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground">Selected Year</div>
-                <div className="text-xl font-semibold mt-1">{selectedYear}</div>
-              </div>
-              <div className="bg-card p-4 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground">Selected Province</div>
-                <div className="text-xl font-semibold mt-1">{selectedProvince}</div>
-              </div>
-            </div>
-
             {/* Top-right YoY chart */}
             <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
               <h3 className="text-lg font-semibold mb-4">Selected Year vs Previous Year Same Month Growth</h3>
@@ -535,30 +522,18 @@ export function LicenseAnalysis() {
           </div>
 
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground mb-1">Filtered Records</div>
-                <div className="text-3xl font-semibold">{filteredCountData.length}</div>
-              </div>
-              <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground mb-1">Selected Type Count</div>
-                <div className="text-3xl font-semibold">{selectedCountItem?.count ?? 0}</div>
-              </div>
-              <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-                <div className="text-sm text-muted-foreground mb-1">Selected Type Province</div>
-                <div className="text-xl font-semibold mt-1">{selectedCountItem?.province ?? '-'}</div>
-              </div>
-            </div>
-
             <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
               <h3 className="text-lg font-semibold mb-4">License Count by Service Type</h3>
               <ResponsiveContainer width="100%" height={360}>
                 <BarChart data={countChartRows} onClick={(state) => {
                   const clicked = state?.activePayload?.[0]?.payload;
-                  if (clicked?.type) setSelectedLicenseType(clicked.type);
+                  if (clicked?.type) {
+                    setSelectedLicenseType(clicked.type);
+                    setDetailBusinessType(clicked.type);
+                  }
                 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="type" />
+                  <XAxis dataKey="type" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" tickMargin={10} height={80} />
                   <YAxis />
                   <Tooltip />
                   <Legend />
@@ -912,14 +887,10 @@ export function LicenseAnalysis() {
             </ResponsiveContainer>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
               <div className="text-sm text-muted-foreground mb-1">Selected Date</div>
               <div className="text-2xl font-semibold text-primary">{validityDateFilter}</div>
-            </div>
-            <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-              <div className="text-sm text-muted-foreground mb-1">Selected Province</div>
-              <div className="text-2xl font-semibold">{validityProvinceFilter}</div>
             </div>
             <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
               <div className="text-sm text-muted-foreground mb-1">Expired Licenses</div>

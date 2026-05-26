@@ -54,6 +54,10 @@ export interface PermitQuery {
   keyword?: string;
   type?: string;
   status?: string;
+  category?: string;
+  province?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface PermitCreate {
