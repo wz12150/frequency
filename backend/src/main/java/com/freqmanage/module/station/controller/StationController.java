@@ -79,4 +79,14 @@ public class StationController {
     public ApiResponse<List<RsbtStation>> list() {
         return ApiResponse.ok(stationService.listAll());
     }
+
+    @GetMapping("/region-detail")
+    public ApiResponse<PageResponse<StationVO>> getRegionDetail(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String province) {
+        StationQueryDTO query = new StationQueryDTO();
+        query.setType(type);
+        query.setProvince(province);
+        return ApiResponse.ok(stationService.page(query));
+    }
 }

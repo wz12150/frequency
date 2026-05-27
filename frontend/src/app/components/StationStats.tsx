@@ -2,11 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, MapPin, Filter } from 'lucide-react';
 import { StationDetailCard } from './StationDetailCard';
+import { stationApi } from '../api/station';
 import { request } from '../api/request';
 
 async function fetchRegionStats() {
   const json = await request('/statistics/station/region-detail');
   return json.data || [];
+}
+
+async function fetchRegionDetail(type?: string, province?: string) {
+  const json = await stationApi.getRegionDetail(type, province);
+  return json.data?.records ?? json.records ?? [];
 }
 
 async function fetchGrowthTrend(type: string, year: number, province: string) {
@@ -66,12 +72,15 @@ export function StationStats() {
   const [showExpiredOnMap, setShowExpiredOnMap] = useState(true);
   const [selectedExpiredMonth, setSelectedExpiredMonth] = useState<number | null>(8);
   const [selectedExpiredStation, setSelectedExpiredStation] = useState<any | null>(null);
+  const [selectedRegionStation, setSelectedRegionStation] = useState<any | null>(null);
 
   // API data state
   const [regionStats, setRegionStats] = useState<any[]>([]);
+  const [regionDetailData, setRegionDetailData] = useState<any[]>([]);
   const [growthData, setGrowthData] = useState<any[]>([]);
   const [expiredData, setExpiredData] = useState<any[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [regionalDetailLoading, setRegionalDetailLoading] = useState(false);
 
   // Load data from API
   useEffect(() => {
@@ -81,6 +90,13 @@ export function StationStats() {
         console.error('Failed to fetch region stats:', err);
         setApiError('Failed to load regional statistics');
       });
+      setRegionalDetailLoading(true);
+      fetchRegionDetail(selectedType, selectedRegion)
+        .then(setRegionDetailData)
+        .catch(err => {
+          console.error('Failed to fetch region detail:', err);
+        })
+        .finally(() => setRegionalDetailLoading(false));
     } else if (analysisType === 'growth') {
       fetchGrowthTrend(selectedGrowthType, selectedGrowthYear, selectedGrowthProvince)
         .then(setGrowthData).catch(err => {
@@ -95,7 +111,8 @@ export function StationStats() {
         });
     }
   }, [analysisType, selectedGrowthType, selectedGrowthYear, selectedGrowthProvince,
-      selectedValidityYear, selectedValidityProvince, selectedValidityType]);
+      selectedValidityYear, selectedValidityProvince, selectedValidityType,
+      selectedType, selectedRegion]);
 
   const regionalData = [
     { region: 'Ulaanbaatar', mobile: 580, broadcast: 320, fixed: 180, satellite: 120, other: 85 },
@@ -257,12 +274,19 @@ export function StationStats() {
 
           <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Regional Statistics Detail</h3>
+            {regionalDetailLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : regionDetailData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No data available for selected filters</div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Region</th><th className="text-center py-3 px-4">Mobile</th><th className="text-center py-3 px-4">Broadcasting</th><th className="text-center py-3 px-4">Fixed</th><th className="text-center py-3 px-4">Satellite</th><th className="text-center py-3 px-4">Others</th><th className="text-center py-3 px-4">Total</th><th className="text-center py-3 px-4">Percentage</th></tr></thead>
-                <tbody>{(regionStats.length > 0 ? regionStats : regionalData).map((row: any) => { const total = row.total ?? (row.mobile + row.broadcast + row.fixed + row.satellite + row.other); const percentage = ((total / totalStations) * 100).toFixed(1); return (<tr key={row.region} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{row.region}</td><td className="text-center py-3 px-4">{row.mobile}</td><td className="text-center py-3 px-4">{row.broadcast}</td><td className="text-center py-3 px-4">{row.fixed}</td><td className="text-center py-3 px-4">{row.satellite}</td><td className="text-center py-3 px-4">{row.other}</td><td className="text-center py-3 px-4 font-semibold">{total}</td><td className="text-center py-3 px-4">{percentage}%</td></tr>); })}</tbody>
+                <thead><tr className="border-b border-border"><th className="text-left py-3 px-4">Station Name</th><th className="text-left py-3 px-4">Station Type</th><th className="text-left py-3 px-4">Status</th><th className="text-left py-3 px-4">Region</th><th className="text-left py-3 px-4">Location</th><th className="text-left py-3 px-4">Owner Name</th><th className="text-left py-3 px-4">Action</th></tr></thead>
+                <tbody>{regionDetailData.map((row: any) => {
+                  const status = row.expirationdate ? (new Date(row.expirationdate) < new Date() ? 'Expired' : 'Normal') : 'Normal';
+                  return (<tr key={row.guid} className="border-b border-border hover:bg-muted/50"><td className="py-3 px-4 font-medium">{row.sitename || row.name || '-'}</td><td className="py-3 px-4">{row.stationtype || row.type || '-'}</td><td className="py-3 px-4"><span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status === 'Expired' ? 'bg-red-100 text-red-800' : status === 'Expiring' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>{status}</span></td><td className="py-3 px-4">{row.province || '-'}</td><td className="py-3 px-4">{row.location || row.district || '-'}</td><td className="py-3 px-4">{row.equipname || row.unit || '-'}</td><td className="py-3 px-4"><button type="button" onClick={() => setSelectedRegionStation(row)} className="text-primary hover:underline">Detail</button></td></tr>); })}</tbody>
               </table>
-            </div>
+            </div> )}
           </div>
         </div>
       )}
@@ -300,16 +324,6 @@ export function StationStats() {
                   <button onClick={() => setGrowthMetric('percent')} className={`rounded-lg px-3 py-2 border transition-colors ${growthMetric === 'percent' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}>Percent</button>
                 </div>
               </div>
-              <div>
-                <div className="text-muted-foreground mb-2">Station Types</div>
-                <div className="max-h-[320px] overflow-y-auto rounded-lg border border-border divide-y divide-border">
-                  {growthTypes.filter((type) => type !== 'All').map((type) => (
-                    <button key={type} onClick={() => setSelectedGrowthType(type)} className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/60 ${selectedGrowthType === type ? 'bg-muted font-medium' : ''}`}>
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </aside>
 
@@ -318,18 +332,17 @@ export function StationStats() {
               <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Year-over-Year Growth Comparison</h3>
-                  <div className="text-sm text-muted-foreground">{selectedGrowthYear} vs {selectedGrowthYear - 1}</div>
+                  <div className="text-sm text-muted-foreground">{selectedGrowthYear - 1} vs {selectedGrowthYear}</div>
                 </div>
                 <ResponsiveContainer width="100%" height={340}>
-                  <BarChart data={yoyGrowthData}>
+                  <BarChart data={yoyGrowthData} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number, name: string) => [value, name === 'growthPercent' ? '%' : 'Stations']} />
-                    <Legend />
-                    <ReferenceLine y={0} stroke="#999" />
-                    <Bar dataKey={growthMetric === 'count' ? 'growthCount' : 'growthPercent'} fill="#1976d2" name={growthMetric === 'count' ? 'YoY Growth Count' : 'YoY Growth %'} />
-                    <Line type="monotone" dataKey="current" stroke="#f57c00" strokeWidth={2} dot={false} name="Current Year Stations" />
+                    <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                    <Legend formatter={(v) => <span style={{ fontSize: 12, color: '#374151' }}>{v}</span>} />
+                    <Bar dataKey="previous" fill="#3B82F6" name={`${selectedGrowthYear - 1}`} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="current" fill="#F59E0B" name={`${selectedGrowthYear}`} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -344,11 +357,10 @@ export function StationStats() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => [value, 'count']} />
-                    <Legend />
-                    <ReferenceLine y={0} stroke="#999" />
-                    <Bar dataKey={growthMetric === 'count' ? 'growthCount' : 'growthPercent'} fill="#2e7d32" name={growthMetric === 'count' ? 'MoM Growth Count' : 'MoM Growth %'} />
-                    <Line type="monotone" dataKey="current" stroke="#1976d2" strokeWidth={2} dot={false} name="Monthly Stations" />
+                    <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                    <Legend formatter={(v) => <span style={{ fontSize: 12, color: '#374151' }}>{v}</span>} />
+                    <Bar dataKey="current" fill="#1976d2" name="Current Month" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="previous" fill="#42a5f5" name="Previous Month" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -504,6 +516,39 @@ export function StationStats() {
             { label: 'Expiry Date', value: selectedExpiredStation.expireDate },
           ]}
           onClose={() => setSelectedExpiredStation(null)}
+        />
+      )}
+
+      {selectedRegionStation && (
+        <StationDetailCard
+          title="Station Detail"
+          subtitle="Detailed parameters of the selected station"
+          fields={[
+            { label: 'Technical Standard', value: selectedRegionStation.technicalStandard ?? selectedRegionStation.technicalstandard ?? '-' },
+            { label: 'Bandwidth Processing Unit Model', value: selectedRegionStation.bandwidthProcessingUnitModel ?? selectedRegionStation.bandwidth ?? '-' },
+            { label: 'Owner Name', value: selectedRegionStation.ownerName ?? selectedRegionStation.ownername ?? '-' },
+            { label: 'Backhaul Network Access Method', value: selectedRegionStation.backhaulNetworkAccessMethod ?? '-' },
+            { label: 'Station Purpose', value: selectedRegionStation.stationPurpose ?? '-' },
+            { label: 'Modulation Type', value: selectedRegionStation.modulationType ?? '-' },
+            { label: 'Station Type', value: selectedRegionStation.stationType ?? selectedRegionStation.stationtype ?? selectedRegionStation.type ?? '-' },
+            { label: 'Transmit Frequency', value: selectedRegionStation.transmitFrequency ?? '-' },
+            { label: 'Receive Frequency', value: selectedRegionStation.receiveFrequency ?? '-' },
+            { label: 'Bandwidth', value: selectedRegionStation.bandwidth ?? '-' },
+            { label: 'Equipment Name and Model', value: selectedRegionStation.equipmentNameAndModel ?? selectedRegionStation.equipname ?? '-' },
+            { label: 'Equipment Count', value: selectedRegionStation.equipmentCount ?? '-' },
+            { label: 'Equipment Output Power', value: selectedRegionStation.equipmentPower ?? selectedRegionStation.power ?? '-' },
+            { label: 'Antenna Type', value: selectedRegionStation.antennaType ?? '-' },
+            { label: 'Antenna Count', value: selectedRegionStation.antennaCount ?? '-' },
+            { label: 'Province', value: selectedRegionStation.province ?? '-' },
+            { label: 'Region', value: selectedRegionStation.region ?? selectedRegionStation.province ?? '-' },
+            { label: 'Detailed Location', value: selectedRegionStation.detailedLocation ?? selectedRegionStation.location ?? '-' },
+            { label: 'Station Name', value: selectedRegionStation.sitename || selectedRegionStation.name || '-' },
+            { label: 'Longitude', value: selectedRegionStation.longitude ?? '-' },
+            { label: 'Latitude', value: selectedRegionStation.latitude ?? '-' },
+            { label: 'Open Date', value: selectedRegionStation.openDate ?? '-' },
+            { label: 'Expiry Date', value: selectedRegionStation.expirationdate ?? selectedRegionStation.expireDate ?? '-' },
+          ]}
+          onClose={() => setSelectedRegionStation(null)}
         />
       )}
     </div>

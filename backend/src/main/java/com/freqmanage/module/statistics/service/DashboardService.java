@@ -79,20 +79,16 @@ public class DashboardService {
         vo.setTotalStations(stationMapper.selectCount(null));
         Long totalPermits = permitMapper.selectCount(null);
 
-        LambdaQueryWrapper<RsbtSpecialPermit> validWrapper = new LambdaQueryWrapper<>();
-        validWrapper.ge(RsbtSpecialPermit::getEnddate, now);
-        Long validPermits = permitMapper.selectCount(validWrapper);
-
-        LambdaQueryWrapper<RsbtSpecialPermit> expiringWrapper = new LambdaQueryWrapper<>();
-        expiringWrapper.gt(RsbtSpecialPermit::getEnddate, now).le(RsbtSpecialPermit::getEnddate, expiringThreshold);
-        Long expiringPermits = permitMapper.selectCount(expiringWrapper);
+        LambdaQueryWrapper<RsbtSpecialPermit> activeWrapper = new LambdaQueryWrapper<>();
+        activeWrapper.eq(RsbtSpecialPermit::getStatus, "active");
+        Long activePermits = permitMapper.selectCount(activeWrapper);
 
         LambdaQueryWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaQueryWrapper<>();
-        expiredWrapper.lt(RsbtSpecialPermit::getEnddate, now);
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, "expired");
         Long expiredPermits = permitMapper.selectCount(expiredWrapper);
 
-        Long normalPermits = totalPermits - validPermits - expiringPermits - expiredPermits;
-        if (normalPermits < 0) normalPermits = 0L;
+        Long normalPermits = activePermits;
+        Long expiringPermits = 0L;
 
         vo.setNormalLicenses(normalPermits);
         vo.setExpiringSoon(expiringPermits);

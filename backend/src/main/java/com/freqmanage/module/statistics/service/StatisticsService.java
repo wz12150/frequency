@@ -295,10 +295,12 @@ public class StatisticsService {
     }
 
     private Long countStations(Integer year, Integer month, String type, String province) {
+        // Count total active stations at end of month (startdate <= endOfMonth and not expired before endOfMonth)
+        LocalDate endOfMonth = LocalDate.of(year, month, 1).plusMonths(1).minusDays(1);
         LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
-        if (year != null && month != null) {
-            wrapper.apply("YEAR(startdate) = {0} AND MONTH(startdate) = {1}", year, month);
-        }
+        wrapper.apply("startdate <= {0}", endOfMonth)
+              .and(w -> w.isNull(RsbtStation::getExpirationdate)
+                       .or().gt(RsbtStation::getExpirationdate, endOfMonth));
         if (!"All".equals(type) && type != null && !type.isEmpty()) {
             wrapper.eq(RsbtStation::getStationtype, type);
         }

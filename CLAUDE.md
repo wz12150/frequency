@@ -59,4 +59,4 @@ cd frontend && pnpm build
 5. Do not use `&&` in PowerShell commands
 6. Frontend UI is pre-designed - do not redesign or delete
 7. After modifying Java code, notify user to restart backend
-8. Do not use git unless explicitly instructed
+8. Do not use git unless explicitly instructed。Each time  push all files required to submit to GIT,not just the files modifiyed in one session. 

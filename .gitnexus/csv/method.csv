@@ -1,0 +1,3165 @@
+id,name,filePath,startLine,endLine,isExported,content,description,parameterCount,returnType
+"Method:backend/src/main/java/com/freqmanage/FrequencyManageApplication.java:FrequencyManageApplication.main#1","main","backend/src/main/java/com/freqmanage/FrequencyManageApplication.java",10,12,true,"public class FrequencyManageApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(FrequencyManageApplication.class, args);
+    }
+}
+","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/common/ApiResponse.java:ApiResponse.ok#1","ok","backend/src/main/java/com/freqmanage/common/ApiResponse.java",14,16,true,"    private T data;
+
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(200, ""success"", data);
+    }
+
+    public static ApiResponse<Void> ok() {
+","",1,"ApiResponse<T>"
+"Method:backend/src/main/java/com/freqmanage/common/ApiResponse.java:ApiResponse.ok#0","ok","backend/src/main/java/com/freqmanage/common/ApiResponse.java",18,20,true,"    }
+
+    public static ApiResponse<Void> ok() {
+        return new ApiResponse<>(200, ""success"", null);
+    }
+
+    public static ApiResponse<Void> fail(int code, String message) {
+","",0,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/ApiResponse.java:ApiResponse.fail#2","fail","backend/src/main/java/com/freqmanage/common/ApiResponse.java",22,24,true,"    }
+
+    public static ApiResponse<Void> fail(int code, String message) {
+        return new ApiResponse<>(code, message, null);
+    }
+}
+","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/BizException.java:BizException.getCode#0","getCode","backend/src/main/java/com/freqmanage/common/BizException.java",15,17,true,"    }
+
+    public int getCode() {
+        return code;
+    }
+}
+","",0,"int"
+"Method:backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java:GlobalExceptionHandler.handleBiz#1","handleBiz","backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java",12,15,true,"@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(BizException.class)
+    public ApiResponse<Void> handleBiz(BizException e) {
+        return ApiResponse.fail(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
+","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java:GlobalExceptionHandler.handleValid#1","handleValid","backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java",17,21,true,"    }
+
+    @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleValid(Exception e) {
+        return ApiResponse.fail(400, ""参数错误："" + e.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java:GlobalExceptionHandler.handleDenied#1","handleDenied","backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java",23,27,true,"    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Void> handleDenied(AccessDeniedException e) {
+        return ApiResponse.fail(403, ""无权限访问"");
+    }
+
+    @ExceptionHandler(Exception.class)
+","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java:GlobalExceptionHandler.handle#1","handle","backend/src/main/java/com/freqmanage/common/GlobalExceptionHandler.java",29,33,true,"    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiResponse<Void> handle(Exception e) {
+        return ApiResponse.fail(500, e.getMessage());
+    }
+}
+","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/common/ResultCode.java:ResultCode.getCode#0","getCode","backend/src/main/java/com/freqmanage/common/ResultCode.java",18,20,true,"    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public String getMessage() {
+","",0,"int"
+"Method:backend/src/main/java/com/freqmanage/common/ResultCode.java:ResultCode.getMessage#0","getMessage","backend/src/main/java/com/freqmanage/common/ResultCode.java",22,24,true,"    }
+
+    public String getMessage() {
+        return message;
+    }
+}","",0,"String"
+"Method:backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java:ExcelUtil.export#3","export","backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java",15,19,true,"public class ExcelUtil {
+
+    public static <T> void export(List<T> data, Class<T> clazz, OutputStream outputStream) {
+        EasyExcel.write(outputStream, clazz)
+                .sheet(""Sheet1"")
+                .doWrite(data);
+    }
+
+    public static <T> void importData(InputStream inputStream, Class<T> clazz, Consumer<T> consumer) {","",3,"void"
+"Method:backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java:ExcelUtil.importData#3","importData","backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java",21,29,true,"    }
+
+    public static <T> void importData(InputStream inputStream, Class<T> clazz, Consumer<T> consumer) {
+        ExcelReader reader = EasyExcel.read(inputStream, clazz, new PageReadListener<T>(list -> {
+            for (T item : list) {
+                consumer.accept(item);
+            }
+        })).build();
+        reader.readAll();
+        reader.finish();
+    }
+
+    public static <T> void importDataBatch(InputStream inputStream, Class<T> clazz, Consumer<List<T>> consumer) {","",3,"void"
+"Method:backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java:ExcelUtil.importDataBatch#3","importDataBatch","backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java",31,33,true,"    }
+
+    public static <T> void importDataBatch(InputStream inputStream, Class<T> clazz, Consumer<List<T>> consumer) {
+        EasyExcel.read(inputStream, clazz, new PageReadListener<T>(consumer)).sheet().doRead();
+    }
+}","",3,"void"
+"Method:backend/src/main/java/com/freqmanage/config/MybatisPlusConfig.java:MybatisPlusConfig.mybatisPlusInterceptor#0","mybatisPlusInterceptor","backend/src/main/java/com/freqmanage/config/MybatisPlusConfig.java",12,17,true,"@MapperScan(""com.freqmanage.module.**.mapper"")
+public class MybatisPlusConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        return interceptor;
+    }
+}
+","",0,"MybatisPlusInterceptor"
+"Method:backend/src/main/java/com/freqmanage/config/SecurityConfig.java:SecurityConfig.securityFilterChain#1","securityFilterChain","backend/src/main/java/com/freqmanage/config/SecurityConfig.java",25,43,true,"    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(new org.springframework.web.cors.UrlBasedCorsConfigurationSource() {{
+                registerCorsConfiguration(""/**"", new org.springframework.web.cors.CorsConfiguration() {{
+                    setAllowedOriginPatterns(java.util.List.of(""*""));
+                    setAllowedMethods(java.util.List.of(""*""));
+                    setAllowedHeaders(java.util.List.of(""*""));
+                    setAllowCredentials(true);
+                }});
+            }}))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, ""/**"").permitAll()
+                .requestMatchers(""/api/auth/login"", ""/api/health"", ""/swagger-ui/**"", ""/v3/api-docs/**"").permitAll()
+                .anyRequest().authenticated())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+","",1,"SecurityFilterChain"
+"Method:backend/src/main/java/com/freqmanage/config/SecurityConfig.java:SecurityConfig.passwordEncoder#0","passwordEncoder","backend/src/main/java/com/freqmanage/config/SecurityConfig.java",45,48,true,"    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+","",0,"PasswordEncoder"
+"Method:backend/src/main/java/com/freqmanage/config/SecurityConfig.java:SecurityConfig.authenticationManager#1","authenticationManager","backend/src/main/java/com/freqmanage/config/SecurityConfig.java",50,53,true,"    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+}
+","",1,"AuthenticationManager"
+"Method:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:AuthController.login#1","login","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",32,68,true,"    }
+
+    @PostMapping(""/login"")
+    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        RsbtUser user = userService.getByUsernameEntity(request.getUsername());
+        if (user == null) {
+            throw new BizException(401, ""用户名或密码错误"");
+        }
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BizException(401, ""用户名或密码错误"");
+        }
+        if (!""active"".equals(user.getStatus())) {
+            throw new BizException(401, ""用户已被禁用"");
+        }
+        String token = jwtUtil.generate(user.getUsername());
+
+        // Get user roles and permissions
+        List<String> roles = new ArrayList<>();
+        List<String> permissions = new ArrayList<>();
+        if (user.getRoleId() != null) {
+            RsbtRole role = userService.getRoleById(user.getRoleId());
+            if (role != null) {
+                roles.add(role.getName().toUpperCase());
+                permissions = userService.getPermissionsByUserId(user.getGuid());
+            }
+        }
+
+        return ApiResponse.ok(Map.of(
+            ""token"", token,
+            ""tokenType"", ""Bearer"",
+            ""username"", user.getUsername(),
+            ""guid"", user.getGuid(),
+            ""name"", user.getName() != null ? user.getName() : user.getUsername(),
+            ""email"", user.getEmail() != null ? user.getEmail() : """",
+            ""phone"", user.getPhone() != null ? user.getPhone() : """",
+            ""roles"", roles,
+            ""permissions"", permissions
+        ));
+    }
+
+    @PostMapping(""/logout"")
+","",1,"ApiResponse<Map<String, Object>>"
+"Method:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:AuthController.logout#0","logout","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",70,73,true,"    }
+
+    @PostMapping(""/logout"")
+    public ApiResponse<Void> logout() {
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/me"")
+","",0,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:AuthController.me#1","me","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",75,103,true,"    }
+
+    @GetMapping(""/me"")
+    public ApiResponse<Map<String, Object>> me(Authentication authentication) {
+        if (authentication == null) {
+            return ApiResponse.ok(Map.of(""username"", ""anonymous"", ""nickname"", ""Anonymous"", ""roles"", new String[]{}));
+        }
+        String username = authentication.getName();
+        RsbtUser user = userService.getByUsernameEntity(username);
+        if (user == null) {
+            return ApiResponse.ok(Map.of(""username"", username, ""roles"", new String[]{""USER""}));
+        }
+
+        List<String> roles = new ArrayList<>();
+        List<String> permissions = new ArrayList<>();
+        if (user.getRoleId() != null) {
+            RsbtRole role = userService.getRoleById(user.getRoleId());
+            if (role != null) {
+                roles.add(role.getName().toUpperCase());
+                permissions = userService.getPermissionsByUserId(user.getGuid());
+            }
+        }
+        return ApiResponse.ok(Map.of(
+            ""username"", user.getUsername(),
+            ""name"", user.getName() != null ? user.getName() : user.getUsername(),
+            ""email"", user.getEmail() != null ? user.getEmail() : """",
+            ""phone"", user.getPhone() != null ? user.getPhone() : """",
+            ""roles"", roles,
+            ""permissions"", permissions
+        ));
+    }
+
+    @PostMapping(""/change-password"")
+","",1,"ApiResponse<Map<String, Object>>"
+"Method:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:AuthController.changePassword#2","changePassword","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",105,112,true,"    }
+
+    @PostMapping(""/change-password"")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new BizException(401, ""未登录"");
+        }
+        userService.changePassword(authentication.getName(), request.getOldPassword(), request.getNewPassword());
+        return ApiResponse.ok();
+    }
+
+    @Data
+","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/health/HealthController.java:HealthController.health#0","health","backend/src/main/java/com/freqmanage/module/health/HealthController.java",13,16,true,"@RequestMapping(""/api"")
+public class HealthController {
+    @GetMapping(""/health"")
+    public ApiResponse<Map<String, Object>> health() {
+        return ApiResponse.ok(Map.of(""status"", ""UP"", ""time"", LocalDateTime.now().toString()));
+    }
+}
+","",0,"ApiResponse<Map<String, Object>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.page#1","page","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",39,42,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<PermitVO>> page(PermitQueryDTO query) {
+        return ApiResponse.ok(permitService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<PermitVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.getById#1","getById","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",44,47,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<PermitVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(permitService.getById(id));
+    }
+
+    @GetMapping(""/detail/{id}"")","",1,"ApiResponse<PermitVO>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.getDetail#1","getDetail","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",49,52,true,"    }
+
+    @GetMapping(""/detail/{id}"")
+    public ApiResponse<PermitDetailVO> getDetail(@PathVariable String id) {
+        return ApiResponse.ok(permitService.getDetail(id));
+    }
+
+    @PostMapping","",1,"ApiResponse<PermitDetailVO>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.create#1","create","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",54,58,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody PermitCreateDTO dto) {
+        permitService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.update#2","update","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",60,64,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody PermitUpdateDTO dto) {
+        permitService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.delete#1","delete","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",66,70,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        permitService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/export"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.export#0","export","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",72,75,true,"    }
+
+    @GetMapping(""/export"")
+    public ApiResponse<List<RsbtSpecialPermit>> export() {
+        return ApiResponse.ok(permitService.listAll());
+    }
+
+    @PostMapping(""/import"")","",0,"ApiResponse<List<RsbtSpecialPermit>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.importData#1","importData","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",77,81,true,"    }
+
+    @PostMapping(""/import"")
+    public ApiResponse<Void> importData(@RequestParam(""file"") MultipartFile file) throws IOException {
+        permitService.importData(file.getInputStream());
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.list#0","list","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",83,86,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtSpecialPermit>> list() {
+        return ApiResponse.ok(permitService.listAll());
+    }
+
+    @GetMapping(""/frequency/{permitId}"")","",0,"ApiResponse<List<RsbtSpecialPermit>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.getFrequencies#1","getFrequencies","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",88,91,true,"    }
+
+    @GetMapping(""/frequency/{permitId}"")
+    public ApiResponse<List<FrequencyVO>> getFrequencies(@PathVariable String permitId) {
+        return ApiResponse.ok(frequencyService.getByPermitId(permitId));
+    }
+
+    @PostMapping(""/frequency"")","",1,"ApiResponse<List<FrequencyVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.createFrequency#1","createFrequency","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",93,97,true,"    }
+
+    @PostMapping(""/frequency"")
+    public ApiResponse<Void> createFrequency(@Valid @RequestBody FrequencyCreateDTO dto) {
+        frequencyService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/frequency/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.updateFrequency#2","updateFrequency","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",99,103,true,"    }
+
+    @PutMapping(""/frequency/{id}"")
+    public ApiResponse<Void> updateFrequency(@PathVariable String id, @Valid @RequestBody FrequencyUpdateDTO dto) {
+        frequencyService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/frequency/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.deleteFrequency#1","deleteFrequency","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",105,109,true,"    }
+
+    @DeleteMapping(""/frequency/{id}"")
+    public ApiResponse<Void> deleteFrequency(@PathVariable String id) {
+        frequencyService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/station-permit/{permitId}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.getStationPermits#1","getStationPermits","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",111,114,true,"    }
+
+    @GetMapping(""/station-permit/{permitId}"")
+    public ApiResponse<List<StationPermitVO>> getStationPermits(@PathVariable String permitId) {
+        return ApiResponse.ok(stationPermitService.getByPermitId(permitId));
+    }
+
+    @PostMapping(""/station-permit"")","",1,"ApiResponse<List<StationPermitVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.createStationPermit#1","createStationPermit","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",116,120,true,"    }
+
+    @PostMapping(""/station-permit"")
+    public ApiResponse<Void> createStationPermit(@Valid @RequestBody StationPermitCreateDTO dto) {
+        stationPermitService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/station-permit/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.updateStationPermit#2","updateStationPermit","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",122,126,true,"    }
+
+    @PutMapping(""/station-permit/{id}"")
+    public ApiResponse<Void> updateStationPermit(@PathVariable String id, @Valid @RequestBody StationPermitUpdateDTO dto) {
+        stationPermitService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/station-permit/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.deleteStationPermit#1","deleteStationPermit","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",128,132,true,"    }
+
+    @DeleteMapping(""/station-permit/{id}"")
+    public ApiResponse<Void> deleteStationPermit(@PathVariable String id) {
+        stationPermitService.delete(id);
+        return ApiResponse.ok();
+    }
+}","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitMapper.java:SpecialPermitMapper.countByCategoryAndProvince#2","countByCategoryAndProvince","backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitMapper.java",12,23,true,"public interface SpecialPermitMapper extends BaseMapper<RsbtSpecialPermit> {
+
+    @Select(""<script>"" +
+            ""SELECT category, scope AS province, COUNT(*) AS cnt FROM RSBT_SPECIAL_PERMIT "" +
+            ""WHERE 1=1 "" +
+            ""<if test='province != null and province != \""All\"" and province != \""\""'>"" +
+            ""  AND scope = #{province}"" +
+            ""</if>"" +
+            ""<if test='date != null and date != \""\""'>"" +
+            ""  AND DATE(startdate) &lt;= #{date}"" +
+            ""</if>"" +
+            "" GROUP BY category, scope"" +
+            ""</script>"")
+    List<Map<String, Object>> countByCategoryAndProvince(@Param(""province"") String province, @Param(""date"") String date);
+}
+","",2,"List<Map<String, Object>>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.getByPermitId#1","getByPermitId","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",19,23,true,"public class FrequencyService extends ServiceImpl<SpecialPermitFrequencyMapper, RsbtSpecialPermitFrequency> {
+
+    public List<FrequencyVO> getByPermitId(String permitId) {
+        LambdaQueryWrapper<RsbtSpecialPermitFrequency> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtSpecialPermitFrequency::getPermitid, permitId);
+        return baseMapper.selectList(wrapper).stream().map(this::convertToVO).collect(Collectors.toList());
+    }
+
+    public FrequencyVO getById(String id) {","",1,"List<FrequencyVO>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.getById#1","getById","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",25,31,true,"    }
+
+    public FrequencyVO getById(String id) {
+        RsbtSpecialPermitFrequency entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public void create(FrequencyCreateDTO dto) {","",1,"FrequencyVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.create#1","create","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",33,40,true,"    }
+
+    public void create(FrequencyCreateDTO dto) {
+        RsbtSpecialPermitFrequency entity = new RsbtSpecialPermitFrequency();
+        entity.setGuid(UUID.randomUUID().toString());
+        entity.setPermitid(dto.getPermitid());
+        entity.setFrequency(dto.getFrequency());
+        entity.setBadnwidth(dto.getBadnwidth());
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, FrequencyUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.update#2","update","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",42,50,true,"    }
+
+    public void update(String id, FrequencyUpdateDTO dto) {
+        RsbtSpecialPermitFrequency entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        entity.setFrequency(dto.getFrequency());
+        entity.setBadnwidth(dto.getBadnwidth());
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.delete#1","delete","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",52,54,true,"    }
+
+    public void delete(String id) {
+        baseMapper.deleteById(id);
+    }
+
+    private FrequencyVO convertToVO(RsbtSpecialPermitFrequency entity) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:FrequencyService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",56,63,true,"    }
+
+    private FrequencyVO convertToVO(RsbtSpecialPermitFrequency entity) {
+        FrequencyVO vo = new FrequencyVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());
+        vo.setFrequency(entity.getFrequency());
+        vo.setBadnwidth(entity.getBadnwidth());
+        return vo;
+    }
+}","",1,"FrequencyVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.page#1","page","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",41,80,true,"    }
+
+    public PageResponse<PermitVO> page(PermitQueryDTO query) {
+        Page<RsbtSpecialPermit> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getConsent())) {
+            wrapper.eq(RsbtSpecialPermit::getConsent, query.getConsent());
+        }
+        if (StringUtils.hasText(query.getCategory())) {
+            wrapper.eq(RsbtSpecialPermit::getCategory, query.getCategory());
+        }
+        if (StringUtils.hasText(query.getStatus())) {
+            wrapper.eq(RsbtSpecialPermit::getStatus, query.getStatus());
+        }
+        if (StringUtils.hasText(query.getType())) {
+            wrapper.eq(RsbtSpecialPermit::getType, query.getType());
+        }
+        if (query.getStartDateFrom() != null) {
+            wrapper.ge(RsbtSpecialPermit::getStartdate, query.getStartDateFrom());
+        }
+        if (query.getStartDateTo() != null) {
+            wrapper.le(RsbtSpecialPermit::getStartdate, query.getStartDateTo());
+        }
+        if (query.getEndDateFrom() != null) {
+            wrapper.ge(RsbtSpecialPermit::getEnddate, query.getEndDateFrom());
+        }
+        if (query.getEndDateTo() != null) {
+            wrapper.le(RsbtSpecialPermit::getEnddate, query.getEndDateTo());
+        }
+        if (StringUtils.hasText(query.getProvince())) {
+            wrapper.like(RsbtSpecialPermit::getScope, query.getProvince());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.like(RsbtSpecialPermit::getConsent, query.getKeyword())
+                    .or().like(RsbtSpecialPermit::getInterlocutor, query.getKeyword())
+                    .or().like(RsbtSpecialPermit::getCode, query.getKeyword());
+        }
+        wrapper.orderByDesc(RsbtSpecialPermit::getGuid);
+        IPage<RsbtSpecialPermit> result = page(page, wrapper);
+        List<PermitVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public PermitVO getById(String id) {","",1,"PageResponse<PermitVO>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.getById#1","getById","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",82,88,true,"    }
+
+    public PermitVO getById(String id) {
+        RsbtSpecialPermit entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public PermitDetailVO getDetail(String id) {","",1,"PermitVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.getDetail#1","getDetail","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",90,110,true,"    }
+
+    public PermitDetailVO getDetail(String id) {
+        RsbtSpecialPermit entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+
+        PermitDetailVO detail = new PermitDetailVO();
+        detail.setPermit(convertToVO(entity));
+
+        LambdaQueryWrapper<RsbtSpecialPermitFrequency> freqWrapper = new LambdaQueryWrapper<>();
+        freqWrapper.eq(RsbtSpecialPermitFrequency::getPermitid, id);
+        List<RsbtSpecialPermitFrequency> frequencies = frequencyMapper.selectList(freqWrapper);
+        detail.setFrequencies(frequencies.stream().map(this::convertToFreqVO).collect(Collectors.toList()));
+
+        LambdaQueryWrapper<RsbtSpecialPermitStation> stationWrapper = new LambdaQueryWrapper<>();
+        stationWrapper.eq(RsbtSpecialPermitStation::getPermitid, id);
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(stationWrapper);
+        detail.setStations(stations.stream().map(this::convertToStationVO).collect(Collectors.toList()));
+
+        return detail;
+    }
+
+    public void create(PermitCreateDTO dto) {","",1,"PermitDetailVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.create#1","create","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",112,117,true,"    }
+
+    public void create(PermitCreateDTO dto) {
+        RsbtSpecialPermit entity = new RsbtSpecialPermit();
+        entity.setGuid(UUID.randomUUID().toString());
+        copyProperties(dto, entity);
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, PermitUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.update#2","update","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",119,126,true,"    }
+
+    public void update(String id, PermitUpdateDTO dto) {
+        RsbtSpecialPermit entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        copyProperties(dto, entity);
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.delete#1","delete","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",128,138,true,"    }
+
+    public void delete(String id) {
+        LambdaQueryWrapper<RsbtSpecialPermitFrequency> freqWrapper = new LambdaQueryWrapper<>();
+        freqWrapper.eq(RsbtSpecialPermitFrequency::getPermitid, id);
+        frequencyMapper.delete(freqWrapper);
+
+        LambdaQueryWrapper<RsbtSpecialPermitStation> stationWrapper = new LambdaQueryWrapper<>();
+        stationWrapper.eq(RsbtSpecialPermitStation::getPermitid, id);
+        stationPermitMapper.delete(stationWrapper);
+
+        baseMapper.deleteById(id);
+    }
+
+    public List<RsbtSpecialPermit> listAll() {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",140,142,true,"    }
+
+    public List<RsbtSpecialPermit> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    public void importData(InputStream inputStream) {","",0,"List<RsbtSpecialPermit>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.importData#1","importData","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",144,157,true,"    }
+
+    public void importData(InputStream inputStream) {
+        List<RsbtSpecialPermit> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtSpecialPermit.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtSpecialPermit>(list -> {
+            for (RsbtSpecialPermit item : list) {
+                if (item.getGuid() == null || item.getGuid().isEmpty()) {
+                    item.setGuid(UUID.randomUUID().toString());
+                }
+                importList.add(item);
+            }
+        })).sheet().doRead();
+        if (!importList.isEmpty()) {
+            saveBatch(importList);
+        }
+    }
+
+    private void copyProperties(Object src, RsbtSpecialPermit target) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.copyProperties#2","copyProperties","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",159,205,true,"    }
+
+    private void copyProperties(Object src, RsbtSpecialPermit target) {
+        if (src instanceof PermitCreateDTO) {
+            PermitCreateDTO dto = (PermitCreateDTO) src;
+            target.setConsent(dto.getConsent());
+            target.setInterlocutor(dto.getInterlocutor());
+            target.setCategory(dto.getCategory());
+            target.setLegal(dto.getLegal());
+            target.setType(dto.getType());
+            target.setStartdate(dto.getStartdate());
+            target.setEnddate(dto.getEnddate());
+            target.setScope(dto.getScope());
+            target.setProcess(dto.getProcess());
+            target.setStatus(dto.getStatus());
+            target.setCode(dto.getCode());
+            target.setDecisiondate(dto.getDecisiondate());
+            target.setDecision(dto.getDecision());
+            target.setNote(dto.getNote());
+            target.setRegister(dto.getRegister());
+            target.setAddress(dto.getAddress());
+            target.setPhone(dto.getPhone());
+            target.setEmail(dto.getEmail());
+            target.setAdministrativeinfo(dto.getAdministrativeinfo());
+            target.setDirectorname(dto.getDirectorname());
+        } else if (src instanceof PermitUpdateDTO) {
+            PermitUpdateDTO dto = (PermitUpdateDTO) src;
+            target.setConsent(dto.getConsent());
+            target.setInterlocutor(dto.getInterlocutor());
+            target.setCategory(dto.getCategory());
+            target.setLegal(dto.getLegal());
+            target.setType(dto.getType());
+            target.setStartdate(dto.getStartdate());
+            target.setEnddate(dto.getEnddate());
+            target.setScope(dto.getScope());
+            target.setProcess(dto.getProcess());
+            target.setStatus(dto.getStatus());
+            target.setCode(dto.getCode());
+            target.setDecisiondate(dto.getDecisiondate());
+            target.setDecision(dto.getDecision());
+            target.setNote(dto.getNote());
+            target.setRegister(dto.getRegister());
+            target.setAddress(dto.getAddress());
+            target.setPhone(dto.getPhone());
+            target.setEmail(dto.getEmail());
+            target.setAdministrativeinfo(dto.getAdministrativeinfo());
+            target.setDirectorname(dto.getDirectorname());
+        }
+    }
+
+    private PermitVO convertToVO(RsbtSpecialPermit entity) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",207,231,true,"    }
+
+    private PermitVO convertToVO(RsbtSpecialPermit entity) {
+        PermitVO vo = new PermitVO();
+        vo.setGuid(entity.getGuid());
+        vo.setConsent(entity.getConsent());
+        vo.setInterlocutor(entity.getInterlocutor());
+        vo.setCategory(entity.getCategory());
+        vo.setLegal(entity.getLegal());
+        vo.setType(entity.getType());
+        vo.setStartdate(entity.getStartdate());
+        vo.setEnddate(entity.getEnddate());
+        vo.setScope(entity.getScope());
+        vo.setProcess(entity.getProcess());
+        vo.setStatus(entity.getStatus());
+        vo.setCode(entity.getCode());
+        vo.setDecisiondate(entity.getDecisiondate());
+        vo.setDecision(entity.getDecision());
+        vo.setNote(entity.getNote());
+        vo.setRegister(entity.getRegister());
+        vo.setAddress(entity.getAddress());
+        vo.setPhone(entity.getPhone());
+        vo.setEmail(entity.getEmail());
+        vo.setAdministrativeinfo(entity.getAdministrativeinfo());
+        vo.setDirectorname(entity.getDirectorname());
+        return vo;
+    }
+
+    private FrequencyVO convertToFreqVO(RsbtSpecialPermitFrequency entity) {","",1,"PermitVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.convertToFreqVO#1","convertToFreqVO","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",233,240,true,"    }
+
+    private FrequencyVO convertToFreqVO(RsbtSpecialPermitFrequency entity) {
+        FrequencyVO vo = new FrequencyVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());
+        vo.setFrequency(entity.getFrequency());
+        vo.setBadnwidth(entity.getBadnwidth());
+        return vo;
+    }
+
+    private StationPermitVO convertToStationVO(RsbtSpecialPermitStation entity) {","",1,"FrequencyVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.convertToStationVO#1","convertToStationVO","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",242,250,true,"    }
+
+    private StationPermitVO convertToStationVO(RsbtSpecialPermitStation entity) {
+        StationPermitVO vo = new StationPermitVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());
+        vo.setQuantity(entity.getQuantity());
+        vo.setOutputpower(entity.getOutputpower());
+        vo.setType(entity.getType());
+        return vo;
+    }
+}","",1,"StationPermitVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.getByPermitId#1","getByPermitId","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",19,23,true,"public class StationPermitService extends ServiceImpl<SpecialPermitStationMapper, RsbtSpecialPermitStation> {
+
+    public List<StationPermitVO> getByPermitId(String permitId) {
+        LambdaQueryWrapper<RsbtSpecialPermitStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtSpecialPermitStation::getPermitid, permitId);
+        return baseMapper.selectList(wrapper).stream().map(this::convertToVO).collect(Collectors.toList());
+    }
+
+    public StationPermitVO getById(String id) {","",1,"List<StationPermitVO>"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.getById#1","getById","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",25,31,true,"    }
+
+    public StationPermitVO getById(String id) {
+        RsbtSpecialPermitStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public void create(StationPermitCreateDTO dto) {","",1,"StationPermitVO"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.create#1","create","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",33,41,true,"    }
+
+    public void create(StationPermitCreateDTO dto) {
+        RsbtSpecialPermitStation entity = new RsbtSpecialPermitStation();
+        entity.setGuid(UUID.randomUUID().toString());
+        entity.setPermitid(dto.getPermitid());
+        entity.setQuantity(dto.getQuantity());
+        entity.setOutputpower(dto.getOutputpower());
+        entity.setType(dto.getType());
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, StationPermitUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.update#2","update","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",43,52,true,"    }
+
+    public void update(String id, StationPermitUpdateDTO dto) {
+        RsbtSpecialPermitStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        entity.setQuantity(dto.getQuantity());
+        entity.setOutputpower(dto.getOutputpower());
+        entity.setType(dto.getType());
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.delete#1","delete","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",54,56,true,"    }
+
+    public void delete(String id) {
+        baseMapper.deleteById(id);
+    }
+
+    private StationPermitVO convertToVO(RsbtSpecialPermitStation entity) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:StationPermitService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",58,66,true,"    }
+
+    private StationPermitVO convertToVO(RsbtSpecialPermitStation entity) {
+        StationPermitVO vo = new StationPermitVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());
+        vo.setQuantity(entity.getQuantity());
+        vo.setOutputpower(entity.getOutputpower());
+        vo.setType(entity.getType());
+        return vo;
+    }
+}","",1,"StationPermitVO"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.page#1","page","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",27,30,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<PlanningVO>> page(PlanningQueryDTO query) {
+        return ApiResponse.ok(planningService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<PlanningVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.getById#1","getById","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",32,35,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<PlanningVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(planningService.getById(id));
+    }
+
+    @PostMapping","",1,"ApiResponse<PlanningVO>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.create#1","create","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",37,41,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody PlanningCreateDTO dto) {
+        planningService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.update#2","update","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",43,47,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody PlanningUpdateDTO dto) {
+        planningService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.delete#1","delete","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",49,53,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        planningService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/overview"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.overview#0","overview","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",55,58,true,"    }
+
+    @GetMapping(""/overview"")
+    public ApiResponse<PlanningOverviewVO> overview() {
+        return ApiResponse.ok(planningService.overview());
+    }
+
+    @GetMapping(""/export"")","",0,"ApiResponse<PlanningOverviewVO>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.export#0","export","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",60,63,true,"    }
+
+    @GetMapping(""/export"")
+    public ApiResponse<List<RsbtPlanning>> export() {
+        return ApiResponse.ok(planningService.listAll());
+    }
+
+    @PostMapping(""/import"")","",0,"ApiResponse<List<RsbtPlanning>>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.importData#1","importData","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",65,69,true,"    }
+
+    @PostMapping(""/import"")
+    public ApiResponse<Void> importData(@RequestParam(""file"") MultipartFile file) throws IOException {
+        planningService.importData(file.getInputStream());
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.list#0","list","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",71,74,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtPlanning>> list() {
+        return ApiResponse.ok(planningService.listAll());
+    }
+}","",0,"ApiResponse<List<RsbtPlanning>>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.page#1","page","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",28,52,true,"public class PlanningService extends ServiceImpl<PlanningMapper, RsbtPlanning> {
+
+    public PageResponse<PlanningVO> page(PlanningQueryDTO query) {
+        Page<RsbtPlanning> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getRadioservices())) {
+            wrapper.eq(RsbtPlanning::getRadioservices, query.getRadioservices());
+        }
+        if (StringUtils.hasText(query.getSubservices())) {
+            wrapper.eq(RsbtPlanning::getSubservices, query.getSubservices());
+        }
+        if (StringUtils.hasText(query.getLevel())) {
+            wrapper.eq(RsbtPlanning::getLevel, query.getLevel());
+        }
+        if (StringUtils.hasText(query.getSegmentname())) {
+            wrapper.eq(RsbtPlanning::getSegmentname, query.getSegmentname());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.like(RsbtPlanning::getRadioservices, query.getKeyword())
+                    .or().like(RsbtPlanning::getSubservices, query.getKeyword())
+                    .or().like(RsbtPlanning::getSegmentname, query.getKeyword());
+        }
+        wrapper.orderByDesc(RsbtPlanning::getGuid);
+        IPage<RsbtPlanning> result = page(page, wrapper);
+        List<PlanningVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public PlanningVO getById(String id) {","",1,"PageResponse<PlanningVO>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.getById#1","getById","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",54,60,true,"    }
+
+    public PlanningVO getById(String id) {
+        RsbtPlanning entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public void create(PlanningCreateDTO dto) {","",1,"PlanningVO"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.create#1","create","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",62,67,true,"    }
+
+    public void create(PlanningCreateDTO dto) {
+        RsbtPlanning entity = new RsbtPlanning();
+        entity.setGuid(UUID.randomUUID().toString());
+        copyProperties(dto, entity);
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, PlanningUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.update#2","update","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",69,76,true,"    }
+
+    public void update(String id, PlanningUpdateDTO dto) {
+        RsbtPlanning entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        copyProperties(dto, entity);
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.delete#1","delete","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",78,80,true,"    }
+
+    public void delete(String id) {
+        baseMapper.deleteById(id);
+    }
+
+    public PlanningOverviewVO overview() {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.overview#0","overview","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",82,99,true,"    }
+
+    public PlanningOverviewVO overview() {
+        PlanningOverviewVO vo = new PlanningOverviewVO();
+        vo.setTotalCount(baseMapper.selectCount(null));
+        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtPlanning::getStartfrequency).orderByAsc(RsbtPlanning::getStartfrequency).last(""LIMIT 1"");
+        RsbtPlanning minFreq = baseMapper.selectOne(wrapper);
+        vo.setMinFrequency(minFreq != null ? minFreq.getStartfrequency() : ""0"");
+
+        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtPlanning::getStopfrequency).orderByDesc(RsbtPlanning::getStopfrequency).last(""LIMIT 1"");
+        RsbtPlanning maxFreq = baseMapper.selectOne(wrapper);
+        vo.setMaxFrequency(maxFreq != null ? maxFreq.getStopfrequency() : ""0"");
+
+        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtPlanning::getRadioservices).groupBy(RsbtPlanning::getRadioservices);
+        vo.setServiceTypeCount((long) baseMapper.selectList(wrapper).size());
+        return vo;
+    }
+
+    public List<RsbtPlanning> listAll() {","",0,"PlanningOverviewVO"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",101,103,true,"    }
+
+    public List<RsbtPlanning> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    public void importData(InputStream inputStream) {","",0,"List<RsbtPlanning>"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.importData#1","importData","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",105,118,true,"    }
+
+    public void importData(InputStream inputStream) {
+        List<RsbtPlanning> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtPlanning.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtPlanning>(list -> {
+            for (RsbtPlanning item : list) {
+                if (item.getGuid() == null || item.getGuid().isEmpty()) {
+                    item.setGuid(UUID.randomUUID().toString());
+                }
+                importList.add(item);
+            }
+        })).sheet().doRead();
+        if (!importList.isEmpty()) {
+            saveBatch(importList);
+        }
+    }
+
+    private void copyProperties(Object src, RsbtPlanning target) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.copyProperties#2","copyProperties","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",120,144,true,"    }
+
+    private void copyProperties(Object src, RsbtPlanning target) {
+        if (src instanceof PlanningCreateDTO) {
+            PlanningCreateDTO dto = (PlanningCreateDTO) src;
+            target.setRadioservices(dto.getRadioservices());
+            target.setSubservices(dto.getSubservices());
+            target.setLevel(dto.getLevel());
+            target.setSegmentname(dto.getSegmentname());
+            target.setStartfrequency(dto.getStartfrequency());
+            target.setStopfrequency(dto.getStopfrequency());
+            target.setStep(dto.getStep());
+            target.setBandwidth(dto.getBandwidth());
+            target.setRemark(dto.getRemark());
+        } else if (src instanceof PlanningUpdateDTO) {
+            PlanningUpdateDTO dto = (PlanningUpdateDTO) src;
+            target.setRadioservices(dto.getRadioservices());
+            target.setSubservices(dto.getSubservices());
+            target.setLevel(dto.getLevel());
+            target.setSegmentname(dto.getSegmentname());
+            target.setStartfrequency(dto.getStartfrequency());
+            target.setStopfrequency(dto.getStopfrequency());
+            target.setStep(dto.getStep());
+            target.setBandwidth(dto.getBandwidth());
+            target.setRemark(dto.getRemark());
+        }
+    }
+
+    private PlanningVO convertToVO(RsbtPlanning entity) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:PlanningService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",146,159,true,"    }
+
+    private PlanningVO convertToVO(RsbtPlanning entity) {
+        PlanningVO vo = new PlanningVO();
+        vo.setGuid(entity.getGuid());
+        vo.setRadioservices(entity.getRadioservices());
+        vo.setSubservices(entity.getSubservices());
+        vo.setLevel(entity.getLevel());
+        vo.setSegmentname(entity.getSegmentname());
+        vo.setStartfrequency(entity.getStartfrequency());
+        vo.setStopfrequency(entity.getStopfrequency());
+        vo.setStep(entity.getStep());
+        vo.setBandwidth(entity.getBandwidth());
+        vo.setRemark(entity.getRemark());
+        return vo;
+    }
+}","",1,"PlanningVO"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.page#1","page","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",28,31,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<StationVO>> page(StationQueryDTO query) {
+        return ApiResponse.ok(stationService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<StationVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.getById#1","getById","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",33,36,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<StationVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(stationService.getById(id));
+    }
+
+    @PostMapping","",1,"ApiResponse<StationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.create#1","create","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",38,42,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody StationCreateDTO dto) {
+        stationService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.update#2","update","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",44,48,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody StationUpdateDTO dto) {
+        stationService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.delete#1","delete","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",50,54,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        stationService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/map"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.getMapPoints#0","getMapPoints","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",56,59,true,"    }
+
+    @GetMapping(""/map"")
+    public ApiResponse<List<StationMapVO>> getMapPoints() {
+        return ApiResponse.ok(stationService.getMapPoints());
+    }
+
+    @GetMapping(""/stats"")","",0,"ApiResponse<List<StationMapVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.getStats#0","getStats","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",61,64,true,"    }
+
+    @GetMapping(""/stats"")
+    public ApiResponse<StationStatsVO> getStats() {
+        return ApiResponse.ok(stationService.getStats());
+    }
+
+    @GetMapping(""/export"")","",0,"ApiResponse<StationStatsVO>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.export#0","export","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",66,69,true,"    }
+
+    @GetMapping(""/export"")
+    public ApiResponse<List<RsbtStation>> export() {
+        return ApiResponse.ok(stationService.listAll());
+    }
+
+    @PostMapping(""/import"")","",0,"ApiResponse<List<RsbtStation>>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.importData#1","importData","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",71,75,true,"    }
+
+    @PostMapping(""/import"")
+    public ApiResponse<Void> importData(@RequestParam(""file"") MultipartFile file) throws IOException {
+        stationService.importData(file.getInputStream());
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.list#0","list","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",77,80,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtStation>> list() {
+        return ApiResponse.ok(stationService.listAll());
+    }
+
+    @GetMapping(""/region-detail"")","",0,"ApiResponse<List<RsbtStation>>"
+"Method:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.getRegionDetail#2","getRegionDetail","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",82,90,true,"    }
+
+    @GetMapping(""/region-detail"")
+    public ApiResponse<PageResponse<StationVO>> getRegionDetail(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String province) {
+        StationQueryDTO query = new StationQueryDTO();
+        query.setType(type);
+        query.setProvince(province);
+        return ApiResponse.ok(stationService.page(query));
+    }
+}","",2,"ApiResponse<PageResponse<StationVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.page#1","page","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",29,72,true,"public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
+
+    public PageResponse<StationVO> page(StationQueryDTO query) {
+        Page<RsbtStation> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getType())) {
+            // Match both TYPE (e.g. ""Macro"") and STATIONTYPE (e.g. ""Base Station"") fields
+            wrapper.and(w -> w
+                .eq(RsbtStation::getType, query.getType())
+                .or().eq(RsbtStation::getStationtype, query.getType())
+            );
+        }
+        if (StringUtils.hasText(query.getTechnology())) {
+            wrapper.eq(RsbtStation::getTechnology, query.getTechnology());
+        }
+        if (StringUtils.hasText(query.getProvince())) {
+            wrapper.eq(RsbtStation::getProvince, query.getProvince());
+        }
+        if (StringUtils.hasText(query.getDistrict())) {
+            wrapper.eq(RsbtStation::getDistrict, query.getDistrict());
+        }
+        if (StringUtils.hasText(query.getStationtype())) {
+            wrapper.eq(RsbtStation::getStationtype, query.getStationtype());
+        }
+        if (query.getStartDateFrom() != null) {
+            wrapper.ge(RsbtStation::getStartdate, query.getStartDateFrom());
+        }
+        if (query.getStartDateTo() != null) {
+            wrapper.le(RsbtStation::getStartdate, query.getStartDateTo());
+        }
+        if (query.getExpirationDateFrom() != null) {
+            wrapper.ge(RsbtStation::getExpirationdate, query.getExpirationDateFrom());
+        }
+        if (query.getExpirationDateTo() != null) {
+            wrapper.le(RsbtStation::getExpirationdate, query.getExpirationDateTo());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.like(RsbtStation::getSitename, query.getKeyword())
+                    .or().like(RsbtStation::getLocation, query.getKeyword())
+                    .or().like(RsbtStation::getProvince, query.getKeyword());
+        }
+        wrapper.orderByDesc(RsbtStation::getGuid);
+        IPage<RsbtStation> result = page(page, wrapper);
+        List<StationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public StationVO getById(String id) {","",1,"PageResponse<StationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.getById#1","getById","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",74,80,true,"    }
+
+    public StationVO getById(String id) {
+        RsbtStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public void create(StationCreateDTO dto) {","",1,"StationVO"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.create#1","create","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",82,87,true,"    }
+
+    public void create(StationCreateDTO dto) {
+        RsbtStation entity = new RsbtStation();
+        entity.setGuid(UUID.randomUUID().toString());
+        copyProperties(dto, entity);
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, StationUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.update#2","update","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",89,96,true,"    }
+
+    public void update(String id, StationUpdateDTO dto) {
+        RsbtStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        copyProperties(dto, entity);
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.delete#1","delete","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",98,100,true,"    }
+
+    public void delete(String id) {
+        baseMapper.deleteById(id);
+    }
+
+    public List<StationMapVO> getMapPoints() {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.getMapPoints#0","getMapPoints","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",102,110,true,"    }
+
+    public List<StationMapVO> getMapPoints() {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.isNotNull(RsbtStation::getLongitude)
+                .isNotNull(RsbtStation::getLatitude)
+                .ne(RsbtStation::getLongitude, 0)
+                .ne(RsbtStation::getLatitude, 0);
+        List<RsbtStation> list = baseMapper.selectList(wrapper);
+        return list.stream().map(this::convertToMapVO).collect(Collectors.toList());
+    }
+
+    public StationStatsVO getStats() {","",0,"List<StationMapVO>"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.getStats#0","getStats","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",112,136,true,"    }
+
+    public StationStatsVO getStats() {
+        StationStatsVO vo = new StationStatsVO();
+        Long total = baseMapper.selectCount(null);
+        vo.setTotalCount(total);
+
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(RsbtStation::getExpirationdate, LocalDate.now());
+        vo.setValidCount(baseMapper.selectCount(wrapper));
+
+        wrapper = new LambdaQueryWrapper<>();
+        wrapper.lt(RsbtStation::getExpirationdate, LocalDate.now());
+        vo.setExpiredCount(baseMapper.selectCount(wrapper));
+
+        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince).groupBy(RsbtStation::getProvince).last(""ORDER BY COUNT(*) DESC LIMIT 1"");
+        RsbtStation topProvinceStation = baseMapper.selectOne(wrapper);
+        vo.setTopProvince(topProvinceStation != null ? topProvinceStation.getProvince() : """");
+
+        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getStationtype).groupBy(RsbtStation::getStationtype).last(""ORDER BY COUNT(*) DESC LIMIT 1"");
+        RsbtStation topTypeStation = baseMapper.selectOne(wrapper);
+        vo.setTopType(topTypeStation != null ? topTypeStation.getStationtype() : """");
+
+        return vo;
+    }
+
+    public List<RsbtStation> listAll() {","",0,"StationStatsVO"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",138,140,true,"    }
+
+    public List<RsbtStation> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    public void importData(InputStream inputStream) {","",0,"List<RsbtStation>"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.importData#1","importData","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",142,155,true,"    }
+
+    public void importData(InputStream inputStream) {
+        List<RsbtStation> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtStation.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtStation>(list -> {
+            for (RsbtStation item : list) {
+                if (item.getGuid() == null || item.getGuid().isEmpty()) {
+                    item.setGuid(UUID.randomUUID().toString());
+                }
+                importList.add(item);
+            }
+        })).sheet().doRead();
+        if (!importList.isEmpty()) {
+            saveBatch(importList);
+        }
+    }
+
+    private void copyProperties(Object src, RsbtStation target) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.copyProperties#2","copyProperties","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",157,215,true,"    }
+
+    private void copyProperties(Object src, RsbtStation target) {
+        if (src instanceof StationCreateDTO) {
+            StationCreateDTO dto = (StationCreateDTO) src;
+            target.setType(dto.getType());
+            target.setTechnology(dto.getTechnology());
+            target.setBbumodel(dto.getBbumodel());
+            target.setOwnedsite(dto.getOwnedsite());
+            target.setBackbone(dto.getBackbone());
+            target.setStationpurpose(dto.getStationpurpose());
+            target.setModulation(dto.getModulation());
+            target.setStationtype(dto.getStationtype());
+            target.setFrequencyt(dto.getFrequencyt());
+            target.setFrequencyr(dto.getFrequencyr());
+            target.setBandwidth(dto.getBandwidth());
+            target.setDevicemodel(dto.getDevicemodel());
+            target.setDevicequantity(dto.getDevicequantity());
+            target.setOutputpower(dto.getOutputpower());
+            target.setAnttype(dto.getAnttype());
+            target.setAntquantity(dto.getAntquantity());
+            target.setProvince(dto.getProvince());
+            target.setDistrict(dto.getDistrict());
+            target.setLocation(dto.getLocation());
+            target.setSitename(dto.getSitename());
+            target.setUnit(dto.getUnit());
+            target.setEquipname(dto.getEquipname());
+            target.setLongitude(dto.getLongitude());
+            target.setLatitude(dto.getLatitude());
+            target.setStartdate(dto.getStartdate());
+            target.setExpirationdate(dto.getExpirationdate());
+        } else if (src instanceof StationUpdateDTO) {
+            StationUpdateDTO dto = (StationUpdateDTO) src;
+            target.setType(dto.getType());
+            target.setTechnology(dto.getTechnology());
+            target.setBbumodel(dto.getBbumodel());
+            target.setOwnedsite(dto.getOwnedsite());
+            target.setBackbone(dto.getBackbone());
+            target.setStationpurpose(dto.getStationpurpose());
+            target.setModulation(dto.getModulation());
+            target.setStationtype(dto.getStationtype());
+            target.setFrequencyt(dto.getFrequencyt());
+            target.setFrequencyr(dto.getFrequencyr());
+            target.setBandwidth(dto.getBandwidth());
+            target.setDevicemodel(dto.getDevicemodel());
+            target.setDevicequantity(dto.getDevicequantity());
+            target.setOutputpower(dto.getOutputpower());
+            target.setAnttype(dto.getAnttype());
+            target.setAntquantity(dto.getAntquantity());
+            target.setProvince(dto.getProvince());
+            target.setDistrict(dto.getDistrict());
+            target.setLocation(dto.getLocation());
+            target.setSitename(dto.getSitename());
+            target.setUnit(dto.getUnit());
+            target.setEquipname(dto.getEquipname());
+            target.setLongitude(dto.getLongitude());
+            target.setLatitude(dto.getLatitude());
+            target.setStartdate(dto.getStartdate());
+            target.setExpirationdate(dto.getExpirationdate());
+        }
+    }
+
+    private StationVO convertToVO(RsbtStation entity) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",217,245,true,"    }
+
+    private StationVO convertToVO(RsbtStation entity) {
+        StationVO vo = new StationVO();
+        vo.setGuid(entity.getGuid());
+        vo.setType(entity.getType());
+        vo.setTechnology(entity.getTechnology());
+        vo.setBbumodel(entity.getBbumodel());
+        vo.setOwnedsite(entity.getOwnedsite());
+        vo.setBackbone(entity.getBackbone());
+        vo.setStationpurpose(entity.getStationpurpose());
+        vo.setModulation(entity.getModulation());
+        vo.setStationtype(entity.getStationtype());
+        vo.setFrequencyt(entity.getFrequencyt());
+        vo.setFrequencyr(entity.getFrequencyr());
+        vo.setBandwidth(entity.getBandwidth());
+        vo.setDevicemodel(entity.getDevicemodel());
+        vo.setDevicequantity(entity.getDevicequantity());
+        vo.setOutputpower(entity.getOutputpower());
+        vo.setAnttype(entity.getAnttype());
+        vo.setAntquantity(entity.getAntquantity());
+        vo.setProvince(entity.getProvince());
+        vo.setDistrict(entity.getDistrict());
+        vo.setLocation(entity.getLocation());
+        vo.setSitename(entity.getSitename());
+        vo.setLongitude(entity.getLongitude());
+        vo.setLatitude(entity.getLatitude());
+        vo.setStartdate(entity.getStartdate());
+        vo.setExpirationdate(entity.getExpirationdate());
+        return vo;
+    }
+
+    private StationMapVO convertToMapVO(RsbtStation entity) {","",1,"StationVO"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.convertToMapVO#1","convertToMapVO","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",247,293,true,"    }
+
+    private StationMapVO convertToMapVO(RsbtStation entity) {
+        StationMapVO vo = new StationMapVO();
+        vo.setGuid(entity.getGuid());
+        vo.setSitename(entity.getSitename());
+        vo.setLongitude(entity.getLongitude());
+        vo.setLatitude(entity.getLatitude());
+        vo.setType(entity.getType());
+        vo.setStationtype(entity.getStationtype());
+        vo.setProvince(entity.getProvince());
+
+        // 频率字符串拼接：FREQUENCYT - FREQUENCYR MHz
+        java.math.BigDecimal ft = entity.getFrequencyt();
+        java.math.BigDecimal fr = entity.getFrequencyr();
+        if (ft != null && fr != null) {
+            vo.setFrequency(ft.stripTrailingZeros().toPlainString() + ""–""
+                          + fr.stripTrailingZeros().toPlainString() + "" MHz"");
+            vo.setFreqMHz(ft.add(fr).divide(new java.math.BigDecimal(""2""), 6, java.math.RoundingMode.HALF_UP));
+        } else if (ft != null) {
+            vo.setFrequency(ft.stripTrailingZeros().toPlainString() + "" MHz"");
+            vo.setFreqMHz(ft);
+        } else if (fr != null) {
+            vo.setFrequency(fr.stripTrailingZeros().toPlainString() + "" MHz"");
+            vo.setFreqMHz(fr);
+        }
+
+        // 设备型号 (复用 DEVICEMODEL)
+        vo.setEquipModel(entity.getDevicemodel());
+
+        // 设台单位 / 设备名称
+        vo.setUnit(entity.getUnit());
+        vo.setEquipName(entity.getEquipname());
+
+        // 功率
+        if (entity.getOutputpower() != null) {
+            vo.setPower(entity.getOutputpower().stripTrailingZeros().toPlainString() + "" W"");
+        }
+
+        // 有效期
+        if (entity.getExpirationdate() != null) {
+            vo.setExpiry(entity.getExpirationdate().toString());
+        }
+
+        // 状态计算
+        vo.setStatus(computeStatus(entity.getExpirationdate()));
+
+        return vo;
+    }
+
+    private String computeStatus(java.time.LocalDate expirationDate) {","",1,"StationMapVO"
+"Method:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:StationService.computeStatus#1","computeStatus","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",295,302,true,"    }
+
+    private String computeStatus(java.time.LocalDate expirationDate) {
+        if (expirationDate == null) return ""normal"";
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate warningThreshold = today.plusDays(90);
+        if (expirationDate.isBefore(today)) return ""expired"";
+        if (expirationDate.isBefore(warningThreshold)) return ""expiring"";
+        return ""normal"";
+    }
+}","",1,"String"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.overview#0","overview","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",21,24,true,"    }
+
+    @GetMapping(""/overview"")
+    public ApiResponse<DashboardOverviewVO> overview() {
+        return ApiResponse.ok(dashboardService.getOverview());
+    }
+
+    @GetMapping(""/station-type"")","",0,"ApiResponse<DashboardOverviewVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.stationType#0","stationType","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",26,29,true,"    }
+
+    @GetMapping(""/station-type"")
+    public ApiResponse<Map<String, Long>> stationType() {
+        return ApiResponse.ok(dashboardService.getStationTypeDistribution());
+    }
+
+    @GetMapping(""/permit-status"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.permitStatus#0","permitStatus","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",31,34,true,"    }
+
+    @GetMapping(""/permit-status"")
+    public ApiResponse<Map<String, Long>> permitStatus() {
+        return ApiResponse.ok(dashboardService.getPermitStatusDistribution());
+    }
+
+    @GetMapping(""/province-station"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.provinceStation#0","provinceStation","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",36,39,true,"    }
+
+    @GetMapping(""/province-station"")
+    public ApiResponse<Map<String, Long>> provinceStation() {
+        return ApiResponse.ok(dashboardService.getProvinceStationCount());
+    }
+
+    @GetMapping(""/station-growth"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.stationGrowth#0","stationGrowth","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",41,44,true,"    }
+
+    @GetMapping(""/station-growth"")
+    public ApiResponse<StationGrowthVO> stationGrowth() {
+        return ApiResponse.ok(dashboardService.getStationGrowth());
+    }
+}","",0,"ApiResponse<StationGrowthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.stationRegion#0","stationRegion","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",31,34,true,"    }
+
+    @GetMapping(""/station/region"")
+    public ApiResponse<List<ProvinceStationVO>> stationRegion() {
+        return ApiResponse.ok(statisticsService.getStationRegionStats());
+    }
+
+    @GetMapping(""/station/growth"")","",0,"ApiResponse<List<ProvinceStationVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.stationGrowth#0","stationGrowth","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",36,39,true,"    }
+
+    @GetMapping(""/station/growth"")
+    public ApiResponse<StationGrowthVO> stationGrowth() {
+        return ApiResponse.ok(statisticsService.getStationGrowth());
+    }
+
+    @GetMapping(""/station/expired"")","",0,"ApiResponse<StationGrowthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.expiredStation#0","expiredStation","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",41,44,true,"    }
+
+    @GetMapping(""/station/expired"")
+    public ApiResponse<Map<String, Long>> expiredStation() {
+        return ApiResponse.ok(statisticsService.getExpiredStationStats());
+    }
+
+    @GetMapping(""/station/valid"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.validStation#0","validStation","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",46,49,true,"    }
+
+    @GetMapping(""/station/valid"")
+    public ApiResponse<Map<String, Long>> validStation() {
+        return ApiResponse.ok(statisticsService.getValidStationStats());
+    }
+
+    @GetMapping(""/permit/usage-growth"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitUsageGrowth#0","permitUsageGrowth","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",51,54,true,"    }
+
+    @GetMapping(""/permit/usage-growth"")
+    public ApiResponse<PermitUsageGrowthVO> permitUsageGrowth() {
+        return ApiResponse.ok(statisticsService.getPermitUsageGrowth());
+    }
+
+    @GetMapping(""/permit/usage-by-month"")","",0,"ApiResponse<PermitUsageGrowthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitUsageByMonth#3","permitUsageByMonth","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",56,62,true,"    }
+
+    @GetMapping(""/permit/usage-by-month"")
+    public ApiResponse<List<PermitUsageByMonthVO>> permitUsageByMonth(
+            @RequestParam(required = false) String businessType,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) Integer year) {
+        return ApiResponse.ok(statisticsService.getPermitUsageByMonth(businessType, province, year));
+    }
+
+    @GetMapping(""/permit/count"")","",3,"ApiResponse<List<PermitUsageByMonthVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitCount#0","permitCount","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",64,67,true,"    }
+
+    @GetMapping(""/permit/count"")
+    public ApiResponse<Map<String, Long>> permitCount() {
+        return ApiResponse.ok(statisticsService.getPermitCountByStatus());
+    }
+
+    @GetMapping(""/permit/count-by-type"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitCountByType#2","permitCountByType","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",69,74,true,"    }
+
+    @GetMapping(""/permit/count-by-type"")
+    public ApiResponse<List<LicenseCountByTypeVO>> permitCountByType(
+            @RequestParam(required = false, defaultValue = ""All"") String province,
+            @RequestParam(required = false) String date) {
+        return ApiResponse.ok(statisticsService.getLicenseCountByType(province, date));
+    }
+
+    @GetMapping(""/permit/station-count"")","",2,"ApiResponse<List<LicenseCountByTypeVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitStationCount#0","permitStationCount","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",76,79,true,"    }
+
+    @GetMapping(""/permit/station-count"")
+    public ApiResponse<Map<String, Long>> permitStationCount() {
+        return ApiResponse.ok(statisticsService.getPermitStationCount());
+    }
+
+    /**","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitStationCountDetail#2","permitStationCountDetail","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",93,98,true,"     * @return list of station count details by type
+     */
+    @GetMapping(""/permit/station-count-detail"")
+    public ApiResponse<List<StationCountDetailVO>> permitStationCountDetail(
+            @RequestParam(required = false, defaultValue = ""All"") String province,
+            @RequestParam(required = false) String date) {
+        return ApiResponse.ok(statisticsService.getStationCountDetail(province, date));
+    }
+
+    @GetMapping(""/permit/expiry"")","",2,"ApiResponse<List<StationCountDetailVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitExpiry#0","permitExpiry","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",100,103,true,"    }
+
+    @GetMapping(""/permit/expiry"")
+    public ApiResponse<Map<String, Long>> permitExpiry() {
+        return ApiResponse.ok(statisticsService.getPermitExpiryStats());
+    }
+
+    @GetMapping(""/permit/validity-forecast"")","",0,"ApiResponse<Map<String, Long>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.permitValidityForecast#2","permitValidityForecast","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",105,110,true,"    }
+
+    @GetMapping(""/permit/validity-forecast"")
+    public ApiResponse<List<ValidityForecastVO>> permitValidityForecast(
+            @RequestParam(required = false, defaultValue = ""All"") String province,
+            @RequestParam(required = false, defaultValue = ""12"") Integer months) {
+        return ApiResponse.ok(statisticsService.getValidityForecast(province, months));
+    }
+
+    @GetMapping(""/station/region-detail"")","",2,"ApiResponse<List<ValidityForecastVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.stationRegionDetail#0","stationRegionDetail","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",112,115,true,"    }
+
+    @GetMapping(""/station/region-detail"")
+    public ApiResponse<List<StationRegionDetailVO>> stationRegionDetail() {
+        return ApiResponse.ok(statisticsService.getRegionStats());
+    }
+
+    @GetMapping(""/station/growth-trend"")","",0,"ApiResponse<List<StationRegionDetailVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.stationGrowthTrend#3","stationGrowthTrend","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",117,123,true,"    }
+
+    @GetMapping(""/station/growth-trend"")
+    public ApiResponse<List<MonthlyGrowthVO>> stationGrowthTrend(
+            @RequestParam(required = false, defaultValue = ""All"") String type,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false, defaultValue = ""All"") String province) {
+        return ApiResponse.ok(statisticsService.getGrowthTrend(type, year, province));
+    }
+
+    @GetMapping(""/station/expired-detail"")","",3,"ApiResponse<List<MonthlyGrowthVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.expiredStationDetail#3","expiredStationDetail","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",125,131,true,"    }
+
+    @GetMapping(""/station/expired-detail"")
+    public ApiResponse<List<ExpiredStationVO>> expiredStationDetail(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false, defaultValue = ""All"") String province,
+            @RequestParam(required = false, defaultValue = ""All"") String type) {
+        return ApiResponse.ok(statisticsService.getExpiredStations(year, province, type));
+    }
+}","",3,"ApiResponse<List<ExpiredStationVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.getOverview#0","getOverview","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",73,104,true,"    }
+
+    public DashboardOverviewVO getOverview() {
+        DashboardOverviewVO vo = new DashboardOverviewVO();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+
+        vo.setTotalStations(stationMapper.selectCount(null));
+        Long totalPermits = permitMapper.selectCount(null);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> activeWrapper = new LambdaQueryWrapper<>();
+        activeWrapper.eq(RsbtSpecialPermit::getStatus, ""active"");
+        Long activePermits = permitMapper.selectCount(activeWrapper);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, ""expired"");
+        Long expiredPermits = permitMapper.selectCount(expiredWrapper);
+
+        Long normalPermits = activePermits;
+        Long expiringPermits = 0L;
+
+        vo.setNormalLicenses(normalPermits);
+        vo.setExpiringSoon(expiringPermits);
+        vo.setExpired(expiredPermits);
+        vo.setStationGrowth(calcGrowthRate(countThisMonthStations(now), countLastMonthStations(now)));
+        vo.setLicenseGrowth(calcGrowthRate(countThisMonthPermits(now), countLastMonthPermits(now)));
+        vo.setExpiringGrowth(""+0.0%"");
+        vo.setExpiredGrowth(""-0.0%"");
+        vo.setProvinceStats(buildProvinceStats());
+        vo.setLicenseTypeStats(buildLicenseTypeStats());
+        vo.setStationTypes(buildStationTypes());
+        vo.setStationGrowthTrend(buildStationGrowthTrend());
+        return vo;
+    }
+
+    public Map<String, Long> getStationTypeDistribution() {","",0,"DashboardOverviewVO"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.getStationTypeDistribution#0","getStationTypeDistribution","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",106,108,true,"    }
+
+    public Map<String, Long> getStationTypeDistribution() {
+        return buildStationTypes().stream().collect(Collectors.toMap(StationTypeVO::getName, StationTypeVO::getValue, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    public Map<String, Long> getPermitStatusDistribution() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.getPermitStatusDistribution#0","getPermitStatusDistribution","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",110,116,true,"    }
+
+    public Map<String, Long> getPermitStatusDistribution() {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getStatus);
+        return permitMapper.selectList(wrapper).stream()
+                .filter(p -> p.getStatus() != null && !p.getStatus().isEmpty())
+                .collect(Collectors.groupingBy(RsbtSpecialPermit::getStatus, LinkedHashMap::new, Collectors.counting()));
+    }
+
+    public Map<String, Long> getProvinceStationCount() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.getProvinceStationCount#0","getProvinceStationCount","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",118,120,true,"    }
+
+    public Map<String, Long> getProvinceStationCount() {
+        return buildProvinceStats().stream().collect(Collectors.toMap(ProvinceStationVO::getName, ProvinceStationVO::getTotal, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    public StationGrowthVO getStationGrowth() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.getStationGrowth#0","getStationGrowth","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",122,140,true,"    }
+
+    public StationGrowthVO getStationGrowth() {
+        List<StationGrowthVO> trend = buildStationGrowthTrend();
+        StationGrowthVO vo = new StationGrowthVO();
+        if (!trend.isEmpty()) {
+            vo.setMonth(trend.get(trend.size() - 1).getMonth());
+            vo.setCount(trend.get(trend.size() - 1).getCount());
+        }
+        Map<String, Long> monthlyData = trend.stream().collect(Collectors.toMap(StationGrowthVO::getMonth, StationGrowthVO::getCount, (a, b) -> a, LinkedHashMap::new));
+        vo.setMonthlyData(monthlyData);
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            long last = values.get(values.size() - 1);
+            long prev = values.get(values.size() - 2);
+            vo.setGrowthRate(prev > 0 ? (last - prev) * 100.0 / prev : 0.0);
+        } else {
+            vo.setGrowthRate(0.0);
+        }
+        return vo;
+    }
+
+    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }","",0,"StationGrowthVO"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.countThisMonthStations#1","countThisMonthStations","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",142,142,true,"    }
+
+    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }","",1,"long"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.countLastMonthStations#1","countLastMonthStations","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",143,143,true,"
+    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }","",1,"long"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.countThisMonthPermits#1","countThisMonthPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",144,144,true,"    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+","",1,"long"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.countLastMonthPermits#1","countLastMonthPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",145,145,true,"    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+
+    private List<ProvinceStationVO> buildProvinceStats() {","",1,"long"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.buildProvinceStats#0","buildProvinceStats","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",147,175,true,"    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+
+    private List<ProvinceStationVO> buildProvinceStats() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> provinceTotal = new HashMap<>();
+        Map<String, Long> provinceExpiring = new HashMap<>();
+        Map<String, Long> provinceExpired = new HashMap<>();
+        LocalDate expiringThreshold = LocalDate.now().plusDays(EXPIRING_DAYS);
+        for (RsbtStation s : allStations) {
+            if (s.getProvince() == null || s.getProvince().isEmpty()) continue;
+            // 将数据库省份名映射到标准 key
+            String provinceKey = DB_PROVINCE_TO_KEY.getOrDefault(s.getProvince(), s.getProvince().toLowerCase().replace("" "", ""-""));
+            provinceTotal.merge(provinceKey, 1L, Long::sum);
+            if (s.getExpirationdate() != null) {
+                if (s.getExpirationdate().isBefore(LocalDate.now())) provinceExpired.merge(provinceKey, 1L, Long::sum);
+                else if (!s.getExpirationdate().isAfter(expiringThreshold)) provinceExpiring.merge(provinceKey, 1L, Long::sum);
+            }
+        }
+        List<ProvinceStationVO> result = new ArrayList<>();
+        for (Map.Entry<String, String[]> entry : PROVINCE_NAMES.entrySet()) {
+            ProvinceStationVO pvo = new ProvinceStationVO();
+            pvo.setId(entry.getKey());
+            pvo.setName(entry.getValue()[0]);
+            pvo.setAbbr(entry.getValue()[1]);
+            pvo.setTotal(provinceTotal.getOrDefault(entry.getKey(), 0L));
+            pvo.setExpiring60(provinceExpiring.getOrDefault(entry.getKey(), 0L));
+            pvo.setExpired(provinceExpired.getOrDefault(entry.getKey(), 0L));
+            result.add(pvo);
+        }
+        return result;
+    }
+
+    private List<LicenseTypeStatsVO> buildLicenseTypeStats() {","",0,"List<ProvinceStationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.buildLicenseTypeStats#0","buildLicenseTypeStats","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",177,211,true,"    }
+
+    private List<LicenseTypeStatsVO> buildLicenseTypeStats() {
+        List<RsbtSpecialPermit> allPermits = permitMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();
+        Map<String, Long> typeExpired = new HashMap<>();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+        for (RsbtSpecialPermit p : allPermits) {
+            String t = p.getType() != null ? p.getType() : ""Unknown"";
+            if (p.getEnddate() == null) {
+                typeNormal.merge(t, 1L, Long::sum);
+            } else if (p.getEnddate().isBefore(now)) {
+                typeExpired.merge(t, 1L, Long::sum);
+            } else if (!p.getEnddate().isAfter(expiringThreshold)) {
+                typeExpiring.merge(t, 1L, Long::sum);
+            } else {
+                typeNormal.merge(t, 1L, Long::sum);
+            }
+        }
+        List<LicenseTypeStatsVO> result = new ArrayList<>();
+        Set<String> allTypes = new HashSet<>();
+        allTypes.addAll(typeNormal.keySet());
+        allTypes.addAll(typeExpiring.keySet());
+        allTypes.addAll(typeExpired.keySet());
+        for (String type : allTypes) {
+            LicenseTypeStatsVO vo = new LicenseTypeStatsVO();
+            vo.setId(type.toLowerCase());
+            vo.setType(type);
+            vo.setNormal(typeNormal.getOrDefault(type, 0L));
+            vo.setExpiring(typeExpiring.getOrDefault(type, 0L));
+            vo.setExpired(typeExpired.getOrDefault(type, 0L));
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private List<StationTypeVO> buildStationTypes() {","",0,"List<LicenseTypeStatsVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.buildStationTypes#0","buildStationTypes","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",213,233,true,"    }
+
+    private List<StationTypeVO> buildStationTypes() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeCount = new HashMap<>();
+        for (RsbtStation s : allStations) {
+            String t = s.getType() != null ? s.getType() : ""Unknown"";
+            typeCount.merge(t, 1L, Long::sum);
+        }
+        List<StationTypeVO> result = new ArrayList<>();
+        int idx = 0;
+        String[] COLORS = {""#1976d2"", ""#42a5f5"", ""#64b5f6"", ""#90caf9"", ""#bbdefb""};
+        for (Map.Entry<String, Long> e : typeCount.entrySet()) {
+            StationTypeVO vo = new StationTypeVO();
+            vo.setId(e.getKey().toLowerCase());
+            vo.setName(e.getKey());
+            vo.setValue(e.getValue());
+            vo.setColor(COLORS[idx % COLORS.length]);
+            result.add(vo);
+            idx++;
+        }
+        return result;
+    }
+
+    private List<StationGrowthVO> buildStationGrowthTrend() {","",0,"List<StationTypeVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.buildStationGrowthTrend#0","buildStationGrowthTrend","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",235,251,true,"    }
+
+    private List<StationGrowthVO> buildStationGrowthTrend() {
+        List<StationGrowthVO> result = new ArrayList<>();
+        LocalDate now = LocalDate.now();
+        for (int i = 11; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);
+            LambdaQueryWrapper<RsbtStation> w = new LambdaQueryWrapper<>();
+            w.ge(RsbtStation::getCreateTime, month.atStartOfDay());
+            w.lt(RsbtStation::getCreateTime, nextMonth.atStartOfDay());
+            long count = stationMapper.selectCount(w);
+            StationGrowthVO vo = new StationGrowthVO();
+            vo.setMonth(month.format(DateTimeFormatter.ofPattern(""yyyy-MM"")));
+            vo.setCount(count);
+            result.add(vo);
+        }
+        return result;
+    }
+    private String calcGrowthRate(long current, long previous) { if (previous == 0) return current > 0 ? ""+100.0%"" : ""+0.0%""; double rate = ((double) (current - previous) / previous) * 100; return (rate >= 0 ? ""+"" : """") + String.format(""%.1f"", rate) + ""%""; }
+}","",0,"List<StationGrowthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.calcGrowthRate#2","calcGrowthRate","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",252,252,true,"        return result;
+    }
+    private String calcGrowthRate(long current, long previous) { if (previous == 0) return current > 0 ? ""+100.0%"" : ""+0.0%""; double rate = ((double) (current - previous) / previous) * 100; return (rate >= 0 ? ""+"" : """") + String.format(""%.1f"", rate) + ""%""; }
+}
+","",2,"String"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getStationRegionStats#0","getStationRegionStats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",44,63,true,"    }
+
+    public List<ProvinceStationVO> getStationRegionStats() {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince, RsbtStation::getStationtype);
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        Map<String, List<RsbtStation>> byProvince = stations.stream()
+                .filter(s -> s.getProvince() != null && !s.getProvince().isEmpty())
+                .collect(Collectors.groupingBy(RsbtStation::getProvince));
+
+        return byProvince.entrySet().stream().map(entry -> {
+            ProvinceStationVO vo = new ProvinceStationVO();
+            vo.setProvince(entry.getKey());
+            vo.setCount((long) entry.getValue().size());
+            Map<String, Long> typeDist = entry.getValue().stream()
+                    .filter(s -> s.getStationtype() != null && !s.getStationtype().isEmpty())
+                    .collect(Collectors.groupingBy(RsbtStation::getStationtype, Collectors.counting()));
+            vo.setTypeDistribution(typeDist);
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    public StationGrowthVO getStationGrowth() {","",0,"List<ProvinceStationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getStationGrowth#0","getStationGrowth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",65,95,true,"    }
+
+    public StationGrowthVO getStationGrowth() {
+        StationGrowthVO vo = new StationGrowthVO();
+        LocalDate now = LocalDate.now();
+        Map<String, Long> monthlyData = new LinkedHashMap<>();
+
+        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(now.minusMonths(i));
+            String key = ym.format(DateTimeFormatter.ofPattern(""yyyy-MM""));
+            LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+            wrapper.le(RsbtStation::getStartdate, ym.atEndOfMonth());
+            Long count = stationMapper.selectCount(wrapper);
+            monthlyData.put(key, count);
+        }
+
+        vo.setMonthlyData(monthlyData);
+
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            Long last = values.get(values.size() - 1);
+            Long prev = values.get(values.size() - 2);
+            if (prev > 0) {
+                vo.setGrowthRate((last - prev) * 100.0 / prev);
+            } else {
+                vo.setGrowthRate(0.0);
+            }
+        } else {
+            vo.setGrowthRate(0.0);
+        }
+
+        return vo;
+    }
+
+    public Map<String, Long> getExpiredStationStats() {","",0,"StationGrowthVO"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getExpiredStationStats#0","getExpiredStationStats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",97,105,true,"    }
+
+    public Map<String, Long> getExpiredStationStats() {
+        LambdaQueryWrapper<RsbtStation> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.lt(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> expiredStations = stationMapper.selectList(expiredWrapper);
+
+        return expiredStations.stream()
+                .filter(s -> s.getProvince() != null && !s.getProvince().isEmpty())
+                .collect(Collectors.groupingBy(RsbtStation::getProvince, Collectors.counting()));
+    }
+
+    public Map<String, Long> getValidStationStats() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getValidStationStats#0","getValidStationStats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",107,115,true,"    }
+
+    public Map<String, Long> getValidStationStats() {
+        LambdaQueryWrapper<RsbtStation> validWrapper = new LambdaQueryWrapper<>();
+        validWrapper.ge(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> validStations = stationMapper.selectList(validWrapper);
+
+        return validStations.stream()
+                .filter(s -> s.getProvince() != null && !s.getProvince().isEmpty())
+                .collect(Collectors.groupingBy(RsbtStation::getProvince, Collectors.counting()));
+    }
+
+    public PermitUsageGrowthVO getPermitUsageGrowth() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getPermitUsageGrowth#0","getPermitUsageGrowth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",117,147,true,"    }
+
+    public PermitUsageGrowthVO getPermitUsageGrowth() {
+        PermitUsageGrowthVO vo = new PermitUsageGrowthVO();
+        LocalDate now = LocalDate.now();
+        Map<String, Long> monthlyData = new LinkedHashMap<>();
+
+        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(now.minusMonths(i));
+            String key = ym.format(DateTimeFormatter.ofPattern(""yyyy-MM""));
+            LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+            wrapper.le(RsbtSpecialPermit::getStartdate, ym.atEndOfMonth());
+            Long count = permitMapper.selectCount(wrapper);
+            monthlyData.put(key, count);
+        }
+
+        vo.setMonthlyData(monthlyData);
+
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            Long last = values.get(values.size() - 1);
+            Long prev = values.get(values.size() - 2);
+            if (prev > 0) {
+                vo.setGrowthRate((last - prev) * 100.0 / prev);
+            } else {
+                vo.setGrowthRate(0.0);
+            }
+        } else {
+            vo.setGrowthRate(0.0);
+        }
+
+        return vo;
+    }
+
+    public Map<String, Long> getPermitCountByStatus() {","",0,"PermitUsageGrowthVO"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getPermitCountByStatus#0","getPermitCountByStatus","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",149,156,true,"    }
+
+    public Map<String, Long> getPermitCountByStatus() {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getStatus);
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+        return permits.stream()
+                .filter(p -> p.getStatus() != null && !p.getStatus().isEmpty())
+                .collect(Collectors.groupingBy(RsbtSpecialPermit::getStatus, Collectors.counting()));
+    }
+
+    public Map<String, Long> getPermitStationCount() {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getPermitStationCount#0","getPermitStationCount","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",158,165,true,"    }
+
+    public Map<String, Long> getPermitStationCount() {
+        LambdaQueryWrapper<RsbtSpecialPermitStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermitStation::getType);
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(wrapper);
+        return stations.stream()
+                .filter(s -> s.getType() != null && !s.getType().isEmpty())
+                .collect(Collectors.groupingBy(RsbtSpecialPermitStation::getType, Collectors.counting()));
+    }
+
+    public List<StationCountDetailVO> getStationCountDetail(String province, String date) {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getStationCountDetail#2","getStationCountDetail","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",167,189,true,"    }
+
+    public List<StationCountDetailVO> getStationCountDetail(String province, String date) {
+        LambdaQueryWrapper<RsbtSpecialPermitStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermitStation::getType);
+        // Note: RsbtSpecialPermitStation does not have a province field
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(wrapper);
+
+        return stations.stream()
+                .filter(s -> s.getType() != null && !s.getType().isEmpty())
+                .collect(Collectors.groupingBy(s -> s.getType()))
+                .entrySet().stream()
+                .map(entry -> {
+                    StationCountDetailVO vo = new StationCountDetailVO();
+                    vo.setType(entry.getKey());
+                    vo.setStations((long) entry.getValue().size());
+                    vo.setLicenses((long) entry.getValue().size()); // permits are 1:1 with stations in current model
+                    // Ratio is a placeholder - stations and licenses are 1:1 in current model, no meaningful ratio can be calculated
+                    vo.setRatio(null);
+                    vo.setProvince(province != null ? province : ""All"");
+                    vo.setDate(date != null ? date : LocalDate.now().toString());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Long> getPermitExpiryStats() {","",2,"List<StationCountDetailVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getPermitExpiryStats#0","getPermitExpiryStats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",191,205,true,"    }
+
+    public Map<String, Long> getPermitExpiryStats() {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getEnddate);
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+
+        LocalDate now = LocalDate.now();
+        LocalDate threeMonthsLater = now.plusMonths(3);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put(""expired"", permits.stream().filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count());
+        stats.put(""expiringSoon"", permits.stream().filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && p.getEnddate().isBefore(threeMonthsLater)).count());
+        stats.put(""valid"", permits.stream().filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(threeMonthsLater)).count());
+
+        return stats;
+    }
+
+    public List<ValidityForecastVO> getValidityForecast(String province, Integer months) {","",0,"Map<String, Long>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getValidityForecast#2","getValidityForecast","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",207,239,true,"    }
+
+    public List<ValidityForecastVO> getValidityForecast(String province, Integer months) {
+        List<ValidityForecastVO> result = new ArrayList<>();
+        int count = months != null ? months : 12;
+        LocalDate now = LocalDate.now();
+
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (!""All"".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.like(RsbtSpecialPermit::getScope, province);
+        }
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+
+        for (int i = 0; i < count; i++) {
+            YearMonth ym = YearMonth.from(now.plusMonths(i));
+            LocalDate monthEnd = ym.atEndOfMonth();
+            LocalDate warningDate = monthEnd.plusDays(60);
+
+            long expired = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count();
+            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && !p.getEnddate().isAfter(warningDate)).count();
+            long normal = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isAfter(warningDate)).count();
+
+            ValidityForecastVO vo = new ValidityForecastVO();
+            vo.setMonth(ym.format(DateTimeFormatter.ofPattern(""yyyy-MM"")));
+            vo.setProvince(province != null ? province : ""All"");
+            vo.setNormal(normal);
+            vo.setExpiring(expiring);
+            vo.setExpired(expired);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    public List<StationRegionDetailVO> getRegionStats() {","",2,"List<ValidityForecastVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getRegionStats#0","getRegionStats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",241,263,true,"    }
+
+    public List<StationRegionDetailVO> getRegionStats() {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince, RsbtStation::getStationtype);
+        wrapper.eq(RsbtStation::getDeleted, 0);
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        // 按 province 分组
+        Map<String, List<RsbtStation>> byProvince = stations.stream()
+                .filter(s -> s.getProvince() != null && !s.getProvince().isEmpty())
+                .collect(Collectors.groupingBy(RsbtStation::getProvince));
+
+        return byProvince.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Long> typeCountMap = entry.getValue().stream()
+                            .filter(s -> s.getStationtype() != null && !s.getStationtype().isEmpty())
+                            .collect(Collectors.groupingBy(
+                                    s -> s.getStationtype(),
+                                    Collectors.counting()));
+                    return StationRegionDetailVO.from(entry.getKey(), typeCountMap);
+                })
+                .sorted(Comparator.comparingLong(StationRegionDetailVO::getTotal).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public List<MonthlyGrowthVO> getGrowthTrend(String type, Integer year, String province) {","",0,"List<StationRegionDetailVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getGrowthTrend#3","getGrowthTrend","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",265,294,true,"    }
+
+    public List<MonthlyGrowthVO> getGrowthTrend(String type, Integer year, String province) {
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+        List<MonthlyGrowthVO> result = new ArrayList<>();
+
+        for (int month = 1; month <= 12; month++) {
+            // 当年当月计数
+            Long current = countStations(targetYear, month, type, province);
+            // 去年同月计数
+            Long previous = countStations(targetYear - 1, month, type, province);
+            // 上月计数（用于环比）
+            Long lastMonth = month > 1 ? countStations(targetYear, month - 1, type, province) : 0L;
+
+            long growthCountVal = current - previous;
+            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;
+            double momPercentVal = lastMonth > 0 ? (momCountVal * 100.0 / lastMonth) : 0.0;
+
+            MonthlyGrowthVO vo = new MonthlyGrowthVO();
+            vo.setMonth(new java.text.SimpleDateFormat(""MMM"", java.util.Locale.ENGLISH)
+                            .format(new java.util.Date(targetYear - 1900, month - 1, 1)));
+            vo.setCurrent(current);
+            vo.setPrevious(previous);
+            vo.setGrowthCount(growthCountVal);
+            vo.setGrowthPercent(Math.round(growthPercentVal * 10) / 10.0);
+            vo.setMomCount(momCountVal);
+            vo.setMomPercent(Math.round(momPercentVal * 10) / 10.0);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private Long countStations(Integer year, Integer month, String type, String province) {","",3,"List<MonthlyGrowthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.countStations#4","countStations","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",296,308,true,"    }
+
+    private Long countStations(Integer year, Integer month, String type, String province) {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        if (year != null && month != null) {
+            wrapper.apply(""YEAR(startdate) = {0} AND MONTH(startdate) = {1}"", year, month);
+        }
+        if (!""All"".equals(type) && type != null && !type.isEmpty()) {
+            wrapper.eq(RsbtStation::getStationtype, type);
+        }
+        if (!""All"".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.eq(RsbtStation::getProvince, province);
+        }
+        return stationMapper.selectCount(wrapper);
+    }
+
+    public List<ExpiredStationVO> getExpiredStations(Integer year, String province, String type) {","",4,"Long"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getExpiredStations#3","getExpiredStations","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",310,335,true,"    }
+
+    public List<ExpiredStationVO> getExpiredStations(Integer year, String province, String type) {
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtStation::getDeleted, 0);
+
+        if (!""All"".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.eq(RsbtStation::getProvince, province);
+        }
+        if (!""All"".equals(type) && type != null && !type.isEmpty()) {
+            wrapper.eq(RsbtStation::getStationtype, type);
+        }
+
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        LocalDate now = LocalDate.now();
+        LocalDate threeMonthsLater = now.plusMonths(3);
+
+        return stations.stream()
+                .filter(s -> s.getExpirationdate() != null
+                        && s.getExpirationdate().getYear() == targetYear)
+                .filter(s -> s.getExpirationdate().isBefore(now)
+                        || s.getExpirationdate().isBefore(threeMonthsLater))
+                .map(this::convertToExpiredVO)
+                .sorted(Comparator.comparing(ExpiredStationVO::getMonth))
+                .collect(Collectors.toList());
+    }
+
+    private ExpiredStationVO convertToExpiredVO(RsbtStation s) {","",3,"List<ExpiredStationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.convertToExpiredVO#1","convertToExpiredVO","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",337,385,true,"    }
+
+    private ExpiredStationVO convertToExpiredVO(RsbtStation s) {
+        ExpiredStationVO vo = new ExpiredStationVO();
+        vo.setGuid(s.getGuid());
+        vo.setName(s.getSitename());
+        vo.setProvince(s.getProvince());
+        vo.setType(s.getStationtype());
+        vo.setExpiredCount(1);
+        vo.setExpireDate(s.getExpirationdate() != null ? s.getExpirationdate().toString() : """");
+        vo.setTechnicalStandard(s.getTechnology());
+        vo.setBandwidthProcessingUnitModel(s.getBbumodel());
+        vo.setOwnerName(s.getUnit());
+        vo.setBackhaulNetworkAccessMethod(s.getBackbone());
+        vo.setStationPurpose(s.getStationpurpose());
+        vo.setModulationType(s.getModulation());
+        vo.setStationType(s.getStationtype());
+        if (s.getFrequencyt() != null) {
+            vo.setTransmitFrequency(s.getFrequencyt().stripTrailingZeros().toPlainString() + "" MHz"");
+        }
+        if (s.getFrequencyr() != null) {
+            vo.setReceiveFrequency(s.getFrequencyr().stripTrailingZeros().toPlainString() + "" MHz"");
+        }
+        if (s.getBandwidth() != null) {
+            vo.setBandwidth(s.getBandwidth().stripTrailingZeros().toPlainString() + "" MHz"");
+        }
+        vo.setEquipmentNameAndModel(s.getDevicemodel());
+        if (s.getDevicequantity() != null) {
+            vo.setEquipmentCount(String.valueOf(s.getDevicequantity()));
+        }
+        if (s.getOutputpower() != null) {
+            vo.setEquipmentPower(s.getOutputpower().stripTrailingZeros().toPlainString() + "" W"");
+        }
+        vo.setAntennaType(s.getAnttype());
+        if (s.getAntquantity() != null) {
+            vo.setAntennaCount(String.valueOf(s.getAntquantity()));
+        }
+        vo.setRegion(s.getProvince());
+        vo.setDetailedLocation(s.getLocation());
+        if (s.getLongitude() != null) {
+            vo.setLongitude(s.getLongitude().stripTrailingZeros().toPlainString());
+        }
+        if (s.getLatitude() != null) {
+            vo.setLatitude(s.getLatitude().stripTrailingZeros().toPlainString());
+        }
+        vo.setOpenDate(s.getStartdate() != null ? s.getStartdate().toString() : """");
+        if (s.getExpirationdate() != null) {
+            vo.setMonth(s.getExpirationdate().getMonthValue());
+        }
+        return vo;
+    }
+
+    public List<PermitUsageByMonthVO> getPermitUsageByMonth(String businessType, String province, Integer year) {","",1,"ExpiredStationVO"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getPermitUsageByMonth#3","getPermitUsageByMonth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",387,467,true,"    }
+
+    public List<PermitUsageByMonthVO> getPermitUsageByMonth(String businessType, String province, Integer year) {
+        List<PermitUsageByMonthVO> result = new ArrayList<>();
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+
+        // Fetch all permits for target year and previous year in bulk to avoid N+1 queries
+        // 2 queries instead of 48+
+        List<RsbtSpecialPermit> currentYearPermits = fetchPermitsByYear(targetYear, businessType, province);
+        List<RsbtSpecialPermit> prevYearPermits = fetchPermitsByYear(targetYear - 1, businessType, province);
+
+        LocalDate now = LocalDate.now();
+        final int currentYearVal = targetYear;
+        final LocalDate nowVal = now;
+
+        for (int month = 1; month <= 12; month++) {
+            final int monthVal = month;
+            // Count current month active and total from cached data
+            long activeCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long totalCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal)
+                    .count();
+
+            // Count previous year same month
+            long prevYearActive = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long prevYearTotal = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal)
+                    .count();
+
+            // Count previous month
+            long prevMonthActive = 0;
+            long prevMonthTotal = 0;
+            if (monthVal > 1) {
+                prevMonthActive = currentYearPermits.stream()
+                        .filter(p -> p.getStartdate() != null
+                                && p.getStartdate().getYear() == currentYearVal
+                                && p.getStartdate().getMonthValue() == monthVal - 1
+                                && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                        .count();
+                prevMonthTotal = currentYearPermits.stream()
+                        .filter(p -> p.getStartdate() != null
+                                && p.getStartdate().getYear() == currentYearVal
+                                && p.getStartdate().getMonthValue() == monthVal - 1)
+                        .count();
+            }
+
+            double usageRate = totalCount > 0 ? (activeCount * 100.0 / totalCount) : 0.0;
+            double prevYearRate = prevYearTotal > 0 ? (prevYearActive * 100.0 / prevYearTotal) : 0.0;
+            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
+
+            double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;
+            double momGrowth = monthVal > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
+
+            PermitUsageByMonthVO vo = new PermitUsageByMonthVO();
+            vo.setMonth(String.format(""%02d"", monthVal));
+            vo.setBusinessType(businessType != null ? businessType : ""All"");
+            vo.setProvince(province != null ? province : ""All"");
+            vo.setYear(String.valueOf(targetYear));
+            vo.setUsageRate(Math.round(usageRate * 10) / 10.0);
+            vo.setYoyGrowth(Math.round(yoyGrowth * 10) / 10.0);
+            vo.setMomGrowth(Math.round(momGrowth * 10) / 10.0);
+            vo.setPrevYearRate(Math.round(prevYearRate * 10) / 10.0);
+            vo.setPrevMonthRate(monthVal > 1 ? Math.round(prevMonthRateVal * 10) / 10.0 : 0.0);
+            vo.setTotalCount(totalCount);
+            vo.setActiveCount(activeCount);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private List<RsbtSpecialPermit> fetchPermitsByYear(Integer year, String businessType, String province) {","",3,"List<PermitUsageByMonthVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.fetchPermitsByYear#3","fetchPermitsByYear","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",469,481,true,"    }
+
+    private List<RsbtSpecialPermit> fetchPermitsByYear(Integer year, String businessType, String province) {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (year != null) {
+            wrapper.apply(""YEAR(startdate) = {0}"", year);
+        }
+        if (!""All"".equals(businessType) && businessType != null && !businessType.isEmpty()) {
+            wrapper.eq(RsbtSpecialPermit::getCategory, businessType);
+        }
+        if (!""All"".equals(province) && province != null && !province.isEmpty()) {
+            wrapper.like(RsbtSpecialPermit::getScope, province);
+        }
+        return permitMapper.selectList(wrapper);
+    }
+
+    public List<LicenseCountByTypeVO> getLicenseCountByType(String province, String date) {","",3,"List<RsbtSpecialPermit>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.getLicenseCountByType#2","getLicenseCountByType","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",483,498,true,"    }
+
+    public List<LicenseCountByTypeVO> getLicenseCountByType(String province, String date) {
+        List<Map<String, Object>> results = permitMapper.countByCategoryAndProvince(province, date);
+
+        return results.stream()
+                .filter(r -> r.get(""category"") != null)
+                .map(r -> {
+                    LicenseCountByTypeVO vo = new LicenseCountByTypeVO();
+                    vo.setType(String.valueOf(r.get(""category"")));
+                    vo.setProvince(r.get(""province"") != null ? String.valueOf(r.get(""province"")) : ""Unknown"");
+                    vo.setCount(((Number) r.get(""cnt"")).longValue());
+                    vo.setDate(date != null ? date : LocalDate.now().toString());
+                    vo.setPeriod(""day"");
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+}","",2,"List<LicenseCountByTypeVO>"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:LicenseStatusUpdateTask.updateLicenseStatuses#0","updateLicenseStatuses","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",22,53,true,"    }
+
+    @Scheduled(cron = ""0 0 1 * * ?"")
+    public void updateLicenseStatuses() {
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+
+        // 更新已过期的: enddate < now
+        LambdaUpdateWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaUpdateWrapper<>();
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, ""normal"")
+                     .or().eq(RsbtSpecialPermit::getStatus, ""expiring"")
+                     .or().isNull(RsbtSpecialPermit::getStatus)
+                     .lt(RsbtSpecialPermit::getEnddate, now)
+                     .set(RsbtSpecialPermit::getStatus, ""expired"");
+        permitMapper.update(null, expiredWrapper);
+
+        // 更新即将过期的: enddate > now AND enddate <= now + 60
+        LambdaUpdateWrapper<RsbtSpecialPermit> expiringWrapper = new LambdaUpdateWrapper<>();
+        expiringWrapper.eq(RsbtSpecialPermit::getStatus, ""normal"")
+                       .or().isNull(RsbtSpecialPermit::getStatus)
+                       .gt(RsbtSpecialPermit::getEnddate, now)
+                       .le(RsbtSpecialPermit::getEnddate, expiringThreshold)
+                       .set(RsbtSpecialPermit::getStatus, ""expiring"");
+        permitMapper.update(null, expiringWrapper);
+
+        // 更新正常的: enddate > now + 60 或 enddate 为 null
+        LambdaUpdateWrapper<RsbtSpecialPermit> normalWrapper = new LambdaUpdateWrapper<>();
+        normalWrapper.and(w -> w.eq(RsbtSpecialPermit::getStatus, ""expiring"")
+                                .or().eq(RsbtSpecialPermit::getStatus, ""expired""))
+                     .and(w -> w.gt(RsbtSpecialPermit::getEnddate, expiringThreshold)
+                                .or().isNull(RsbtSpecialPermit::getEnddate))
+                     .set(RsbtSpecialPermit::getStatus, ""normal"");
+        permitMapper.update(null, normalWrapper);
+    }
+}","",0,"void"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:StationRegionDetailVO.normalizeType#1","normalizeType","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",15,23,true,"    private Long total;
+
+    private static String normalizeType(String type) {
+        if (type == null) return ""Other"";
+        String t = type.toLowerCase();
+        if (t.contains(""mobile"") || t.contains(""宏站"") || t.contains(""基站"") || t.contains(""base station"")) return ""Mobile"";
+        if (t.contains(""broadcast"") || t.contains(""广播"") || t.contains(""tv"") || t.contains(""dtv"")) return ""Broadcasting"";
+        if (t.contains(""fixed"") || t.contains(""固定"") || t.contains(""微波"") || t.contains(""microwave"")) return ""Fixed"";
+        if (t.contains(""satellite"") || t.contains(""卫星"") || t.contains(""vsat"")) return ""Satellite"";
+        return ""Other"";
+    }
+
+    public static StationRegionDetailVO from(String region, Map<String, Long> typeCountMap) {
+","",1,"String"
+"Method:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:StationRegionDetailVO.from#2","from","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",25,49,true,"    }
+
+    public static StationRegionDetailVO from(String region, Map<String, Long> typeCountMap) {
+        StationRegionDetailVO vo = new StationRegionDetailVO();
+        vo.setRegion(region);
+
+        long mobile = 0, broadcast = 0, fixed = 0, satellite = 0, other = 0;
+        for (Map.Entry<String, Long> entry : typeCountMap.entrySet()) {
+            String normalized = normalizeType(entry.getKey());
+            long count = entry.getValue();
+            switch (normalized) {
+                case ""Mobile"": mobile = count; break;
+                case ""Broadcasting"": broadcast = count; break;
+                case ""Fixed"": fixed = count; break;
+                case ""Satellite"": satellite = count; break;
+                default: other += count;
+            }
+        }
+
+        vo.setMobile(mobile);
+        vo.setBroadcast(broadcast);
+        vo.setFixed(fixed);
+        vo.setSatellite(satellite);
+        vo.setOther(other);
+        vo.setTotal(mobile + broadcast + fixed + satellite + other);
+        return vo;
+    }
+}","",2,"StationRegionDetailVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.page#1","page","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",24,27,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<OrganizationVO>> page(OrganizationQueryDTO query) {
+        return ApiResponse.ok(organizationService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<OrganizationVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",29,32,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<OrganizationVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(organizationService.getById(id));
+    }
+
+    @PostMapping","",1,"ApiResponse<OrganizationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.create#1","create","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",34,38,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody OrganizationCreateDTO dto) {
+        organizationService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.update#2","update","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",40,44,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody OrganizationUpdateDTO dto) {
+        organizationService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",46,50,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        organizationService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.list#0","list","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",52,55,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtOrganization>> list() {
+        return ApiResponse.ok(organizationService.listAll());
+    }
+}","",0,"ApiResponse<List<RsbtOrganization>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.page#1","page","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",24,27,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<RoleVO>> page(RoleQueryDTO query) {
+        return ApiResponse.ok(roleService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<RoleVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",29,32,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<RoleVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(roleService.getById(id));
+    }
+
+    @PostMapping","",1,"ApiResponse<RoleVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.create#1","create","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",34,38,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody RoleCreateDTO dto) {
+        roleService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.update#2","update","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",40,44,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody RoleUpdateDTO dto) {
+        roleService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",46,50,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        roleService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.list#0","list","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",52,55,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtRole>> list() {
+        return ApiResponse.ok(roleService.listAll());
+    }
+
+    @GetMapping(""/{id}/permissions"")","",0,"ApiResponse<List<RsbtRole>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.getPermissions#1","getPermissions","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",57,60,true,"    }
+
+    @GetMapping(""/{id}/permissions"")
+    public ApiResponse<List<String>> getPermissions(@PathVariable String id) {
+        return ApiResponse.ok(roleService.getPermissionsByRoleId(id));
+    }
+}","",1,"ApiResponse<List<String>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.page#1","page","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",24,27,true,"    }
+
+    @GetMapping(""/page"")
+    public ApiResponse<PageResponse<UserVO>> page(UserQueryDTO query) {
+        return ApiResponse.ok(userService.page(query));
+    }
+
+    @GetMapping(""/{id}"")","",1,"ApiResponse<PageResponse<UserVO>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",29,32,true,"    }
+
+    @GetMapping(""/{id}"")
+    public ApiResponse<UserVO> getById(@PathVariable String id) {
+        return ApiResponse.ok(userService.getById(id));
+    }
+
+    @GetMapping(""/username/{username}"")","",1,"ApiResponse<UserVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.getByUsername#1","getByUsername","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",34,37,true,"    }
+
+    @GetMapping(""/username/{username}"")
+    public ApiResponse<UserVO> getByUsername(@PathVariable String username) {
+        return ApiResponse.ok(userService.getByUsername(username));
+    }
+
+    @PostMapping","",1,"ApiResponse<UserVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.create#1","create","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",39,43,true,"    }
+
+    @PostMapping
+    public ApiResponse<Void> create(@Valid @RequestBody UserCreateDTO dto) {
+        userService.create(dto);
+        return ApiResponse.ok();
+    }
+
+    @PutMapping(""/{id}"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.update#2","update","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",45,49,true,"    }
+
+    @PutMapping(""/{id}"")
+    public ApiResponse<Void> update(@PathVariable String id, @Valid @RequestBody UserUpdateDTO dto) {
+        userService.update(id, dto);
+        return ApiResponse.ok();
+    }
+
+    @PostMapping(""/{id}/reset-password"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.resetPassword#2","resetPassword","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",51,55,true,"    }
+
+    @PostMapping(""/{id}/reset-password"")
+    public ApiResponse<Void> resetPassword(@PathVariable String id, @RequestParam String newPassword) {
+        userService.resetPassword(id, newPassword);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping(""/{id}"")","",2,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",57,61,true,"    }
+
+    @DeleteMapping(""/{id}"")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        userService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping(""/list"")","",1,"ApiResponse<Void>"
+"Method:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.list#0","list","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",63,66,true,"    }
+
+    @GetMapping(""/list"")
+    public ApiResponse<List<RsbtUser>> list() {
+        return ApiResponse.ok(userService.listAll());
+    }
+}","",0,"ApiResponse<List<RsbtUser>>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.page#1","page","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",24,47,true,"public class OrganizationService extends ServiceImpl<OrganizationMapper, RsbtOrganization> {
+
+    public PageResponse<OrganizationVO> page(OrganizationQueryDTO query) {
+        Page<RsbtOrganization> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtOrganization> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {
+            wrapper.like(RsbtOrganization::getName, query.getName());
+        }
+        if (StringUtils.hasText(query.getCode())) {
+            wrapper.eq(RsbtOrganization::getCode, query.getCode());
+        }
+        if (StringUtils.hasText(query.getType())) {
+            wrapper.eq(RsbtOrganization::getType, query.getType());
+        }
+        if (StringUtils.hasText(query.getRegion())) {
+            wrapper.like(RsbtOrganization::getRegion, query.getRegion());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.and(w -> w.like(RsbtOrganization::getName, query.getKeyword())
+                    .or().like(RsbtOrganization::getCode, query.getKeyword()));
+        }
+        wrapper.orderByDesc(RsbtOrganization::getCreateTime);
+        IPage<RsbtOrganization> result = page(page, wrapper);
+        List<OrganizationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public OrganizationVO getById(String id) {","",1,"PageResponse<OrganizationVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",49,55,true,"    }
+
+    public OrganizationVO getById(String id) {
+        RsbtOrganization entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public void create(OrganizationCreateDTO dto) {","",1,"OrganizationVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.create#1","create","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",57,63,true,"    }
+
+    public void create(OrganizationCreateDTO dto) {
+        RsbtOrganization entity = new RsbtOrganization();
+        entity.setGuid(UUID.randomUUID().toString());
+        validateParent(dto.getParentId(), entity.getGuid());
+        copyProperties(dto, entity);
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, OrganizationUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.update#2","update","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",65,73,true,"    }
+
+    public void update(String id, OrganizationUpdateDTO dto) {
+        RsbtOrganization entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");
+        }
+        validateParent(dto.getParentId(), id);
+        copyProperties(dto, entity);
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",75,82,true,"    }
+
+    public void delete(String id) {
+        long childCount = baseMapper.selectCount(new LambdaQueryWrapper<RsbtOrganization>()
+                .eq(RsbtOrganization::getParentId, id));
+        if (childCount > 0) {
+            throw new BizException(400, ""该组织存在下级组织，无法删除"");
+        }
+        baseMapper.deleteById(id);
+    }
+
+    public List<RsbtOrganization> listAll() {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",84,86,true,"    }
+
+    public List<RsbtOrganization> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    private void copyProperties(Object src, RsbtOrganization target) {","",0,"List<RsbtOrganization>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.copyProperties#2","copyProperties","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",88,114,true,"    }
+
+    private void copyProperties(Object src, RsbtOrganization target) {
+        if (src instanceof OrganizationCreateDTO) {
+            OrganizationCreateDTO dto = (OrganizationCreateDTO) src;
+            target.setParentId(dto.getParentId());
+            target.setName(dto.getName());
+            target.setCode(dto.getCode());
+            target.setType(dto.getType());
+            target.setRegion(dto.getRegion());
+            target.setAddress(dto.getAddress());
+            target.setContact(dto.getContact());
+            target.setPhone(dto.getPhone());
+            target.setEmail(dto.getEmail());
+            target.setStatus(dto.getStatus() != null ? dto.getStatus() : ""enabled"");
+        } else if (src instanceof OrganizationUpdateDTO) {
+            OrganizationUpdateDTO dto = (OrganizationUpdateDTO) src;
+            target.setParentId(dto.getParentId());
+            target.setName(dto.getName());
+            target.setCode(dto.getCode());
+            target.setType(dto.getType());
+            target.setRegion(dto.getRegion());
+            target.setAddress(dto.getAddress());
+            target.setContact(dto.getContact());
+            target.setPhone(dto.getPhone());
+            target.setEmail(dto.getEmail());
+            target.setStatus(dto.getStatus());
+        }
+    }
+
+    private OrganizationVO convertToVO(RsbtOrganization entity) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",116,132,true,"    }
+
+    private OrganizationVO convertToVO(RsbtOrganization entity) {
+        OrganizationVO vo = new OrganizationVO();
+        vo.setGuid(entity.getGuid());
+        vo.setParentId(entity.getParentId());
+        vo.setName(entity.getName());
+        vo.setCode(entity.getCode());
+        vo.setType(entity.getType());
+        vo.setRegion(entity.getRegion());
+        vo.setAddress(entity.getAddress());
+        vo.setContact(entity.getContact());
+        vo.setPhone(entity.getPhone());
+        vo.setEmail(entity.getEmail());
+        vo.setStatus(entity.getStatus());
+        vo.setCreateTime(entity.getCreateTime());
+        vo.setUpdateTime(entity.getUpdateTime());
+        return vo;
+    }
+
+    private void validateParent(String parentId, String currentId) {","",1,"OrganizationVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:OrganizationService.validateParent#2","validateParent","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",134,145,true,"    }
+
+    private void validateParent(String parentId, String currentId) {
+        if (!StringUtils.hasText(parentId)) {
+            return;
+        }
+        if (parentId.equals(currentId)) {
+            throw new BizException(400, ""父级组织不能选择自己"");
+        }
+        RsbtOrganization parent = baseMapper.selectById(parentId);
+        if (parent == null) {
+            throw new BizException(400, ""父级组织不存在"");
+        }
+    }
+}","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.page#1","page","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",39,55,true,"    }
+
+    public PageResponse<RoleVO> page(RoleQueryDTO query) {
+        Page<RsbtRole> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtRole> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {
+            wrapper.like(RsbtRole::getName, query.getName());
+        }
+        if (StringUtils.hasText(query.getStatus())) {
+            wrapper.eq(RsbtRole::getStatus, query.getStatus());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.like(RsbtRole::getName, query.getKeyword());
+        }
+        wrapper.orderByDesc(RsbtRole::getCreateTime);
+        IPage<RsbtRole> result = page(page, wrapper);
+        List<RoleVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public RoleVO getById(String id) {","",1,"PageResponse<RoleVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",57,63,true,"    }
+
+    public RoleVO getById(String id) {
+        RsbtRole entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""角色不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    @Transactional","",1,"RoleVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.create#1","create","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",65,89,true,"    }
+
+    @Transactional
+    public void create(RoleCreateDTO dto) {
+        LambdaQueryWrapper<RsbtRole> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtRole::getName, dto.getName());
+        if (baseMapper.selectCount(wrapper) > 0) {
+            throw new BizException(400, ""角色名称已存在"");
+        }
+
+        RsbtRole entity = new RsbtRole();
+        entity.setGuid(UUID.randomUUID().toString());
+        entity.setName(dto.getName());
+        entity.setDescription(dto.getDescription());
+        entity.setStatus(dto.getStatus() != null ? dto.getStatus() : ""enabled"");
+        baseMapper.insert(entity);
+
+        if (dto.getPermissions() != null && !dto.getPermissions().isEmpty()) {
+            for (String permKey : dto.getPermissions()) {
+                RsbtRolePermission perm = new RsbtRolePermission();
+                perm.setGuid(UUID.randomUUID().toString());
+                perm.setRoleId(entity.getGuid());
+                perm.setPermissionKey(permKey);
+                rolePermissionMapper.insert(perm);
+            }
+        }
+    }
+
+    @Transactional","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.update#2","update","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",91,115,true,"    }
+
+    @Transactional
+    public void update(String id, RoleUpdateDTO dto) {
+        RsbtRole entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""角色不存在"");
+        }
+        entity.setName(dto.getName());
+        entity.setDescription(dto.getDescription());
+        entity.setStatus(dto.getStatus());
+        baseMapper.updateById(entity);
+
+        LambdaQueryWrapper<RsbtRolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtRolePermission::getRoleId, id);
+        rolePermissionMapper.delete(wrapper);
+
+        if (dto.getPermissions() != null && !dto.getPermissions().isEmpty()) {
+            for (String permKey : dto.getPermissions()) {
+                RsbtRolePermission perm = new RsbtRolePermission();
+                perm.setGuid(UUID.randomUUID().toString());
+                perm.setRoleId(id);
+                perm.setPermissionKey(permKey);
+                rolePermissionMapper.insert(perm);
+            }
+        }
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",117,130,true,"    }
+
+    public void delete(String id) {
+        LambdaQueryWrapper<RsbtUser> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.eq(RsbtUser::getRoleId, id);
+        long userCount = userMapper.selectCount(userWrapper);
+        if (userCount > 0) {
+            throw new BizException(400, ""该角色已有用户关联，无法删除"");
+        }
+
+        LambdaQueryWrapper<RsbtRolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtRolePermission::getRoleId, id);
+        rolePermissionMapper.delete(wrapper);
+
+        baseMapper.deleteById(id);
+    }
+
+    public List<RsbtRole> listAll() {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",132,134,true,"    }
+
+    public List<RsbtRole> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    public List<String> getPermissionsByRoleId(String roleId) {","",0,"List<RsbtRole>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.getPermissionsByRoleId#1","getPermissionsByRoleId","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",136,141,true,"    }
+
+    public List<String> getPermissionsByRoleId(String roleId) {
+        LambdaQueryWrapper<RsbtRolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtRolePermission::getRoleId, roleId);
+        List<RsbtRolePermission> perms = rolePermissionMapper.selectList(wrapper);
+        return perms.stream().map(RsbtRolePermission::getPermissionKey).collect(Collectors.toList());
+    }
+
+    private RoleVO convertToVO(RsbtRole entity) {","",1,"List<String>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",143,158,true,"    }
+
+    private RoleVO convertToVO(RsbtRole entity) {
+        RoleVO vo = new RoleVO();
+        vo.setGuid(entity.getGuid());
+        vo.setName(entity.getName());
+        vo.setDescription(entity.getDescription());
+        vo.setStatus(entity.getStatus());
+
+        List<String> permissions = getPermissionsByRoleId(entity.getGuid());
+        vo.setPermissions(permissions);
+
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtUser::getRoleId, entity.getGuid());
+        vo.setUserCount(Long.valueOf(userMapper.selectCount(wrapper)).intValue());
+
+        return vo;
+    }
+}","",1,"RoleVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getUserAuthorities#1","getUserAuthorities","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",43,65,true,"    }
+
+    public List<SimpleGrantedAuthority> getUserAuthorities(String username) {
+        RsbtUser user = getByUsernameEntity(username);
+        if (user == null) {
+            return Collections.emptyList();
+        }
+
+        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+
+        // Add role-based authority
+        if (user.getRoleId() != null) {
+            RsbtRole role = roleMapper.selectById(user.getRoleId());
+            if (role != null) {
+                authorities.add(new SimpleGrantedAuthority(""ROLE_"" + role.getName().toUpperCase()));
+            }
+            // Get permissions from role
+            List<String> permissions = roleService.getPermissionsByRoleId(user.getRoleId());
+            for (String perm : permissions) {
+                authorities.add(new SimpleGrantedAuthority(perm));
+            }
+        }
+
+        return authorities;
+    }
+
+    public PageResponse<UserVO> page(UserQueryDTO query) {","",1,"List<SimpleGrantedAuthority>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.page#1","page","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",67,94,true,"    }
+
+    public PageResponse<UserVO> page(UserQueryDTO query) {
+        Page<RsbtUser> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getUsername())) {
+            wrapper.like(RsbtUser::getUsername, query.getUsername());
+        }
+        if (StringUtils.hasText(query.getName())) {
+            wrapper.like(RsbtUser::getName, query.getName());
+        }
+        if (StringUtils.hasText(query.getRoleId())) {
+            wrapper.eq(RsbtUser::getRoleId, query.getRoleId());
+        }
+        if (StringUtils.hasText(query.getOrgId())) {
+            wrapper.eq(RsbtUser::getOrgId, query.getOrgId());
+        }
+        if (StringUtils.hasText(query.getStatus())) {
+            wrapper.eq(RsbtUser::getStatus, query.getStatus());
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            wrapper.and(w -> w.like(RsbtUser::getUsername, query.getKeyword())
+                    .or().like(RsbtUser::getName, query.getKeyword())
+                    .or().like(RsbtUser::getEmail, query.getKeyword()));
+        }
+        wrapper.orderByDesc(RsbtUser::getCreateTime);
+        IPage<RsbtUser> result = page(page, wrapper);
+        List<UserVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    public UserVO getById(String id) {","",1,"PageResponse<UserVO>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getById#1","getById","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",96,102,true,"    }
+
+    public UserVO getById(String id) {
+        RsbtUser entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""用户不存在"");
+        }
+        return convertToVO(entity);
+    }
+
+    public UserVO getByUsername(String username) {","",1,"UserVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getByUsername#1","getByUsername","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",104,112,true,"    }
+
+    public UserVO getByUsername(String username) {
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtUser::getUsername, username);
+        RsbtUser entity = baseMapper.selectOne(wrapper);
+        if (entity == null) {
+            return null;
+        }
+        return convertToVO(entity);
+    }
+
+    public RsbtUser getByUsernameEntity(String username) {","",1,"UserVO"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getByUsernameEntity#1","getByUsernameEntity","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",114,118,true,"    }
+
+    public RsbtUser getByUsernameEntity(String username) {
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtUser::getUsername, username);
+        return baseMapper.selectOne(wrapper);
+    }
+
+    public RsbtRole getRoleById(String roleId) {","",1,"RsbtUser"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getRoleById#1","getRoleById","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",120,122,true,"    }
+
+    public RsbtRole getRoleById(String roleId) {
+        return roleMapper.selectById(roleId);
+    }
+
+    public List<String> getPermissionsByUserId(String userId) {","",1,"RsbtRole"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.getPermissionsByUserId#1","getPermissionsByUserId","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",124,130,true,"    }
+
+    public List<String> getPermissionsByUserId(String userId) {
+        RsbtUser user = baseMapper.selectById(userId);
+        if (user == null || user.getRoleId() == null) {
+            return Collections.emptyList();
+        }
+        return roleService.getPermissionsByRoleId(user.getRoleId());
+    }
+
+    public void create(UserCreateDTO dto) {","",1,"List<String>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.create#1","create","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",132,150,true,"    }
+
+    public void create(UserCreateDTO dto) {
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtUser::getUsername, dto.getUsername());
+        if (baseMapper.selectCount(wrapper) > 0) {
+            throw new BizException(400, ""用户名已存在"");
+        }
+
+        RsbtUser entity = new RsbtUser();
+        entity.setGuid(UUID.randomUUID().toString());
+        entity.setUsername(dto.getUsername());
+        entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+        entity.setName(dto.getName());
+        entity.setEmail(dto.getEmail());
+        entity.setPhone(dto.getPhone());
+        entity.setRoleId(dto.getRoleId());
+        entity.setOrgId(dto.getOrgId());
+        entity.setStatus(dto.getStatus() != null ? dto.getStatus() : ""active"");
+        baseMapper.insert(entity);
+    }
+
+    public void update(String id, UserUpdateDTO dto) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.update#2","update","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",152,164,true,"    }
+
+    public void update(String id, UserUpdateDTO dto) {
+        RsbtUser entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""用户不存在"");
+        }
+        entity.setName(dto.getName());
+        entity.setEmail(dto.getEmail());
+        entity.setPhone(dto.getPhone());
+        entity.setRoleId(dto.getRoleId());
+        entity.setOrgId(dto.getOrgId());
+        entity.setStatus(dto.getStatus());
+        baseMapper.updateById(entity);
+    }
+
+    public void resetPassword(String id, String newPassword) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.resetPassword#2","resetPassword","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",166,173,true,"    }
+
+    public void resetPassword(String id, String newPassword) {
+        RsbtUser entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""用户不存在"");
+        }
+        entity.setPassword(passwordEncoder.encode(newPassword));
+        baseMapper.updateById(entity);
+    }
+
+    public void delete(String id) {","",2,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.delete#1","delete","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",175,177,true,"    }
+
+    public void delete(String id) {
+        baseMapper.deleteById(id);
+    }
+
+    public void changePassword(String username, String oldPassword, String newPassword) {","",1,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.changePassword#3","changePassword","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",179,189,true,"    }
+
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        RsbtUser entity = getByUsernameEntity(username);
+        if (entity == null) {
+            throw new BizException(404, ""用户不存在"");
+        }
+        if (!passwordEncoder.matches(oldPassword, entity.getPassword())) {
+            throw new BizException(400, ""原密码错误"");
+        }
+        entity.setPassword(passwordEncoder.encode(newPassword));
+        baseMapper.updateById(entity);
+    }
+
+    public List<RsbtUser> listAll() {","",3,"void"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.listAll#0","listAll","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",191,193,true,"    }
+
+    public List<RsbtUser> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    private UserVO convertToVO(RsbtUser entity) {","",0,"List<RsbtUser>"
+"Method:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.convertToVO#1","convertToVO","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",195,219,true,"    }
+
+    private UserVO convertToVO(RsbtUser entity) {
+        UserVO vo = new UserVO();
+        vo.setGuid(entity.getGuid());
+        vo.setUsername(entity.getUsername());
+        vo.setName(entity.getName());
+        vo.setEmail(entity.getEmail());
+        vo.setPhone(entity.getPhone());
+        vo.setRoleId(entity.getRoleId());
+        vo.setOrgId(entity.getOrgId());
+        vo.setStatus(entity.getStatus());
+
+        if (entity.getRoleId() != null) {
+            RsbtRole role = roleMapper.selectById(entity.getRoleId());
+            if (role != null) {
+                vo.setRoleName(role.getName());
+            }
+        }
+        if (entity.getOrgId() != null) {
+            RsbtOrganization org = organizationMapper.selectById(entity.getOrgId());
+            if (org != null) {
+                vo.setOrgName(org.getName());
+            }
+        }
+        return vo;
+    }
+}","",1,"UserVO"
+"Method:backend/src/main/java/com/freqmanage/security/JwtFilter.java:JwtFilter.doFilterInternal#3","doFilterInternal","backend/src/main/java/com/freqmanage/security/JwtFilter.java",27,40,true,"    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String auth = request.getHeader(""Authorization"");
+        if (StringUtils.hasText(auth) && auth.startsWith(""Bearer "")) {
+            try {
+                String username = jwtUtil.parseUsername(auth.substring(7));
+                List<SimpleGrantedAuthority> authorities = userService.getUserAuthorities(username);
+                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(token);
+            } catch (Exception ignored) {
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+","",3,"void"
+"Method:backend/src/main/java/com/freqmanage/security/JwtUtil.java:JwtUtil.generate#1","generate","backend/src/main/java/com/freqmanage/security/JwtUtil.java",17,20,true,"    private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+
+    public String generate(String username) {
+        Date now = new Date();
+        return Jwts.builder().subject(username).issuedAt(now).expiration(new Date(now.getTime() + EXPIRE)).signWith(key).compact();
+    }
+
+    public String parseUsername(String token) {
+","",1,"String"
+"Method:backend/src/main/java/com/freqmanage/security/JwtUtil.java:JwtUtil.parseUsername#1","parseUsername","backend/src/main/java/com/freqmanage/security/JwtUtil.java",22,25,true,"    }
+
+    public String parseUsername(String token) {
+        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        return claims.getSubject();
+    }
+}
+","",1,"String"

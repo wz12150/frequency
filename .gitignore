@@ -1,0 +1,45 @@
+# Dependencies
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/.vite/
+frontend/dist/assets/
+
+# Backend build
+backend/target/
+backend/bin/
+backend/backend/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+
+# Gitnexus
+.gitnexus/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Sql data files
+*.sql
+!sql/schema.sql
+
+# Docs
+docs/

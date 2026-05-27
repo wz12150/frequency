@@ -1,0 +1,749 @@
+id,name,filePath,startLine,endLine,isExported,content,description
+"Interface:backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitFrequencyMapper.java:SpecialPermitFrequencyMapper","SpecialPermitFrequencyMapper","backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitFrequencyMapper.java",5,6,true,"import com.freqmanage.module.permit.entity.RsbtSpecialPermitFrequency;
+
+public interface SpecialPermitFrequencyMapper extends BaseMapper<RsbtSpecialPermitFrequency> {
+}",""
+"Interface:backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitMapper.java:SpecialPermitMapper","SpecialPermitMapper","backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitMapper.java",10,24,true,"import java.util.Map;
+
+public interface SpecialPermitMapper extends BaseMapper<RsbtSpecialPermit> {
+
+    @Select(""<script>"" +
+            ""SELECT category, scope AS province, COUNT(*) AS cnt FROM RSBT_SPECIAL_PERMIT "" +
+            ""WHERE 1=1 "" +
+            ""<if test='province != null and province != \""All\"" and province != \""\""'>"" +
+            ""  AND scope = #{province}"" +
+            ""</if>"" +
+            ""<if test='date != null and date != \""\""'>"" +
+            ""  AND DATE(startdate) &lt;= #{date}"" +
+            ""</if>"" +
+            "" GROUP BY category, scope"" +
+            ""</script>"")
+    List<Map<String, Object>> countByCategoryAndProvince(@Param(""province"") String province, @Param(""date"") String date);
+}
+",""
+"Interface:backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitStationMapper.java:SpecialPermitStationMapper","SpecialPermitStationMapper","backend/src/main/java/com/freqmanage/module/permit/mapper/SpecialPermitStationMapper.java",5,6,true,"import com.freqmanage.module.permit.entity.RsbtSpecialPermitStation;
+
+public interface SpecialPermitStationMapper extends BaseMapper<RsbtSpecialPermitStation> {
+}",""
+"Interface:backend/src/main/java/com/freqmanage/module/planning/mapper/PlanningMapper.java:PlanningMapper","PlanningMapper","backend/src/main/java/com/freqmanage/module/planning/mapper/PlanningMapper.java",5,6,true,"import com.freqmanage.module.planning.entity.RsbtPlanning;
+
+public interface PlanningMapper extends BaseMapper<RsbtPlanning> {
+}
+",""
+"Interface:backend/src/main/java/com/freqmanage/module/station/mapper/StationMapper.java:StationMapper","StationMapper","backend/src/main/java/com/freqmanage/module/station/mapper/StationMapper.java",5,6,true,"import com.freqmanage.module.station.entity.RsbtStation;
+
+public interface StationMapper extends BaseMapper<RsbtStation> {
+}
+",""
+"Interface:backend/src/main/java/com/freqmanage/module/system/mapper/OrganizationMapper.java:OrganizationMapper","OrganizationMapper","backend/src/main/java/com/freqmanage/module/system/mapper/OrganizationMapper.java",5,6,true,"import com.freqmanage.module.system.entity.RsbtOrganization;
+
+public interface OrganizationMapper extends BaseMapper<RsbtOrganization> {
+}",""
+"Interface:backend/src/main/java/com/freqmanage/module/system/mapper/RoleMapper.java:RoleMapper","RoleMapper","backend/src/main/java/com/freqmanage/module/system/mapper/RoleMapper.java",5,6,true,"import com.freqmanage.module.system.entity.RsbtRole;
+
+public interface RoleMapper extends BaseMapper<RsbtRole> {
+}",""
+"Interface:backend/src/main/java/com/freqmanage/module/system/mapper/RolePermissionMapper.java:RolePermissionMapper","RolePermissionMapper","backend/src/main/java/com/freqmanage/module/system/mapper/RolePermissionMapper.java",5,6,true,"import com.freqmanage.module.system.entity.RsbtRolePermission;
+
+public interface RolePermissionMapper extends BaseMapper<RsbtRolePermission> {
+}",""
+"Interface:backend/src/main/java/com/freqmanage/module/system/mapper/UserMapper.java:UserMapper","UserMapper","backend/src/main/java/com/freqmanage/module/system/mapper/UserMapper.java",5,6,true,"import com.freqmanage.module.system.entity.RsbtUser;
+
+public interface UserMapper extends BaseMapper<RsbtUser> {
+}",""
+"Interface:frontend/src/app/api/dashboard.ts:ProvinceStatsVO","ProvinceStatsVO","frontend/src/app/api/dashboard.ts",26,33,true,"
+// ── 省份台站统计 ───────────────────────────────────────────────────────────
+export interface ProvinceStatsVO {
+  id: string;
+  name: string;
+  abbr: string;
+  total: number;
+  expiring60: number;  // 60天内过期数量（原始值，用于动态计算）
+  expired: number;
+}
+
+// ── 许可证类型统计 ─────────────────────────────────────────────────────────",""
+"Interface:frontend/src/app/api/dashboard.ts:LicenseTypeStatsVO","LicenseTypeStatsVO","frontend/src/app/api/dashboard.ts",36,42,true,"
+// ── 许可证类型统计 ─────────────────────────────────────────────────────────
+export interface LicenseTypeStatsVO {
+  id: string;
+  type: string;
+  normal: number;
+  expiring: number;
+  expired: number;
+}
+
+// ── Dashboard 概览 ──────────────────────────────────────────────────────────",""
+"Interface:frontend/src/app/api/dashboard.ts:DashboardOverviewVO","DashboardOverviewVO","frontend/src/app/api/dashboard.ts",45,64,true,"
+// ── Dashboard 概览 ──────────────────────────────────────────────────────────
+export interface DashboardOverviewVO {
+  // KPI cards
+  totalStations: number;
+  normalLicenses: number;
+  expiringSoon: number;
+  expired: number;
+  // 增长率
+  stationGrowth: string;     // 百分比字符串 e.g. ""+2.4%""
+  licenseGrowth: string;
+  expiringGrowth: string;
+  expiredGrowth: string;
+  // 省份台站统计列表
+  provinceStats: ProvinceStatsVO[];
+  // 许可证类型统计列表
+  licenseTypeStats: LicenseTypeStatsVO[];
+  // 台站类型分布（用于饼图）
+  stationTypes: { id: string; name: string; value: number; color: string }[];
+  // 台站增长趋势（最近12个月）
+  stationGrowthTrend: { month: string; count: number }[];
+}
+
+export const dashboardApi = {",""
+"Interface:frontend/src/app/api/permit.ts:PermitVO","PermitVO","frontend/src/app/api/permit.ts",26,48,true,"
+// 后端 PermitVO 字段 (PermitVO extends RsbtSpecialPermit)
+export interface PermitVO {
+  guid: string;
+  consent: string;           // 许可证号
+  interlocutor: string;      // 对话者/组织
+  category: string;           // 类别
+  legal: string;             // 法律依据
+  type: string;             // 类型
+  startdate: string;         // 开始日期 (yyyy-MM-dd)
+  enddate: string;           // 结束日期 (yyyy-MM-dd)
+  scope: string;            // 范围 (frequency)
+  process: string;          // 流程
+  status: string;            // 状态 active/expired/revoked
+  code: string;             // 许可证号
+  decisiondate: string;     // 决定日期
+  decision: string;         // 决定
+  note: string;             // 备注
+  register: string;         // 登记人
+  address: string;          // 地址
+  phone: string;            // 电话
+  email: string;            // 邮箱
+  administrativeinfo: string; // 行政信息
+  directorname: string;     // 负责人
+}
+
+export interface PermitQuery {",""
+"Interface:frontend/src/app/api/permit.ts:PermitQuery","PermitQuery","frontend/src/app/api/permit.ts",50,56,true,"}
+
+export interface PermitQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  type?: string;
+  status?: string;
+}
+
+export interface PermitCreate {",""
+"Interface:frontend/src/app/api/permit.ts:PermitCreate","PermitCreate","frontend/src/app/api/permit.ts",58,79,true,"}
+
+export interface PermitCreate {
+  consent?: string;
+  interlocutor?: string;
+  category?: string;
+  legal?: string;
+  type?: string;
+  startdate?: string;
+  enddate?: string;
+  scope?: string;
+  process?: string;
+  status?: string;
+  code?: string;
+  decisiondate?: string;
+  decision?: string;
+  note?: string;
+  register?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  administrativeinfo?: string;
+  directorname?: string;
+}
+
+export interface PermitUpdate {",""
+"Interface:frontend/src/app/api/permit.ts:PermitUpdate","PermitUpdate","frontend/src/app/api/permit.ts",81,102,true,"}
+
+export interface PermitUpdate {
+  consent?: string;
+  interlocutor?: string;
+  category?: string;
+  legal?: string;
+  type?: string;
+  startdate?: string;
+  enddate?: string;
+  scope?: string;
+  process?: string;
+  status?: string;
+  code?: string;
+  decisiondate?: string;
+  decision?: string;
+  note?: string;
+  register?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  administrativeinfo?: string;
+  directorname?: string;
+}
+
+export const permitApi = {",""
+"Interface:frontend/src/app/api/planning.ts:PlanningVO","PlanningVO","frontend/src/app/api/planning.ts",47,58,true,"
+/** 导入/接口中的频率相关数值单位为 kHz（起始、终止、步进、信号带宽）。 */
+export interface PlanningVO {
+  guid: string;
+  radioservices: string;
+  subservices: string;
+  level: string;
+  segmentname: string;
+  startfrequency: number | string;
+  stopfrequency: number | string;
+  step: number;
+  bandwidth: number;
+  remark: string;
+}
+
+export interface PlanningQuery {",""
+"Interface:frontend/src/app/api/planning.ts:PlanningQuery","PlanningQuery","frontend/src/app/api/planning.ts",60,68,true,"}
+
+export interface PlanningQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  radioservices?: string;
+  subservices?: string;
+  level?: string;
+  segmentname?: string;
+}
+
+export interface PlanningCreate {",""
+"Interface:frontend/src/app/api/planning.ts:PlanningCreate","PlanningCreate","frontend/src/app/api/planning.ts",70,80,true,"}
+
+export interface PlanningCreate {
+  radioservices: string;
+  subservices: string;
+  level: string;
+  segmentname: string;
+  startfrequency: number;
+  stopfrequency: number;
+  step: number;
+  bandwidth: number;
+  remark: string;
+}
+
+export interface PlanningUpdate {",""
+"Interface:frontend/src/app/api/planning.ts:PlanningUpdate","PlanningUpdate","frontend/src/app/api/planning.ts",82,92,true,"}
+
+export interface PlanningUpdate {
+  radioservices?: string;
+  subservices?: string;
+  level?: string;
+  segmentname?: string;
+  startfrequency?: number;
+  stopfrequency?: number;
+  step?: number;
+  bandwidth?: number;
+  remark?: string;
+}
+
+export const planningApi = {",""
+"Interface:frontend/src/app/api/station.ts:StationMapVO","StationMapVO","frontend/src/app/api/station.ts",25,41,true,"};
+
+export interface StationMapVO {
+  guid: string;
+  sitename: string;
+  longitude: number;
+  latitude: number;
+  type: string;
+  stationtype: string;
+  frequency: string;
+  freqMHz: number;
+  unit: string;
+  equipName: string;
+  equipModel: string;
+  expiry: string;
+  power: string;
+  status: 'normal' | 'expiring' | 'expired';
+  province: string;
+}
+
+export interface StationQuery {",""
+"Interface:frontend/src/app/api/station.ts:StationQuery","StationQuery","frontend/src/app/api/station.ts",43,52,true,"}
+
+export interface StationQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  type?: string;
+  province?: string;
+  stationtype?: string;
+  technology?: string;
+  district?: string;
+}
+
+export interface StationCreate {",""
+"Interface:frontend/src/app/api/station.ts:StationCreate","StationCreate","frontend/src/app/api/station.ts",54,81,true,"}
+
+export interface StationCreate {
+  type: string;
+  technology?: string;
+  bbumodel?: string;
+  ownedsite?: string;
+  backbone?: string;
+  stationpurpose?: string;
+  modulation?: string;
+  stationtype: string;
+  frequencyt?: number;
+  frequencyr?: number;
+  bandwidth?: number;
+  devicemodel?: string;
+  devicequantity?: number;
+  outputpower?: number;
+  anttype?: string;
+  antquantity?: number;
+  province: string;
+  district?: string;
+  location?: string;
+  sitename: string;
+  longitude?: number;
+  latitude?: number;
+  startdate?: string;
+  expirationdate?: string;
+  unit?: string;
+  equipname?: string;
+}
+
+export interface StationUpdate {",""
+"Interface:frontend/src/app/api/station.ts:StationUpdate","StationUpdate","frontend/src/app/api/station.ts",83,110,true,"}
+
+export interface StationUpdate {
+  type?: string;
+  technology?: string;
+  bbumodel?: string;
+  ownedsite?: string;
+  backbone?: string;
+  stationpurpose?: string;
+  modulation?: string;
+  stationtype?: string;
+  frequencyt?: number;
+  frequencyr?: number;
+  bandwidth?: number;
+  devicemodel?: string;
+  devicequantity?: number;
+  outputpower?: number;
+  anttype?: string;
+  antquantity?: number;
+  province?: string;
+  district?: string;
+  location?: string;
+  sitename?: string;
+  longitude?: number;
+  latitude?: number;
+  startdate?: string;
+  expirationdate?: string;
+  unit?: string;
+  equipname?: string;
+}
+
+export interface StationPageResponse {",""
+"Interface:frontend/src/app/api/station.ts:StationPageResponse","StationPageResponse","frontend/src/app/api/station.ts",112,117,true,"}
+
+export interface StationPageResponse {
+  records: StationMapVO[];
+  total: number;
+  current: number;
+  size: number;
+}
+
+export const stationApi = {",""
+"Interface:frontend/src/app/api/statistics.ts:PermitUsageByMonthVO","PermitUsageByMonthVO","frontend/src/app/api/statistics.ts",22,34,true,"// ====== VO 类型定义 ======
+
+export interface PermitUsageByMonthVO {
+  month: string;
+  businessType: string;
+  province: string;
+  year: string;
+  usageRate: number;
+  yoyGrowth: number;
+  momGrowth: number;
+  prevYearRate: number;
+  prevMonthRate: number;
+  totalCount: number;
+  activeCount: number;
+}
+
+export interface LicenseCountByTypeVO {",""
+"Interface:frontend/src/app/api/statistics.ts:LicenseCountByTypeVO","LicenseCountByTypeVO","frontend/src/app/api/statistics.ts",36,42,true,"}
+
+export interface LicenseCountByTypeVO {
+  type: string;
+  count: number;
+  province: string;
+  date: string;
+  period: string;
+}
+
+export interface StationCountDetailVO {",""
+"Interface:frontend/src/app/api/statistics.ts:StationCountDetailVO","StationCountDetailVO","frontend/src/app/api/statistics.ts",44,51,true,"}
+
+export interface StationCountDetailVO {
+  type: string;
+  licenses: number;
+  stations: number;
+  ratio: number | null;
+  province: string;
+  date: string;
+}
+
+export interface ValidityForecastVO {",""
+"Interface:frontend/src/app/api/statistics.ts:ValidityForecastVO","ValidityForecastVO","frontend/src/app/api/statistics.ts",53,59,true,"}
+
+export interface ValidityForecastVO {
+  month: string;
+  province: string;
+  normal: number;
+  expiring: number;
+  expired: number;
+}
+
+export interface PermitVO {",""
+"Interface:frontend/src/app/api/statistics.ts:PermitVO","PermitVO","frontend/src/app/api/statistics.ts",61,84,true,"}
+
+export interface PermitVO {
+  guid: string;
+  consent: string;
+  interlocutor: string;
+  category: string;
+  legal: string;
+  type: string;
+  startdate: string;
+  enddate: string;
+  scope: string;
+  process: string;
+  status: string;
+  code: string;
+  decisiondate: string;
+  decision: string;
+  note: string;
+  register: string;
+  address: string;
+  phone: string;
+  email: string;
+  administrativeinfo: string;
+  directorname: string;
+  province: string;
+}
+
+export interface PageResponse<T> {",""
+"Interface:frontend/src/app/api/statistics.ts:PageResponse","PageResponse","frontend/src/app/api/statistics.ts",86,91,true,"}
+
+export interface PageResponse<T> {
+  records: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+export interface PermitQuery {",""
+"Interface:frontend/src/app/api/statistics.ts:PermitQuery","PermitQuery","frontend/src/app/api/statistics.ts",93,102,true,"}
+
+export interface PermitQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  type?: string;
+  status?: string;
+  province?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+// ====== API 方法 ======",""
+"Interface:frontend/src/app/api/system.ts:ApiResponse","ApiResponse","frontend/src/app/api/system.ts",25,29,true,"};
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+export interface PageResponse<T> {",""
+"Interface:frontend/src/app/api/system.ts:PageResponse","PageResponse","frontend/src/app/api/system.ts",31,36,true,"}
+
+export interface PageResponse<T> {
+  records: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+export interface Organization {",""
+"Interface:frontend/src/app/api/system.ts:Organization","Organization","frontend/src/app/api/system.ts",38,52,true,"}
+
+export interface Organization {
+  guid: string;
+  parentId?: string;
+  name: string;
+  code: string;
+  type: string;
+  region: string;
+  address: string;
+  contact: string;
+  phone: string;
+  email: string;
+  status: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface OrganizationQuery {",""
+"Interface:frontend/src/app/api/system.ts:OrganizationQuery","OrganizationQuery","frontend/src/app/api/system.ts",54,62,true,"}
+
+export interface OrganizationQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  name?: string;
+  code?: string;
+  type?: string;
+  region?: string;
+}
+
+export interface OrganizationCreate {",""
+"Interface:frontend/src/app/api/system.ts:OrganizationCreate","OrganizationCreate","frontend/src/app/api/system.ts",64,75,true,"}
+
+export interface OrganizationCreate {
+  parentId?: string;
+  name: string;
+  code: string;
+  type: string;
+  region: string;
+  address?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+}
+
+export interface OrganizationUpdate {",""
+"Interface:frontend/src/app/api/system.ts:OrganizationUpdate","OrganizationUpdate","frontend/src/app/api/system.ts",77,88,true,"}
+
+export interface OrganizationUpdate {
+  parentId?: string;
+  name?: string;
+  code?: string;
+  type?: string;
+  region?: string;
+  address?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+}
+
+export const organizationApi = {",""
+"Interface:frontend/src/app/api/system.ts:User","User","frontend/src/app/api/system.ts",112,123,true,"};
+
+export interface User {
+  guid: string;
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  roleId: string;
+  roleName: string;
+  orgId: string;
+  orgName: string;
+  status: string;
+}
+
+export interface UserQuery {",""
+"Interface:frontend/src/app/api/system.ts:UserQuery","UserQuery","frontend/src/app/api/system.ts",125,134,true,"}
+
+export interface UserQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  username?: string;
+  name?: string;
+  roleId?: string;
+  orgId?: string;
+  status?: string;
+}
+
+export interface UserCreate {",""
+"Interface:frontend/src/app/api/system.ts:UserCreate","UserCreate","frontend/src/app/api/system.ts",136,145,true,"}
+
+export interface UserCreate {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  phone?: string;
+  roleId: string;
+  orgId: string;
+  status?: string;
+}
+
+export interface UserUpdate {",""
+"Interface:frontend/src/app/api/system.ts:UserUpdate","UserUpdate","frontend/src/app/api/system.ts",147,154,true,"}
+
+export interface UserUpdate {
+  name?: string;
+  email?: string;
+  phone?: string;
+  roleId?: string;
+  orgId?: string;
+  status?: string;
+}
+
+export const userApi = {",""
+"Interface:frontend/src/app/api/system.ts:Role","Role","frontend/src/app/api/system.ts",185,192,true,"};
+
+export interface Role {
+  guid: string;
+  name: string;
+  description: string;
+  status: string;
+  permissions: string[];
+  userCount: number;
+}
+
+export interface RoleQuery {",""
+"Interface:frontend/src/app/api/system.ts:RoleQuery","RoleQuery","frontend/src/app/api/system.ts",194,200,true,"}
+
+export interface RoleQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  name?: string;
+  status?: string;
+}
+
+export interface RoleCreate {",""
+"Interface:frontend/src/app/api/system.ts:RoleCreate","RoleCreate","frontend/src/app/api/system.ts",202,207,true,"}
+
+export interface RoleCreate {
+  name: string;
+  description?: string;
+  status?: string;
+  permissions: string[];
+}
+
+export interface RoleUpdate {",""
+"Interface:frontend/src/app/api/system.ts:RoleUpdate","RoleUpdate","frontend/src/app/api/system.ts",209,214,true,"}
+
+export interface RoleUpdate {
+  name?: string;
+  description?: string;
+  status?: string;
+  permissions?: string[];
+}
+
+export const roleApi = {",""
+"Interface:frontend/src/app/components/Layout.tsx:LayoutProps","LayoutProps","frontend/src/app/components/Layout.tsx",4,9,false,"import iconImage from '../../assets/icon.png';
+
+interface LayoutProps {
+  children: ReactNode;
+  currentPage: string;
+  onNavigate: (page: string) => void;
+  onLogout?: () => void;
+}
+
+export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutProps) {
+",""
+"Interface:frontend/src/app/components/Login.tsx:LoginProps","LoginProps","frontend/src/app/components/Login.tsx",4,6,false,"import iconImage from '../../assets/icon.png';
+
+interface LoginProps {
+  onLogin: () => void;
+}
+
+export function Login({ onLogin }: LoginProps) {",""
+"Interface:frontend/src/app/components/MongoliaProvinceMap.tsx:ProvinceStationData","ProvinceStationData","frontend/src/app/components/MongoliaProvinceMap.tsx",4,8,true,"import 'leaflet/dist/leaflet.css';
+
+export interface ProvinceStationData {
+  id: string;
+  name: string;
+  stations: number;
+}
+
+// ── Province capitals ─────────────────────────────────────────────────────────",""
+"Interface:frontend/src/app/components/StationMap.tsx:ServiceBand","ServiceBand","frontend/src/app/components/StationMap.tsx",19,21,false,"
+// ─── Service bands (synced from Frequency Planning module) ───────────────────
+interface ServiceBand {
+  id: string; name: string; minMHz: number; maxMHz: number; service: string;
+}
+const SERVICE_BANDS: ServiceBand[] = [
+  // Mobile",""
+"Interface:frontend/src/app/components/StationMap.tsx:Station","Station","frontend/src/app/components/StationMap.tsx",47,70,false,"const STATION_TYPES = ['All', 'Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
+
+interface Station {
+  guid: string; name: string; type: string;
+  frequency: string; freqMHz: number;
+  lat: number; lng: number;
+  status: 'normal' | 'expiring' | 'expired';
+  province: string; expiry: string; power: string;
+  unit: string;
+  equipName: string;
+  equipModel: string;
+  // StationForm fields
+  technicalStandard?: string;
+  bandwidthProcessingUnitModel?: string;
+  ownerName?: string;
+  backhaulNetworkAccessMethod?: string;
+  stationPurpose?: string;
+  modulationType?: string;
+  equipmentCount?: string;
+  equipmentPower?: string;
+  antenna?: string;
+  antennaCount?: string;
+  detailedLocation?: string;
+  region?: string;
+  openDate?: string;
+}
+
+// ─── Tower SVG (high zoom icon) ───────────────────────────────────────────────",""
+"Interface:frontend/src/app/components/SystemManagement.tsx:ApiResponse","ApiResponse","frontend/src/app/components/SystemManagement.tsx",6,10,false,"type PermissionKey = 'dashboard' | 'stations' | 'licenses' | 'planning' | 'reports' | 'system';
+
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+interface PageResponse<T> {",""
+"Interface:frontend/src/app/components/SystemManagement.tsx:PageResponse","PageResponse","frontend/src/app/components/SystemManagement.tsx",12,17,false,"}
+
+interface PageResponse<T> {
+  records: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+export function SystemManagement() {",""
+"Interface:frontend/src/app/context/AuthContext.tsx:UserInfo","UserInfo","frontend/src/app/context/AuthContext.tsx",2,10,true,"import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+export interface UserInfo {
+  username: string;
+  guid?: string;
+  name: string;
+  email: string;
+  phone: string;
+  roles: string[];
+  permissions: string[];
+}
+
+interface AuthContextType {",""
+"Interface:frontend/src/app/context/AuthContext.tsx:AuthContextType","AuthContextType","frontend/src/app/context/AuthContext.tsx",12,19,false,"}
+
+interface AuthContextType {
+  user: UserInfo | null;
+  isLoggedIn: boolean;
+  login: (userInfo: UserInfo, token: string) => void;
+  logout: () => void;
+  hasPermission: (permissionKey: string) => boolean;
+  hasRole: (roleKey: string) => boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);",""

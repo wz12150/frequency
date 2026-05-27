@@ -31,7 +31,11 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
         Page<RsbtStation> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(query.getType())) {
-            wrapper.eq(RsbtStation::getType, query.getType());
+            // Match both TYPE (e.g. "Macro") and STATIONTYPE (e.g. "Base Station") fields
+            wrapper.and(w -> w
+                .eq(RsbtStation::getType, query.getType())
+                .or().eq(RsbtStation::getStationtype, query.getType())
+            );
         }
         if (StringUtils.hasText(query.getTechnology())) {
             wrapper.eq(RsbtStation::getTechnology, query.getTechnology());

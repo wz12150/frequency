@@ -1,0 +1,1023 @@
+id,name,filePath,startLine,endLine,content,description
+"Variable:backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java:reader","reader","backend/src/main/java/com/freqmanage/common/util/ExcelUtil.java",22,26,"
+    public static <T> void importData(InputStream inputStream, Class<T> clazz, Consumer<T> consumer) {
+        ExcelReader reader = EasyExcel.read(inputStream, clazz, new PageReadListener<T>(list -> {
+            for (T item : list) {
+                consumer.accept(item);
+            }
+        })).build();
+        reader.readAll();
+        reader.finish();",""
+"Variable:backend/src/main/java/com/freqmanage/config/MybatisPlusConfig.java:interceptor","interceptor","backend/src/main/java/com/freqmanage/config/MybatisPlusConfig.java",14,14,"    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        return interceptor;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:user","user","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",34,34,"    @PostMapping(""/login"")
+    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        RsbtUser user = userService.getByUsernameEntity(request.getUsername());
+        if (user == null) {
+            throw new BizException(401, ""用户名或密码错误"");
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:token","token","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",44,44,"            throw new BizException(401, ""用户已被禁用"");
+        }
+        String token = jwtUtil.generate(user.getUsername());
+
+        // Get user roles and permissions
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:roles","roles","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",47,47,"
+        // Get user roles and permissions
+        List<String> roles = new ArrayList<>();
+        List<String> permissions = new ArrayList<>();
+        if (user.getRoleId() != null) {
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:permissions","permissions","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",48,48,"        // Get user roles and permissions
+        List<String> roles = new ArrayList<>();
+        List<String> permissions = new ArrayList<>();
+        if (user.getRoleId() != null) {
+            RsbtRole role = userService.getRoleById(user.getRoleId());
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:role","role","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",50,50,"        List<String> permissions = new ArrayList<>();
+        if (user.getRoleId() != null) {
+            RsbtRole role = userService.getRoleById(user.getRoleId());
+            if (role != null) {
+                roles.add(role.getName().toUpperCase());
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:username","username","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",80,80,"            return ApiResponse.ok(Map.of(""username"", ""anonymous"", ""nickname"", ""Anonymous"", ""roles"", new String[]{}));
+        }
+        String username = authentication.getName();
+        RsbtUser user = userService.getByUsernameEntity(username);
+        if (user == null) {
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",20,20,"
+    public List<FrequencyVO> getByPermitId(String permitId) {
+        LambdaQueryWrapper<RsbtSpecialPermitFrequency> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtSpecialPermitFrequency::getPermitid, permitId);
+        return baseMapper.selectList(wrapper).stream().map(this::convertToVO).collect(Collectors.toList());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:entity","entity","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",26,26,"
+    public FrequencyVO getById(String id) {
+        RsbtSpecialPermitFrequency entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java:vo","vo","backend/src/main/java/com/freqmanage/module/permit/service/FrequencyService.java",57,57,"
+    private FrequencyVO convertToVO(RsbtSpecialPermitFrequency entity) {
+        FrequencyVO vo = new FrequencyVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:page","page","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",42,42,"
+    public PageResponse<PermitVO> page(PermitQueryDTO query) {
+        Page<RsbtSpecialPermit> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getConsent())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",43,43,"    public PageResponse<PermitVO> page(PermitQueryDTO query) {
+        Page<RsbtSpecialPermit> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getConsent())) {
+            wrapper.eq(RsbtSpecialPermit::getConsent, query.getConsent());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:result","result","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",77,77,"        }
+        wrapper.orderByDesc(RsbtSpecialPermit::getGuid);
+        IPage<RsbtSpecialPermit> result = page(page, wrapper);
+        List<PermitVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:voList","voList","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",78,78,"        wrapper.orderByDesc(RsbtSpecialPermit::getGuid);
+        IPage<RsbtSpecialPermit> result = page(page, wrapper);
+        List<PermitVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:entity","entity","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",83,83,"
+    public PermitVO getById(String id) {
+        RsbtSpecialPermit entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:detail","detail","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",96,96,"        }
+
+        PermitDetailVO detail = new PermitDetailVO();
+        detail.setPermit(convertToVO(entity));
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:freqWrapper","freqWrapper","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",99,99,"        detail.setPermit(convertToVO(entity));
+
+        LambdaQueryWrapper<RsbtSpecialPermitFrequency> freqWrapper = new LambdaQueryWrapper<>();
+        freqWrapper.eq(RsbtSpecialPermitFrequency::getPermitid, id);
+        List<RsbtSpecialPermitFrequency> frequencies = frequencyMapper.selectList(freqWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:frequencies","frequencies","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",101,101,"        LambdaQueryWrapper<RsbtSpecialPermitFrequency> freqWrapper = new LambdaQueryWrapper<>();
+        freqWrapper.eq(RsbtSpecialPermitFrequency::getPermitid, id);
+        List<RsbtSpecialPermitFrequency> frequencies = frequencyMapper.selectList(freqWrapper);
+        detail.setFrequencies(frequencies.stream().map(this::convertToFreqVO).collect(Collectors.toList()));
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:stationWrapper","stationWrapper","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",104,104,"        detail.setFrequencies(frequencies.stream().map(this::convertToFreqVO).collect(Collectors.toList()));
+
+        LambdaQueryWrapper<RsbtSpecialPermitStation> stationWrapper = new LambdaQueryWrapper<>();
+        stationWrapper.eq(RsbtSpecialPermitStation::getPermitid, id);
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(stationWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:stations","stations","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",106,106,"        LambdaQueryWrapper<RsbtSpecialPermitStation> stationWrapper = new LambdaQueryWrapper<>();
+        stationWrapper.eq(RsbtSpecialPermitStation::getPermitid, id);
+        List<RsbtSpecialPermitStation> stations = stationPermitMapper.selectList(stationWrapper);
+        detail.setStations(stations.stream().map(this::convertToStationVO).collect(Collectors.toList()));
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:importList","importList","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",145,145,"
+    public void importData(InputStream inputStream) {
+        List<RsbtSpecialPermit> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtSpecialPermit.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtSpecialPermit>(list -> {
+            for (RsbtSpecialPermit item : list) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:dto","dto","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",161,161,"    private void copyProperties(Object src, RsbtSpecialPermit target) {
+        if (src instanceof PermitCreateDTO) {
+            PermitCreateDTO dto = (PermitCreateDTO) src;
+            target.setConsent(dto.getConsent());
+            target.setInterlocutor(dto.getInterlocutor());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:vo","vo","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",208,208,"
+    private PermitVO convertToVO(RsbtSpecialPermit entity) {
+        PermitVO vo = new PermitVO();
+        vo.setGuid(entity.getGuid());
+        vo.setConsent(entity.getConsent());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",20,20,"
+    public List<StationPermitVO> getByPermitId(String permitId) {
+        LambdaQueryWrapper<RsbtSpecialPermitStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtSpecialPermitStation::getPermitid, permitId);
+        return baseMapper.selectList(wrapper).stream().map(this::convertToVO).collect(Collectors.toList());",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:entity","entity","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",26,26,"
+    public StationPermitVO getById(String id) {
+        RsbtSpecialPermitStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java:vo","vo","backend/src/main/java/com/freqmanage/module/permit/service/StationPermitService.java",59,59,"
+    private StationPermitVO convertToVO(RsbtSpecialPermitStation entity) {
+        StationPermitVO vo = new StationPermitVO();
+        vo.setGuid(entity.getGuid());
+        vo.setPermitid(entity.getPermitid());",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:page","page","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",29,29,"
+    public PageResponse<PlanningVO> page(PlanningQueryDTO query) {
+        Page<RsbtPlanning> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getRadioservices())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",30,30,"    public PageResponse<PlanningVO> page(PlanningQueryDTO query) {
+        Page<RsbtPlanning> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getRadioservices())) {
+            wrapper.eq(RsbtPlanning::getRadioservices, query.getRadioservices());",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:result","result","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",49,49,"        }
+        wrapper.orderByDesc(RsbtPlanning::getGuid);
+        IPage<RsbtPlanning> result = page(page, wrapper);
+        List<PlanningVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:voList","voList","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",50,50,"        wrapper.orderByDesc(RsbtPlanning::getGuid);
+        IPage<RsbtPlanning> result = page(page, wrapper);
+        List<PlanningVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:entity","entity","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",55,55,"
+    public PlanningVO getById(String id) {
+        RsbtPlanning entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:vo","vo","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",83,83,"
+    public PlanningOverviewVO overview() {
+        PlanningOverviewVO vo = new PlanningOverviewVO();
+        vo.setTotalCount(baseMapper.selectCount(null));
+        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:minFreq","minFreq","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",87,87,"        LambdaQueryWrapper<RsbtPlanning> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtPlanning::getStartfrequency).orderByAsc(RsbtPlanning::getStartfrequency).last(""LIMIT 1"");
+        RsbtPlanning minFreq = baseMapper.selectOne(wrapper);
+        vo.setMinFrequency(minFreq != null ? minFreq.getStartfrequency() : ""0"");
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:maxFreq","maxFreq","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",92,92,"        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtPlanning::getStopfrequency).orderByDesc(RsbtPlanning::getStopfrequency).last(""LIMIT 1"");
+        RsbtPlanning maxFreq = baseMapper.selectOne(wrapper);
+        vo.setMaxFrequency(maxFreq != null ? maxFreq.getStopfrequency() : ""0"");
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:importList","importList","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",106,106,"
+    public void importData(InputStream inputStream) {
+        List<RsbtPlanning> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtPlanning.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtPlanning>(list -> {
+            for (RsbtPlanning item : list) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java:dto","dto","backend/src/main/java/com/freqmanage/module/planning/service/PlanningService.java",122,122,"    private void copyProperties(Object src, RsbtPlanning target) {
+        if (src instanceof PlanningCreateDTO) {
+            PlanningCreateDTO dto = (PlanningCreateDTO) src;
+            target.setRadioservices(dto.getRadioservices());
+            target.setSubservices(dto.getSubservices());",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:query","query","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",86,86,"            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String province) {
+        StationQueryDTO query = new StationQueryDTO();
+        query.setType(type);
+        query.setProvince(province);",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:page","page","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",30,30,"
+    public PageResponse<StationVO> page(StationQueryDTO query) {
+        Page<RsbtStation> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getType())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",31,31,"    public PageResponse<StationVO> page(StationQueryDTO query) {
+        Page<RsbtStation> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getType())) {
+            // Match both TYPE (e.g. ""Macro"") and STATIONTYPE (e.g. ""Base Station"") fields",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:result","result","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",69,69,"        }
+        wrapper.orderByDesc(RsbtStation::getGuid);
+        IPage<RsbtStation> result = page(page, wrapper);
+        List<StationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:voList","voList","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",70,70,"        wrapper.orderByDesc(RsbtStation::getGuid);
+        IPage<RsbtStation> result = page(page, wrapper);
+        List<StationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:entity","entity","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",75,75,"
+    public StationVO getById(String id) {
+        RsbtStation entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:list","list","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",108,108,"                .ne(RsbtStation::getLongitude, 0)
+                .ne(RsbtStation::getLatitude, 0);
+        List<RsbtStation> list = baseMapper.selectList(wrapper);
+        return list.stream().map(this::convertToMapVO).collect(Collectors.toList());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:vo","vo","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",113,113,"
+    public StationStatsVO getStats() {
+        StationStatsVO vo = new StationStatsVO();
+        Long total = baseMapper.selectCount(null);
+        vo.setTotalCount(total);",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:total","total","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",114,114,"    public StationStatsVO getStats() {
+        StationStatsVO vo = new StationStatsVO();
+        Long total = baseMapper.selectCount(null);
+        vo.setTotalCount(total);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:topProvinceStation","topProvinceStation","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",127,127,"        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince).groupBy(RsbtStation::getProvince).last(""ORDER BY COUNT(*) DESC LIMIT 1"");
+        RsbtStation topProvinceStation = baseMapper.selectOne(wrapper);
+        vo.setTopProvince(topProvinceStation != null ? topProvinceStation.getProvince() : """");
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:topTypeStation","topTypeStation","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",132,132,"        wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getStationtype).groupBy(RsbtStation::getStationtype).last(""ORDER BY COUNT(*) DESC LIMIT 1"");
+        RsbtStation topTypeStation = baseMapper.selectOne(wrapper);
+        vo.setTopType(topTypeStation != null ? topTypeStation.getStationtype() : """");
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:importList","importList","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",143,143,"
+    public void importData(InputStream inputStream) {
+        List<RsbtStation> importList = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(inputStream, RsbtStation.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtStation>(list -> {
+            for (RsbtStation item : list) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:dto","dto","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",159,159,"    private void copyProperties(Object src, RsbtStation target) {
+        if (src instanceof StationCreateDTO) {
+            StationCreateDTO dto = (StationCreateDTO) src;
+            target.setType(dto.getType());
+            target.setTechnology(dto.getTechnology());",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:ft","ft","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",258,258,"
+        // 频率字符串拼接：FREQUENCYT - FREQUENCYR MHz
+        java.math.BigDecimal ft = entity.getFrequencyt();
+        java.math.BigDecimal fr = entity.getFrequencyr();
+        if (ft != null && fr != null) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:fr","fr","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",259,259,"        // 频率字符串拼接：FREQUENCYT - FREQUENCYR MHz
+        java.math.BigDecimal ft = entity.getFrequencyt();
+        java.math.BigDecimal fr = entity.getFrequencyr();
+        if (ft != null && fr != null) {
+            vo.setFrequency(ft.stripTrailingZeros().toPlainString() + ""–""",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:today","today","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",297,297,"    private String computeStatus(java.time.LocalDate expirationDate) {
+        if (expirationDate == null) return ""normal"";
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate warningThreshold = today.plusDays(90);
+        if (expirationDate.isBefore(today)) return ""expired"";",""
+"Variable:backend/src/main/java/com/freqmanage/module/station/service/StationService.java:warningThreshold","warningThreshold","backend/src/main/java/com/freqmanage/module/station/service/StationService.java",298,298,"        if (expirationDate == null) return ""normal"";
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate warningThreshold = today.plusDays(90);
+        if (expirationDate.isBefore(today)) return ""expired"";
+        if (expirationDate.isBefore(warningThreshold)) return ""expiring"";",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:vo","vo","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",74,74,"
+    public DashboardOverviewVO getOverview() {
+        DashboardOverviewVO vo = new DashboardOverviewVO();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:now","now","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",75,75,"    public DashboardOverviewVO getOverview() {
+        DashboardOverviewVO vo = new DashboardOverviewVO();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:expiringThreshold","expiringThreshold","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",76,76,"        DashboardOverviewVO vo = new DashboardOverviewVO();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+
+        vo.setTotalStations(stationMapper.selectCount(null));",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:totalPermits","totalPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",79,79,"
+        vo.setTotalStations(stationMapper.selectCount(null));
+        Long totalPermits = permitMapper.selectCount(null);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> activeWrapper = new LambdaQueryWrapper<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:activeWrapper","activeWrapper","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",81,81,"        Long totalPermits = permitMapper.selectCount(null);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> activeWrapper = new LambdaQueryWrapper<>();
+        activeWrapper.eq(RsbtSpecialPermit::getStatus, ""active"");
+        Long activePermits = permitMapper.selectCount(activeWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:activePermits","activePermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",83,83,"        LambdaQueryWrapper<RsbtSpecialPermit> activeWrapper = new LambdaQueryWrapper<>();
+        activeWrapper.eq(RsbtSpecialPermit::getStatus, ""active"");
+        Long activePermits = permitMapper.selectCount(activeWrapper);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaQueryWrapper<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:expiredWrapper","expiredWrapper","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",85,85,"        Long activePermits = permitMapper.selectCount(activeWrapper);
+
+        LambdaQueryWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, ""expired"");
+        Long expiredPermits = permitMapper.selectCount(expiredWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:expiredPermits","expiredPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",87,87,"        LambdaQueryWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, ""expired"");
+        Long expiredPermits = permitMapper.selectCount(expiredWrapper);
+
+        Long normalPermits = activePermits;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:normalPermits","normalPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",89,89,"        Long expiredPermits = permitMapper.selectCount(expiredWrapper);
+
+        Long normalPermits = activePermits;
+        Long expiringPermits = 0L;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:expiringPermits","expiringPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",90,90,"
+        Long normalPermits = activePermits;
+        Long expiringPermits = 0L;
+
+        vo.setNormalLicenses(normalPermits);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",111,111,"
+    public Map<String, Long> getPermitStatusDistribution() {
+        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getStatus);
+        return permitMapper.selectList(wrapper).stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:trend","trend","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",123,123,"
+    public StationGrowthVO getStationGrowth() {
+        List<StationGrowthVO> trend = buildStationGrowthTrend();
+        StationGrowthVO vo = new StationGrowthVO();
+        if (!trend.isEmpty()) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:monthlyData","monthlyData","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",129,129,"            vo.setCount(trend.get(trend.size() - 1).getCount());
+        }
+        Map<String, Long> monthlyData = trend.stream().collect(Collectors.toMap(StationGrowthVO::getMonth, StationGrowthVO::getCount, (a, b) -> a, LinkedHashMap::new));
+        vo.setMonthlyData(monthlyData);
+        if (monthlyData.size() >= 2) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:values","values","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",132,132,"        vo.setMonthlyData(monthlyData);
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            long last = values.get(values.size() - 1);
+            long prev = values.get(values.size() - 2);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:last","last","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",133,133,"        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            long last = values.get(values.size() - 1);
+            long prev = values.get(values.size() - 2);
+            vo.setGrowthRate(prev > 0 ? (last - prev) * 100.0 / prev : 0.0);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:prev","prev","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",134,134,"            List<Long> values = new ArrayList<>(monthlyData.values());
+            long last = values.get(values.size() - 1);
+            long prev = values.get(values.size() - 2);
+            vo.setGrowthRate(prev > 0 ? (last - prev) * 100.0 / prev : 0.0);
+        } else {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:lastMonthStart","lastMonthStart","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",143,143,"
+    private long countThisMonthStations(LocalDate now) { return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthStations(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return stationMapper.selectCount(new LambdaQueryWrapper<RsbtStation>().ge(RsbtStation::getCreateTime, lastMonthStart).lt(RsbtStation::getCreateTime, now.withDayOfMonth(1))); }
+    private long countThisMonthPermits(LocalDate now) { return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }
+    private long countLastMonthPermits(LocalDate now) { LocalDate lastMonthStart = now.minusMonths(1).withDayOfMonth(1); return permitMapper.selectCount(new LambdaQueryWrapper<RsbtSpecialPermit>().ge(RsbtSpecialPermit::getCreateTime, lastMonthStart).lt(RsbtSpecialPermit::getCreateTime, now.withDayOfMonth(1))); }",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:allStations","allStations","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",148,148,"
+    private List<ProvinceStationVO> buildProvinceStats() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> provinceTotal = new HashMap<>();
+        Map<String, Long> provinceExpiring = new HashMap<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:provinceTotal","provinceTotal","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",149,149,"    private List<ProvinceStationVO> buildProvinceStats() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> provinceTotal = new HashMap<>();
+        Map<String, Long> provinceExpiring = new HashMap<>();
+        Map<String, Long> provinceExpired = new HashMap<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:provinceExpiring","provinceExpiring","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",150,150,"        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> provinceTotal = new HashMap<>();
+        Map<String, Long> provinceExpiring = new HashMap<>();
+        Map<String, Long> provinceExpired = new HashMap<>();
+        LocalDate expiringThreshold = LocalDate.now().plusDays(EXPIRING_DAYS);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:provinceExpired","provinceExpired","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",151,151,"        Map<String, Long> provinceTotal = new HashMap<>();
+        Map<String, Long> provinceExpiring = new HashMap<>();
+        Map<String, Long> provinceExpired = new HashMap<>();
+        LocalDate expiringThreshold = LocalDate.now().plusDays(EXPIRING_DAYS);
+        for (RsbtStation s : allStations) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:provinceKey","provinceKey","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",156,156,"            if (s.getProvince() == null || s.getProvince().isEmpty()) continue;
+            // 将数据库省份名映射到标准 key
+            String provinceKey = DB_PROVINCE_TO_KEY.getOrDefault(s.getProvince(), s.getProvince().toLowerCase().replace("" "", ""-""));
+            provinceTotal.merge(provinceKey, 1L, Long::sum);
+            if (s.getExpirationdate() != null) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:result","result","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",163,163,"            }
+        }
+        List<ProvinceStationVO> result = new ArrayList<>();
+        for (Map.Entry<String, String[]> entry : PROVINCE_NAMES.entrySet()) {
+            ProvinceStationVO pvo = new ProvinceStationVO();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:pvo","pvo","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",165,165,"        List<ProvinceStationVO> result = new ArrayList<>();
+        for (Map.Entry<String, String[]> entry : PROVINCE_NAMES.entrySet()) {
+            ProvinceStationVO pvo = new ProvinceStationVO();
+            pvo.setId(entry.getKey());
+            pvo.setName(entry.getValue()[0]);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:allPermits","allPermits","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",178,178,"
+    private List<LicenseTypeStatsVO> buildLicenseTypeStats() {
+        List<RsbtSpecialPermit> allPermits = permitMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:typeNormal","typeNormal","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",179,179,"    private List<LicenseTypeStatsVO> buildLicenseTypeStats() {
+        List<RsbtSpecialPermit> allPermits = permitMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();
+        Map<String, Long> typeExpired = new HashMap<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:typeExpiring","typeExpiring","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",180,180,"        List<RsbtSpecialPermit> allPermits = permitMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();
+        Map<String, Long> typeExpired = new HashMap<>();
+        LocalDate now = LocalDate.now();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:typeExpired","typeExpired","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",181,181,"        Map<String, Long> typeNormal = new HashMap<>();
+        Map<String, Long> typeExpiring = new HashMap<>();
+        Map<String, Long> typeExpired = new HashMap<>();
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:t","t","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",185,185,"        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+        for (RsbtSpecialPermit p : allPermits) {
+            String t = p.getType() != null ? p.getType() : ""Unknown"";
+            if (p.getEnddate() == null) {
+                typeNormal.merge(t, 1L, Long::sum);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:allTypes","allTypes","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",197,197,"        }
+        List<LicenseTypeStatsVO> result = new ArrayList<>();
+        Set<String> allTypes = new HashSet<>();
+        allTypes.addAll(typeNormal.keySet());
+        allTypes.addAll(typeExpiring.keySet());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:typeCount","typeCount","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",215,215,"    private List<StationTypeVO> buildStationTypes() {
+        List<RsbtStation> allStations = stationMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Long> typeCount = new HashMap<>();
+        for (RsbtStation s : allStations) {
+            String t = s.getType() != null ? s.getType() : ""Unknown"";",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:idx","idx","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",221,221,"        }
+        List<StationTypeVO> result = new ArrayList<>();
+        int idx = 0;
+        String[] COLORS = {""#1976d2"", ""#42a5f5"", ""#64b5f6"", ""#90caf9"", ""#bbdefb""};
+        for (Map.Entry<String, Long> e : typeCount.entrySet()) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:COLORS","COLORS","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",222,222,"        List<StationTypeVO> result = new ArrayList<>();
+        int idx = 0;
+        String[] COLORS = {""#1976d2"", ""#42a5f5"", ""#64b5f6"", ""#90caf9"", ""#bbdefb""};
+        for (Map.Entry<String, Long> e : typeCount.entrySet()) {
+            StationTypeVO vo = new StationTypeVO();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:i","i","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",238,238,"        List<StationGrowthVO> result = new ArrayList<>();
+        LocalDate now = LocalDate.now();
+        for (int i = 11; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:month","month","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",239,239,"        LocalDate now = LocalDate.now();
+        for (int i = 11; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);
+            LambdaQueryWrapper<RsbtStation> w = new LambdaQueryWrapper<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:nextMonth","nextMonth","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",240,240,"        for (int i = 11; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);
+            LambdaQueryWrapper<RsbtStation> w = new LambdaQueryWrapper<>();
+            w.ge(RsbtStation::getCreateTime, month.atStartOfDay());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:w","w","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",241,241,"            LocalDate month = now.minusMonths(i).withDayOfMonth(1);
+            LocalDate nextMonth = month.plusMonths(1);
+            LambdaQueryWrapper<RsbtStation> w = new LambdaQueryWrapper<>();
+            w.ge(RsbtStation::getCreateTime, month.atStartOfDay());
+            w.lt(RsbtStation::getCreateTime, nextMonth.atStartOfDay());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:count","count","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",244,244,"            w.ge(RsbtStation::getCreateTime, month.atStartOfDay());
+            w.lt(RsbtStation::getCreateTime, nextMonth.atStartOfDay());
+            long count = stationMapper.selectCount(w);
+            StationGrowthVO vo = new StationGrowthVO();
+            vo.setMonth(month.format(DateTimeFormatter.ofPattern(""yyyy-MM"")));",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:rate","rate","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",252,252,"        return result;
+    }
+    private String calcGrowthRate(long current, long previous) { if (previous == 0) return current > 0 ? ""+100.0%"" : ""+0.0%""; double rate = ((double) (current - previous) / previous) * 100; return (rate >= 0 ? ""+"" : """") + String.format(""%.1f"", rate) + ""%""; }
+}
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",45,45,"
+    public List<ProvinceStationVO> getStationRegionStats() {
+        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince, RsbtStation::getStationtype);
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:stations","stations","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",47,47,"        LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtStation::getProvince, RsbtStation::getStationtype);
+        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        Map<String, List<RsbtStation>> byProvince = stations.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:byProvince","byProvince","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",49,51,"        List<RsbtStation> stations = stationMapper.selectList(wrapper);
+
+        Map<String, List<RsbtStation>> byProvince = stations.stream()
+                .filter(s -> s.getProvince() != null && !s.getProvince().isEmpty())
+                .collect(Collectors.groupingBy(RsbtStation::getProvince));
+
+        return byProvince.entrySet().stream().map(entry -> {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:vo","vo","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",54,54,"
+        return byProvince.entrySet().stream().map(entry -> {
+            ProvinceStationVO vo = new ProvinceStationVO();
+            vo.setProvince(entry.getKey());
+            vo.setCount((long) entry.getValue().size());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:typeDist","typeDist","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",57,59,"            vo.setProvince(entry.getKey());
+            vo.setCount((long) entry.getValue().size());
+            Map<String, Long> typeDist = entry.getValue().stream()
+                    .filter(s -> s.getStationtype() != null && !s.getStationtype().isEmpty())
+                    .collect(Collectors.groupingBy(RsbtStation::getStationtype, Collectors.counting()));
+            vo.setTypeDistribution(typeDist);
+            return vo;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:now","now","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",67,67,"    public StationGrowthVO getStationGrowth() {
+        StationGrowthVO vo = new StationGrowthVO();
+        LocalDate now = LocalDate.now();
+        Map<String, Long> monthlyData = new LinkedHashMap<>();
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:monthlyData","monthlyData","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",68,68,"        StationGrowthVO vo = new StationGrowthVO();
+        LocalDate now = LocalDate.now();
+        Map<String, Long> monthlyData = new LinkedHashMap<>();
+
+        for (int i = 11; i >= 0; i--) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:i","i","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",70,70,"        Map<String, Long> monthlyData = new LinkedHashMap<>();
+
+        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(now.minusMonths(i));
+            String key = ym.format(DateTimeFormatter.ofPattern(""yyyy-MM""));",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:ym","ym","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",71,71,"
+        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(now.minusMonths(i));
+            String key = ym.format(DateTimeFormatter.ofPattern(""yyyy-MM""));
+            LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:key","key","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",72,72,"        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(now.minusMonths(i));
+            String key = ym.format(DateTimeFormatter.ofPattern(""yyyy-MM""));
+            LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+            wrapper.le(RsbtStation::getStartdate, ym.atEndOfMonth());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:count","count","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",75,75,"            LambdaQueryWrapper<RsbtStation> wrapper = new LambdaQueryWrapper<>();
+            wrapper.le(RsbtStation::getStartdate, ym.atEndOfMonth());
+            Long count = stationMapper.selectCount(wrapper);
+            monthlyData.put(key, count);
+        }",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:values","values","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",82,82,"
+        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            Long last = values.get(values.size() - 1);
+            Long prev = values.get(values.size() - 2);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:last","last","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",83,83,"        if (monthlyData.size() >= 2) {
+            List<Long> values = new ArrayList<>(monthlyData.values());
+            Long last = values.get(values.size() - 1);
+            Long prev = values.get(values.size() - 2);
+            if (prev > 0) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prev","prev","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",84,84,"            List<Long> values = new ArrayList<>(monthlyData.values());
+            Long last = values.get(values.size() - 1);
+            Long prev = values.get(values.size() - 2);
+            if (prev > 0) {
+                vo.setGrowthRate((last - prev) * 100.0 / prev);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:expiredWrapper","expiredWrapper","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",98,98,"
+    public Map<String, Long> getExpiredStationStats() {
+        LambdaQueryWrapper<RsbtStation> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.lt(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> expiredStations = stationMapper.selectList(expiredWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:expiredStations","expiredStations","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",100,100,"        LambdaQueryWrapper<RsbtStation> expiredWrapper = new LambdaQueryWrapper<>();
+        expiredWrapper.lt(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> expiredStations = stationMapper.selectList(expiredWrapper);
+
+        return expiredStations.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:validWrapper","validWrapper","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",108,108,"
+    public Map<String, Long> getValidStationStats() {
+        LambdaQueryWrapper<RsbtStation> validWrapper = new LambdaQueryWrapper<>();
+        validWrapper.ge(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> validStations = stationMapper.selectList(validWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:validStations","validStations","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",110,110,"        LambdaQueryWrapper<RsbtStation> validWrapper = new LambdaQueryWrapper<>();
+        validWrapper.ge(RsbtStation::getExpirationdate, LocalDate.now());
+        List<RsbtStation> validStations = stationMapper.selectList(validWrapper);
+
+        return validStations.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:permits","permits","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",152,152,"        LambdaQueryWrapper<RsbtSpecialPermit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(RsbtSpecialPermit::getStatus);
+        List<RsbtSpecialPermit> permits = permitMapper.selectList(wrapper);
+        return permits.stream()
+                .filter(p -> p.getStatus() != null && !p.getStatus().isEmpty())",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:threeMonthsLater","threeMonthsLater","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",197,197,"
+        LocalDate now = LocalDate.now();
+        LocalDate threeMonthsLater = now.plusMonths(3);
+
+        Map<String, Long> stats = new HashMap<>();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:stats","stats","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",199,199,"        LocalDate threeMonthsLater = now.plusMonths(3);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put(""expired"", permits.stream().filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count());
+        stats.put(""expiringSoon"", permits.stream().filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && p.getEnddate().isBefore(threeMonthsLater)).count());",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:result","result","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",208,208,"
+    public List<ValidityForecastVO> getValidityForecast(String province, Integer months) {
+        List<ValidityForecastVO> result = new ArrayList<>();
+        int count = months != null ? months : 12;
+        LocalDate now = LocalDate.now();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:monthEnd","monthEnd","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",220,220,"        for (int i = 0; i < count; i++) {
+            YearMonth ym = YearMonth.from(now.plusMonths(i));
+            LocalDate monthEnd = ym.atEndOfMonth();
+            LocalDate warningDate = monthEnd.plusDays(60);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:warningDate","warningDate","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",221,221,"            YearMonth ym = YearMonth.from(now.plusMonths(i));
+            LocalDate monthEnd = ym.atEndOfMonth();
+            LocalDate warningDate = monthEnd.plusDays(60);
+
+            long expired = permits.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:expired","expired","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",223,224,"            LocalDate warningDate = monthEnd.plusDays(60);
+
+            long expired = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count();
+            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && !p.getEnddate().isAfter(warningDate)).count();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:expiring","expiring","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",225,226,"            long expired = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isBefore(now)).count();
+            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && !p.getEnddate().isAfter(warningDate)).count();
+            long normal = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isAfter(warningDate)).count();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:normal","normal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",227,228,"            long expiring = permits.stream()
+                    .filter(p -> p.getEnddate() != null && !p.getEnddate().isBefore(now) && !p.getEnddate().isAfter(warningDate)).count();
+            long normal = permits.stream()
+                    .filter(p -> p.getEnddate() != null && p.getEnddate().isAfter(warningDate)).count();
+
+            ValidityForecastVO vo = new ValidityForecastVO();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:typeCountMap","typeCountMap","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",254,258,"        return byProvince.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Long> typeCountMap = entry.getValue().stream()
+                            .filter(s -> s.getStationtype() != null && !s.getStationtype().isEmpty())
+                            .collect(Collectors.groupingBy(
+                                    s -> s.getStationtype(),
+                                    Collectors.counting()));
+                    return StationRegionDetailVO.from(entry.getKey(), typeCountMap);
+                })",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:targetYear","targetYear","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",266,266,"
+    public List<MonthlyGrowthVO> getGrowthTrend(String type, Integer year, String province) {
+        int targetYear = year != null ? year : LocalDate.now().getYear();
+        List<MonthlyGrowthVO> result = new ArrayList<>();
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:month","month","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",269,269,"        List<MonthlyGrowthVO> result = new ArrayList<>();
+
+        for (int month = 1; month <= 12; month++) {
+            // 当年当月计数
+            Long current = countStations(targetYear, month, type, province);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:current","current","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",271,271,"        for (int month = 1; month <= 12; month++) {
+            // 当年当月计数
+            Long current = countStations(targetYear, month, type, province);
+            // 去年同月计数
+            Long previous = countStations(targetYear - 1, month, type, province);",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:previous","previous","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",273,273,"            Long current = countStations(targetYear, month, type, province);
+            // 去年同月计数
+            Long previous = countStations(targetYear - 1, month, type, province);
+            // 上月计数（用于环比）
+            Long lastMonth = month > 1 ? countStations(targetYear, month - 1, type, province) : 0L;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:lastMonth","lastMonth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",275,275,"            Long previous = countStations(targetYear - 1, month, type, province);
+            // 上月计数（用于环比）
+            Long lastMonth = month > 1 ? countStations(targetYear, month - 1, type, province) : 0L;
+
+            long growthCountVal = current - previous;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:growthCountVal","growthCountVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",277,277,"            Long lastMonth = month > 1 ? countStations(targetYear, month - 1, type, province) : 0L;
+
+            long growthCountVal = current - previous;
+            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:growthPercentVal","growthPercentVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",278,278,"
+            long growthCountVal = current - previous;
+            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;
+            double momPercentVal = lastMonth > 0 ? (momCountVal * 100.0 / lastMonth) : 0.0;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:momCountVal","momCountVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",279,279,"            long growthCountVal = current - previous;
+            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;
+            double momPercentVal = lastMonth > 0 ? (momCountVal * 100.0 / lastMonth) : 0.0;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:momPercentVal","momPercentVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",280,280,"            double growthPercentVal = previous > 0 ? (growthCountVal * 100.0 / previous) : 0.0;
+            long momCountVal = current - lastMonth;
+            double momPercentVal = lastMonth > 0 ? (momCountVal * 100.0 / lastMonth) : 0.0;
+
+            MonthlyGrowthVO vo = new MonthlyGrowthVO();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:currentYearPermits","currentYearPermits","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",393,393,"        // Fetch all permits for target year and previous year in bulk to avoid N+1 queries
+        // 2 queries instead of 48+
+        List<RsbtSpecialPermit> currentYearPermits = fetchPermitsByYear(targetYear, businessType, province);
+        List<RsbtSpecialPermit> prevYearPermits = fetchPermitsByYear(targetYear - 1, businessType, province);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevYearPermits","prevYearPermits","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",394,394,"        // 2 queries instead of 48+
+        List<RsbtSpecialPermit> currentYearPermits = fetchPermitsByYear(targetYear, businessType, province);
+        List<RsbtSpecialPermit> prevYearPermits = fetchPermitsByYear(targetYear - 1, businessType, province);
+
+        LocalDate now = LocalDate.now();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:currentYearVal","currentYearVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",397,397,"
+        LocalDate now = LocalDate.now();
+        final int currentYearVal = targetYear;
+        final LocalDate nowVal = now;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:nowVal","nowVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",398,398,"        LocalDate now = LocalDate.now();
+        final int currentYearVal = targetYear;
+        final LocalDate nowVal = now;
+
+        for (int month = 1; month <= 12; month++) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:monthVal","monthVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",401,401,"
+        for (int month = 1; month <= 12; month++) {
+            final int monthVal = month;
+            // Count current month active and total from cached data
+            long activeCount = currentYearPermits.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:activeCount","activeCount","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",403,408,"            final int monthVal = month;
+            // Count current month active and total from cached data
+            long activeCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long totalCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:totalCount","totalCount","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",409,413,"                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long totalCount = currentYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal
+                            && p.getStartdate().getMonthValue() == monthVal)
+                    .count();
+
+            // Count previous year same month",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevYearActive","prevYearActive","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",416,421,"
+            // Count previous year same month
+            long prevYearActive = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal
+                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long prevYearTotal = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevYearTotal","prevYearTotal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",422,426,"                            && p.getEnddate() != null && p.getEnddate().isAfter(nowVal))
+                    .count();
+            long prevYearTotal = prevYearPermits.stream()
+                    .filter(p -> p.getStartdate() != null
+                            && p.getStartdate().getYear() == currentYearVal - 1
+                            && p.getStartdate().getMonthValue() == monthVal)
+                    .count();
+
+            // Count previous month",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevMonthActive","prevMonthActive","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",429,429,"
+            // Count previous month
+            long prevMonthActive = 0;
+            long prevMonthTotal = 0;
+            if (monthVal > 1) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevMonthTotal","prevMonthTotal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",430,430,"            // Count previous month
+            long prevMonthActive = 0;
+            long prevMonthTotal = 0;
+            if (monthVal > 1) {
+                prevMonthActive = currentYearPermits.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:usageRate","usageRate","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",445,445,"            }
+
+            double usageRate = totalCount > 0 ? (activeCount * 100.0 / totalCount) : 0.0;
+            double prevYearRate = prevYearTotal > 0 ? (prevYearActive * 100.0 / prevYearTotal) : 0.0;
+            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevYearRate","prevYearRate","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",446,446,"
+            double usageRate = totalCount > 0 ? (activeCount * 100.0 / totalCount) : 0.0;
+            double prevYearRate = prevYearTotal > 0 ? (prevYearActive * 100.0 / prevYearTotal) : 0.0;
+            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:prevMonthRateVal","prevMonthRateVal","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",447,447,"            double usageRate = totalCount > 0 ? (activeCount * 100.0 / totalCount) : 0.0;
+            double prevYearRate = prevYearTotal > 0 ? (prevYearActive * 100.0 / prevYearTotal) : 0.0;
+            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
+
+            double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:yoyGrowth","yoyGrowth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",449,449,"            double prevMonthRateVal = prevMonthTotal > 0 ? (prevMonthActive * 100.0 / prevMonthTotal) : 0.0;
+
+            double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;
+            double momGrowth = monthVal > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:momGrowth","momGrowth","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",450,450,"
+            double yoyGrowth = prevYearRate > 0 ? usageRate - prevYearRate : 0.0;
+            double momGrowth = monthVal > 1 && prevMonthRateVal > 0 ? usageRate - prevMonthRateVal : 0.0;
+
+            PermitUsageByMonthVO vo = new PermitUsageByMonthVO();",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:results","results","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",484,484,"
+    public List<LicenseCountByTypeVO> getLicenseCountByType(String province, String date) {
+        List<Map<String, Object>> results = permitMapper.countByCategoryAndProvince(province, date);
+
+        return results.stream()",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:now","now","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",24,24,"    @Scheduled(cron = ""0 0 1 * * ?"")
+    public void updateLicenseStatuses() {
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:expiringThreshold","expiringThreshold","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",25,25,"    public void updateLicenseStatuses() {
+        LocalDate now = LocalDate.now();
+        LocalDate expiringThreshold = now.plusDays(EXPIRING_DAYS);
+
+        // 更新已过期的: enddate < now",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:expiredWrapper","expiredWrapper","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",28,28,"
+        // 更新已过期的: enddate < now
+        LambdaUpdateWrapper<RsbtSpecialPermit> expiredWrapper = new LambdaUpdateWrapper<>();
+        expiredWrapper.eq(RsbtSpecialPermit::getStatus, ""normal"")
+                     .or().eq(RsbtSpecialPermit::getStatus, ""expiring"")",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:expiringWrapper","expiringWrapper","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",37,37,"
+        // 更新即将过期的: enddate > now AND enddate <= now + 60
+        LambdaUpdateWrapper<RsbtSpecialPermit> expiringWrapper = new LambdaUpdateWrapper<>();
+        expiringWrapper.eq(RsbtSpecialPermit::getStatus, ""normal"")
+                       .or().isNull(RsbtSpecialPermit::getStatus)",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:normalWrapper","normalWrapper","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",46,46,"
+        // 更新正常的: enddate > now + 60 或 enddate 为 null
+        LambdaUpdateWrapper<RsbtSpecialPermit> normalWrapper = new LambdaUpdateWrapper<>();
+        normalWrapper.and(w -> w.eq(RsbtSpecialPermit::getStatus, ""expiring"")
+                                .or().eq(RsbtSpecialPermit::getStatus, ""expired""))",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:t","t","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",17,17,"    private static String normalizeType(String type) {
+        if (type == null) return ""Other"";
+        String t = type.toLowerCase();
+        if (t.contains(""mobile"") || t.contains(""宏站"") || t.contains(""基站"") || t.contains(""base station"")) return ""Mobile"";
+        if (t.contains(""broadcast"") || t.contains(""广播"") || t.contains(""tv"") || t.contains(""dtv"")) return ""Broadcasting"";
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:vo","vo","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",26,26,"
+    public static StationRegionDetailVO from(String region, Map<String, Long> typeCountMap) {
+        StationRegionDetailVO vo = new StationRegionDetailVO();
+        vo.setRegion(region);
+
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:mobile","mobile","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",29,29,"        vo.setRegion(region);
+
+        long mobile = 0, broadcast = 0, fixed = 0, satellite = 0, other = 0;
+        for (Map.Entry<String, Long> entry : typeCountMap.entrySet()) {
+            String normalized = normalizeType(entry.getKey());
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:normalized","normalized","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",31,31,"        long mobile = 0, broadcast = 0, fixed = 0, satellite = 0, other = 0;
+        for (Map.Entry<String, Long> entry : typeCountMap.entrySet()) {
+            String normalized = normalizeType(entry.getKey());
+            long count = entry.getValue();
+            switch (normalized) {
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java:count","count","backend/src/main/java/com/freqmanage/module/statistics/vo/StationRegionDetailVO.java",32,32,"        for (Map.Entry<String, Long> entry : typeCountMap.entrySet()) {
+            String normalized = normalizeType(entry.getKey());
+            long count = entry.getValue();
+            switch (normalized) {
+                case ""Mobile"": mobile = count; break;
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:page","page","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",25,25,"
+    public PageResponse<OrganizationVO> page(OrganizationQueryDTO query) {
+        Page<RsbtOrganization> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtOrganization> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",26,26,"    public PageResponse<OrganizationVO> page(OrganizationQueryDTO query) {
+        Page<RsbtOrganization> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtOrganization> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {
+            wrapper.like(RsbtOrganization::getName, query.getName());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:result","result","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",44,44,"        }
+        wrapper.orderByDesc(RsbtOrganization::getCreateTime);
+        IPage<RsbtOrganization> result = page(page, wrapper);
+        List<OrganizationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:voList","voList","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",45,45,"        wrapper.orderByDesc(RsbtOrganization::getCreateTime);
+        IPage<RsbtOrganization> result = page(page, wrapper);
+        List<OrganizationVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:entity","entity","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",50,50,"
+    public OrganizationVO getById(String id) {
+        RsbtOrganization entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""记录不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:childCount","childCount","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",76,77,"
+    public void delete(String id) {
+        long childCount = baseMapper.selectCount(new LambdaQueryWrapper<RsbtOrganization>()
+                .eq(RsbtOrganization::getParentId, id));
+        if (childCount > 0) {
+            throw new BizException(400, ""该组织存在下级组织，无法删除"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:dto","dto","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",90,90,"    private void copyProperties(Object src, RsbtOrganization target) {
+        if (src instanceof OrganizationCreateDTO) {
+            OrganizationCreateDTO dto = (OrganizationCreateDTO) src;
+            target.setParentId(dto.getParentId());
+            target.setName(dto.getName());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:vo","vo","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",117,117,"
+    private OrganizationVO convertToVO(RsbtOrganization entity) {
+        OrganizationVO vo = new OrganizationVO();
+        vo.setGuid(entity.getGuid());
+        vo.setParentId(entity.getParentId());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java:parent","parent","backend/src/main/java/com/freqmanage/module/system/service/OrganizationService.java",141,141,"            throw new BizException(400, ""父级组织不能选择自己"");
+        }
+        RsbtOrganization parent = baseMapper.selectById(parentId);
+        if (parent == null) {
+            throw new BizException(400, ""父级组织不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:page","page","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",40,40,"
+    public PageResponse<RoleVO> page(RoleQueryDTO query) {
+        Page<RsbtRole> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtRole> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",41,41,"    public PageResponse<RoleVO> page(RoleQueryDTO query) {
+        Page<RsbtRole> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtRole> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getName())) {
+            wrapper.like(RsbtRole::getName, query.getName());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:result","result","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",52,52,"        }
+        wrapper.orderByDesc(RsbtRole::getCreateTime);
+        IPage<RsbtRole> result = page(page, wrapper);
+        List<RoleVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:voList","voList","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",53,53,"        wrapper.orderByDesc(RsbtRole::getCreateTime);
+        IPage<RsbtRole> result = page(page, wrapper);
+        List<RoleVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:entity","entity","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",58,58,"
+    public RoleVO getById(String id) {
+        RsbtRole entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""角色不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:perm","perm","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",82,82,"        if (dto.getPermissions() != null && !dto.getPermissions().isEmpty()) {
+            for (String permKey : dto.getPermissions()) {
+                RsbtRolePermission perm = new RsbtRolePermission();
+                perm.setGuid(UUID.randomUUID().toString());
+                perm.setRoleId(entity.getGuid());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:userWrapper","userWrapper","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",118,118,"
+    public void delete(String id) {
+        LambdaQueryWrapper<RsbtUser> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.eq(RsbtUser::getRoleId, id);
+        long userCount = userMapper.selectCount(userWrapper);",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:userCount","userCount","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",120,120,"        LambdaQueryWrapper<RsbtUser> userWrapper = new LambdaQueryWrapper<>();
+        userWrapper.eq(RsbtUser::getRoleId, id);
+        long userCount = userMapper.selectCount(userWrapper);
+        if (userCount > 0) {
+            throw new BizException(400, ""该角色已有用户关联，无法删除"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:perms","perms","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",139,139,"        LambdaQueryWrapper<RsbtRolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RsbtRolePermission::getRoleId, roleId);
+        List<RsbtRolePermission> perms = rolePermissionMapper.selectList(wrapper);
+        return perms.stream().map(RsbtRolePermission::getPermissionKey).collect(Collectors.toList());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:vo","vo","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",144,144,"
+    private RoleVO convertToVO(RsbtRole entity) {
+        RoleVO vo = new RoleVO();
+        vo.setGuid(entity.getGuid());
+        vo.setName(entity.getName());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:permissions","permissions","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",150,150,"        vo.setStatus(entity.getStatus());
+
+        List<String> permissions = getPermissionsByRoleId(entity.getGuid());
+        vo.setPermissions(permissions);
+",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:user","user","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",44,44,"
+    public List<SimpleGrantedAuthority> getUserAuthorities(String username) {
+        RsbtUser user = getByUsernameEntity(username);
+        if (user == null) {
+            return Collections.emptyList();",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:authorities","authorities","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",49,49,"        }
+
+        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+
+        // Add role-based authority",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:role","role","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",53,53,"        // Add role-based authority
+        if (user.getRoleId() != null) {
+            RsbtRole role = roleMapper.selectById(user.getRoleId());
+            if (role != null) {
+                authorities.add(new SimpleGrantedAuthority(""ROLE_"" + role.getName().toUpperCase()));",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:permissions","permissions","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",58,58,"            }
+            // Get permissions from role
+            List<String> permissions = roleService.getPermissionsByRoleId(user.getRoleId());
+            for (String perm : permissions) {
+                authorities.add(new SimpleGrantedAuthority(perm));",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:page","page","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",68,68,"
+    public PageResponse<UserVO> page(UserQueryDTO query) {
+        Page<RsbtUser> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getUsername())) {",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:wrapper","wrapper","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",69,69,"    public PageResponse<UserVO> page(UserQueryDTO query) {
+        Page<RsbtUser> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<RsbtUser> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getUsername())) {
+            wrapper.like(RsbtUser::getUsername, query.getUsername());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:result","result","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",91,91,"        }
+        wrapper.orderByDesc(RsbtUser::getCreateTime);
+        IPage<RsbtUser> result = page(page, wrapper);
+        List<UserVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:voList","voList","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",92,92,"        wrapper.orderByDesc(RsbtUser::getCreateTime);
+        IPage<RsbtUser> result = page(page, wrapper);
+        List<UserVO> voList = result.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
+        return new PageResponse<>(voList, result.getTotal(), result.getCurrent(), result.getSize());
+    }",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:entity","entity","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",97,97,"
+    public UserVO getById(String id) {
+        RsbtUser entity = baseMapper.selectById(id);
+        if (entity == null) {
+            throw new BizException(404, ""用户不存在"");",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:vo","vo","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",196,196,"
+    private UserVO convertToVO(RsbtUser entity) {
+        UserVO vo = new UserVO();
+        vo.setGuid(entity.getGuid());
+        vo.setUsername(entity.getUsername());",""
+"Variable:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:org","org","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",213,213,"        }
+        if (entity.getOrgId() != null) {
+            RsbtOrganization org = organizationMapper.selectById(entity.getOrgId());
+            if (org != null) {
+                vo.setOrgName(org.getName());",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtFilter.java:auth","auth","backend/src/main/java/com/freqmanage/security/JwtFilter.java",29,29,"    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String auth = request.getHeader(""Authorization"");
+        if (StringUtils.hasText(auth) && auth.startsWith(""Bearer "")) {
+            try {
+",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtFilter.java:username","username","backend/src/main/java/com/freqmanage/security/JwtFilter.java",32,32,"        if (StringUtils.hasText(auth) && auth.startsWith(""Bearer "")) {
+            try {
+                String username = jwtUtil.parseUsername(auth.substring(7));
+                List<SimpleGrantedAuthority> authorities = userService.getUserAuthorities(username);
+                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, null, authorities);
+",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtFilter.java:authorities","authorities","backend/src/main/java/com/freqmanage/security/JwtFilter.java",33,33,"            try {
+                String username = jwtUtil.parseUsername(auth.substring(7));
+                List<SimpleGrantedAuthority> authorities = userService.getUserAuthorities(username);
+                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(token);
+",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtFilter.java:token","token","backend/src/main/java/com/freqmanage/security/JwtFilter.java",34,34,"                String username = jwtUtil.parseUsername(auth.substring(7));
+                List<SimpleGrantedAuthority> authorities = userService.getUserAuthorities(username);
+                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(token);
+            } catch (Exception ignored) {
+",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtUtil.java:now","now","backend/src/main/java/com/freqmanage/security/JwtUtil.java",18,18,"
+    public String generate(String username) {
+        Date now = new Date();
+        return Jwts.builder().subject(username).issuedAt(now).expiration(new Date(now.getTime() + EXPIRE)).signWith(key).compact();
+    }
+",""
+"Variable:backend/src/main/java/com/freqmanage/security/JwtUtil.java:claims","claims","backend/src/main/java/com/freqmanage/security/JwtUtil.java",23,23,"
+    public String parseUsername(String token) {
+        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        return claims.getSubject();
+    }
+",""

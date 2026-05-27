@@ -1,0 +1,165 @@
+id,name,filePath,startLine,endLine,content,description
+"Constructor:backend/src/main/java/com/freqmanage/common/BizException.java:BizException.BizException#1","BizException","backend/src/main/java/com/freqmanage/common/BizException.java",5,8,"    private final int code;
+
+    public BizException(String message) {
+        super(message);
+        this.code = 500;
+    }
+
+    public BizException(int code, String message) {
+",""
+"Constructor:backend/src/main/java/com/freqmanage/common/BizException.java:BizException.BizException#2","BizException","backend/src/main/java/com/freqmanage/common/BizException.java",10,13,"    }
+
+    public BizException(int code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public int getCode() {
+",""
+"Constructor:backend/src/main/java/com/freqmanage/common/ResultCode.java:ResultCode.ResultCode#2","ResultCode","backend/src/main/java/com/freqmanage/common/ResultCode.java",13,16,"    private final String message;
+
+    ResultCode(int code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+
+    public int getCode() {
+",""
+"Constructor:backend/src/main/java/com/freqmanage/config/SecurityConfig.java:SecurityConfig.SecurityConfig#1","SecurityConfig","backend/src/main/java/com/freqmanage/config/SecurityConfig.java",21,23,"    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(@Lazy JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
+
+    @Bean
+",""
+"Constructor:backend/src/main/java/com/freqmanage/module/auth/AuthController.java:AuthController.AuthController#3","AuthController","backend/src/main/java/com/freqmanage/module/auth/AuthController.java",26,30,"    private final PasswordEncoder passwordEncoder;
+
+    public AuthController(JwtUtil jwtUtil, UserService userService, PasswordEncoder passwordEncoder) {
+        this.jwtUtil = jwtUtil;
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostMapping(""/login"")
+",""
+"Constructor:backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java:PermitController.PermitController#3","PermitController","backend/src/main/java/com/freqmanage/module/permit/controller/PermitController.java",33,37,"    private final StationPermitService stationPermitService;
+
+    public PermitController(PermitService permitService, FrequencyService frequencyService, StationPermitService stationPermitService) {
+        this.permitService = permitService;
+        this.frequencyService = frequencyService;
+        this.stationPermitService = stationPermitService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java:PermitService.PermitService#2","PermitService","backend/src/main/java/com/freqmanage/module/permit/service/PermitService.java",36,39,"    private final SpecialPermitStationMapper stationPermitMapper;
+
+    public PermitService(SpecialPermitFrequencyMapper frequencyMapper, SpecialPermitStationMapper stationPermitMapper) {
+        this.frequencyMapper = frequencyMapper;
+        this.stationPermitMapper = stationPermitMapper;
+    }
+
+    public PageResponse<PermitVO> page(PermitQueryDTO query) {",""
+"Constructor:backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java:PlanningController.PlanningController#1","PlanningController","backend/src/main/java/com/freqmanage/module/planning/controller/PlanningController.java",23,25,"    private final PlanningService planningService;
+
+    public PlanningController(PlanningService planningService) {
+        this.planningService = planningService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/station/controller/StationController.java:StationController.StationController#1","StationController","backend/src/main/java/com/freqmanage/module/station/controller/StationController.java",24,26,"    private final StationService stationService;
+
+    public StationController(StationService stationService) {
+        this.stationService = stationService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java:DashboardController.DashboardController#1","DashboardController","backend/src/main/java/com/freqmanage/module/statistics/controller/DashboardController.java",17,19,"    private final DashboardService dashboardService;
+
+    public DashboardController(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
+    }
+
+    @GetMapping(""/overview"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java:StatisticsController.StatisticsController#1","StatisticsController","backend/src/main/java/com/freqmanage/module/statistics/controller/StatisticsController.java",27,29,"    private final StatisticsService statisticsService;
+
+    public StatisticsController(StatisticsService statisticsService) {
+        this.statisticsService = statisticsService;
+    }
+
+    @GetMapping(""/station/region"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java:DashboardService.DashboardService#2","DashboardService","backend/src/main/java/com/freqmanage/module/statistics/service/DashboardService.java",68,71,"    }
+
+    public DashboardService(StationMapper stationMapper, SpecialPermitMapper permitMapper) {
+        this.stationMapper = stationMapper;
+        this.permitMapper = permitMapper;
+    }
+
+    public DashboardOverviewVO getOverview() {",""
+"Constructor:backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java:StatisticsService.StatisticsService#4","StatisticsService","backend/src/main/java/com/freqmanage/module/statistics/service/StatisticsService.java",36,42,"    private final SpecialPermitStationMapper stationPermitMapper;
+
+    public StatisticsService(StationMapper stationMapper, SpecialPermitMapper permitMapper,
+                            SpecialPermitFrequencyMapper frequencyMapper, SpecialPermitStationMapper stationPermitMapper) {
+        this.stationMapper = stationMapper;
+        this.permitMapper = permitMapper;
+        this.frequencyMapper = frequencyMapper;
+        this.stationPermitMapper = stationPermitMapper;
+    }
+
+    public List<ProvinceStationVO> getStationRegionStats() {",""
+"Constructor:backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java:LicenseStatusUpdateTask.LicenseStatusUpdateTask#1","LicenseStatusUpdateTask","backend/src/main/java/com/freqmanage/module/statistics/task/LicenseStatusUpdateTask.java",18,20,"    private static final long EXPIRING_DAYS = 60;
+
+    public LicenseStatusUpdateTask(SpecialPermitMapper permitMapper) {
+        this.permitMapper = permitMapper;
+    }
+
+    @Scheduled(cron = ""0 0 1 * * ?"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java:OrganizationController.OrganizationController#1","OrganizationController","backend/src/main/java/com/freqmanage/module/system/controller/OrganizationController.java",20,22,"    private final OrganizationService organizationService;
+
+    public OrganizationController(OrganizationService organizationService) {
+        this.organizationService = organizationService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java:RoleController.RoleController#1","RoleController","backend/src/main/java/com/freqmanage/module/system/controller/RoleController.java",20,22,"    private final RoleService roleService;
+
+    public RoleController(RoleService roleService) {
+        this.roleService = roleService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/system/controller/UserController.java:UserController.UserController#1","UserController","backend/src/main/java/com/freqmanage/module/system/controller/UserController.java",20,22,"    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping(""/page"")",""
+"Constructor:backend/src/main/java/com/freqmanage/module/system/service/RoleService.java:RoleService.RoleService#2","RoleService","backend/src/main/java/com/freqmanage/module/system/service/RoleService.java",34,37,"    private final UserMapper userMapper;
+
+    public RoleService(RolePermissionMapper rolePermissionMapper, UserMapper userMapper) {
+        this.rolePermissionMapper = rolePermissionMapper;
+        this.userMapper = userMapper;
+    }
+
+    public PageResponse<RoleVO> page(RoleQueryDTO query) {",""
+"Constructor:backend/src/main/java/com/freqmanage/module/system/service/UserService.java:UserService.UserService#4","UserService","backend/src/main/java/com/freqmanage/module/system/service/UserService.java",36,41,"    private final RoleService roleService;
+
+    public UserService(RoleMapper roleMapper, OrganizationMapper organizationMapper, PasswordEncoder passwordEncoder, RoleService roleService) {
+        this.roleMapper = roleMapper;
+        this.organizationMapper = organizationMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.roleService = roleService;
+    }
+
+    public List<SimpleGrantedAuthority> getUserAuthorities(String username) {",""
+"Constructor:backend/src/main/java/com/freqmanage/security/JwtFilter.java:JwtFilter.JwtFilter#2","JwtFilter","backend/src/main/java/com/freqmanage/security/JwtFilter.java",22,25,"    private final UserService userService;
+
+    public JwtFilter(JwtUtil jwtUtil, UserService userService) {
+        this.jwtUtil = jwtUtil;
+        this.userService = userService;
+    }
+
+    @Override
+",""

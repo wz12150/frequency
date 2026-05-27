@@ -164,4 +164,11 @@ export const stationApi = {
 
   delete: (id: string) =>
     request(`/station/${id}`, { method: 'DELETE' }),
+
+  getRegionDetail: (type?: string, province?: string) => {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (province) params.append('province', province);
+    return request(`/station/region-detail?${params}`);
+  },
 };
