@@ -37,9 +37,3 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Sql data files
-*.sql
-!sql/schema.sql
-
-# Docs
-docs/
