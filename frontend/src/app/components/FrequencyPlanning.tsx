@@ -369,9 +369,9 @@ export function FrequencyPlanning() {
               {blocksByRow.map((row) => (
                 <div key={row.title} className="flex gap-3 items-center">
                   <div className="text-xs font-medium text-muted-foreground w-[130px] shrink-0 self-center">{row.title}</div>
-                  <div className="relative h-24 min-w-[600px] rounded-xl border border-slate-800 bg-slate-950 overflow-x-auto">
-                    <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '8% 100%' }} />
-                    <div className="relative h-full flex items-stretch gap-0 w-max">
+                  <div className="relative h-24 min-w-[600px] rounded-xl border border-slate-800 bg-slate-950 overflow-visible">
+                    <div className="absolute inset-0 opacity-30 overflow-hidden" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '8% 100%' }} />
+                    <div className="relative h-full flex items-stretch gap-0 w-max overflow-visible">
                       {row.blocks.length > 0 ? row.blocks.map((block) => {
                         const hasSegments = block.segments && block.segments.length > 0;
                         const rowSpanKhz = Math.max(row.khzEnd - row.khzStart, 1);
@@ -382,39 +382,16 @@ export function FrequencyPlanning() {
                         <button
                           key={block.id}
                           onClick={() => { setSelectedBlock(block); setViewMode('detail'); setStationPage(1); }}
-                          className={`relative border-r border-white/15 transition-all hover:brightness-110 hover:shadow-2xl group overflow-hidden shrink-0 ${isNarrowBlock ? 'h-24 flex flex-col' : 'h-full'}`}
-                          style={{ background: block.color, width: `${widthPct}%`, minWidth: isNarrowBlock ? '72px' : '56px' }}
-                          title={`${block.band} · ${block.range}`}
+                          className="relative border-r border-white/15 transition-all hover:brightness-110 hover:shadow-2xl group overflow-visible shrink-0 h-full"
+                          style={{ background: block.color, width: `${widthPct}%`, minWidth: '40px' }}
                         >
-                          {hasSegments ? (
-                            <div className="absolute inset-0 flex flex-col">
-                              {block.segments!.map((segment) => (
-                                <div
-                                  key={segment.service}
-                                  className="flex-1 flex items-center justify-center text-white text-[11px] leading-tight px-2 text-center font-semibold border-b border-white/20 last:border-b-0"
-                                  style={{ background: segment.color, opacity: 0.95 }}
-                                >
-                                  <div>
-                                    <div className="font-bold">{segment.service}</div>
-                                    <div className="text-[10px] opacity-90">{segment.note}</div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : isNarrowBlock ? (
-                            <div className="flex flex-col items-center justify-start h-full text-white text-[10px] leading-tight px-1 text-center font-semibold space-y-1">
-                              <div className="font-bold truncate w-full">{block.label}</div>
-                              <div className="opacity-90">{block.range}</div>
-                              <div className="opacity-70">{block.status === 'free' ? 'FREE' : block.status.toUpperCase()}</div>
-                            </div>
-                          ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-[11px] leading-tight px-2 text-center font-semibold">
-                              <div className="flex items-center gap-1 text-xs mb-1">{block.icons?.map((i) => <span key={i}>{i}</span>)}<span>{block.label}</span></div>
-                              <div className="text-[10px] opacity-95">{block.range}</div>
-                            </div>
-                          )}
                           {!isNarrowBlock && <div className="absolute bottom-1 right-2 text-[10px] bg-black/20 px-1 rounded text-white/95">{block.status === 'free' ? 'FREE' : block.status.toUpperCase()}</div>}
-                          <div className="absolute top-1 left-2 hidden group-hover:block text-[10px] bg-black/80 text-white px-2 py-1 rounded whitespace-nowrap z-10">Click for details</div>
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black/90 text-white text-xs px-2 py-1.5 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none">
+                            <div className="text-center">
+                              <div className="font-semibold text-sm">{block.label}</div>
+                              <div className="text-[10px] opacity-80">{block.range}</div>
+                            </div>
+                          </div>
                         </button>
                         );
                       }) : (
@@ -430,15 +407,6 @@ export function FrequencyPlanning() {
                   <div className="text-right text-xs text-muted-foreground w-[90px] shrink-0 self-center">{row.unit}</div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <div className="text-xs">White space = unassigned spectrum</div>
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-[#2B7FFF] rounded" /><span>Occupied</span></div>
-                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-[#9CA3AF] rounded" /><span>Reserved</span></div>
-                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-white border border-border rounded" /><span>Free</span></div>
-              </div>
             </div>
           </div>
           </>

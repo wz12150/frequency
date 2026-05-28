@@ -195,13 +195,12 @@ export function MongoliaProvinceMap({ data }: { data: ProvinceStationData[] }) {
   }, [data, minVal, maxVal]);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full">
       <div
         ref={containerRef}
-        className="w-full rounded-lg overflow-hidden border border-blue-200"
-        style={{ height: '520px', background: '#e8f4f8' }}
+        className="w-full h-full"
+        style={{ background: '#e8f4f8' }}
       />
-      <Legend min={minVal} max={maxVal} />
     </div>
   );
 }

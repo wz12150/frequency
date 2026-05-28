@@ -237,3 +237,121 @@ export const roleApi = {
 
   getPermissions: (id: string) => request(`/system/role/${id}/permissions`),
 };
+
+// 数据字典类型
+export interface DictType {
+  guid: string;
+  name: string;
+  code: string;
+  description: string;
+  status: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface DictTypeQuery {
+  pageNum?: number;
+  pageSize?: number;
+  keyword?: string;
+  name?: string;
+  code?: string;
+}
+
+export interface DictTypeCreate {
+  name: string;
+  code: string;
+  description?: string;
+  status?: string;
+}
+
+export interface DictTypeUpdate {
+  name?: string;
+  code?: string;
+  description?: string;
+  status?: string;
+}
+
+export const dictTypeApi = {
+  page: (query: DictTypeQuery = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+    return request(`/system/dict/type/page?${params}`);
+  },
+
+  get: (id: string) => request(`/system/dict/type/${id}`),
+
+  create: (data: DictTypeCreate) =>
+    request('/system/dict/type', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: string, data: DictTypeUpdate) =>
+    request(`/system/dict/type/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  delete: (id: string) => request(`/system/dict/type/${id}`, { method: 'DELETE' }),
+
+  list: () => request('/system/dict/type/list'),
+};
+
+// 数据字典数据
+export interface DictData {
+  guid: string;
+  typeId: string;
+  typeName?: string;
+  label: string;
+  value: string;
+  sort: number;
+  status: string;
+  remark: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface DictDataQuery {
+  pageNum?: number;
+  pageSize?: number;
+  typeId?: string;
+  keyword?: string;
+  label?: string;
+  value?: string;
+}
+
+export interface DictDataCreate {
+  typeId: string;
+  label: string;
+  value: string;
+  sort?: number;
+  status?: string;
+  remark?: string;
+}
+
+export interface DictDataUpdate {
+  typeId?: string;
+  label?: string;
+  value?: string;
+  sort?: number;
+  status?: string;
+  remark?: string;
+}
+
+export const dictDataApi = {
+  page: (query: DictDataQuery = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+    return request(`/system/dict/data/page?${params}`);
+  },
+
+  get: (id: string) => request(`/system/dict/data/${id}`),
+
+  create: (data: DictDataCreate) =>
+    request('/system/dict/data', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: string, data: DictDataUpdate) =>
+    request(`/system/dict/data/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  delete: (id: string) => request(`/system/dict/data/${id}`, { method: 'DELETE' }),
+
+  list: (typeId: string) => request(`/system/dict/data/list?typeId=${typeId}`),
+};

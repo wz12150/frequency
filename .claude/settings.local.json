@@ -2,7 +2,32 @@
   "permissions": {
     "allow": [
       "Bash(Get-ChildItem -Path . -Force)",
-      "Bash(Select-Object Name, Mode)"
+      "Bash(Select-Object Name, Mode)",
+      "Bash(pnpm approve-builds *)",
+      "Bash(pnpm dev *)",
+      "Bash(mysql -u root -pa719721 -e \"SELECT 1\")",
+      "Bash(mysql -u root -e \"SELECT 1\")",
+      "Bash(brew services *)",
+      "Bash(sudo launchctl list)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm build *)",
+      "Bash(mysql -u root -pa719721 freqmanage)",
+      "Bash(mysql -u root -p'a719721' freqmanage)",
+      "Bash(mysql -u root -p'a7197210' freqmanage)",
+      "Bash(mysql -u root -p'a7197210' freqmanage -e \"SELECT * FROM sys_dict_type;\")",
+      "Bash(ls -la ~/.claude/)",
+      "Read(//Users/piaoxue/.claude/**)",
+      "Bash(mkdir -p ~/.claude/skills)",
+      "Bash(cp -R ~/Downloads/skills/* ~/.claude/skills/)",
+      "Bash(npm run *)",
+      "Bash(base64 /tmp/dashboard_design.png | head -c 100)",
+      "Read(//private/tmp/**)",
+      "Read(//tmp/**)",
+      "Bash(base64 -i /tmp/dashboard_design.png | base64 -d > /tmp/dashboard_view.png && file /tmp/dashboard_view.png)",
+      "Bash(curl -s http://localhost:84)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

@@ -42,6 +42,14 @@ export interface LicenseTypeStatsVO {
   expired: number;
 }
 
+// ── 台站类型分布 ────────────────────────────────────────────────────────────
+export interface StationTypeVO {
+  id: string;
+  name: string;
+  value: number;
+  color: string;
+}
+
 // ── Dashboard 概览 ──────────────────────────────────────────────────────────
 export interface DashboardOverviewVO {
   // KPI cards
@@ -59,15 +67,25 @@ export interface DashboardOverviewVO {
   // 许可证类型统计列表
   licenseTypeStats: LicenseTypeStatsVO[];
   // 台站类型分布（用于饼图）
-  stationTypes: { id: string; name: string; value: number; color: string }[];
+  stationTypes: StationTypeVO[];
   // 台站增长趋势（最近12个月）
   stationGrowthTrend: { month: string; count: number }[];
 }
 
 export const dashboardApi = {
-  overview: async () => {
+  overview: async (): Promise<DashboardOverviewVO> => {
     const res = await request('/dashboard/overview');
     // Handle ApiResponse wrapper: {code, message, data: {...}}
+    return res?.data ?? res;
+  },
+  // 新增：台站增长趋势（每日数据）
+  stationGrowthTrend: async (days: number = 30) => {
+    const res = await request(`/dashboard/station-growth?days=${days}`);
+    return res?.data ?? res;
+  },
+  // 新增：省份台站详细统计
+  provinceStationDetail: async () => {
+    const res = await request('/dashboard/province-station');
     return res?.data ?? res;
   },
 };

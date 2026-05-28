@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Building2, Users, Plus, Edit2, Trash2, Search, Shield, Check, Layers3, X, KeyRound } from 'lucide-react';
-import { organizationApi, userApi, roleApi, type Organization, type User, type Role } from '../api/system';
+import { Building2, Users, Plus, Edit2, Trash2, Search, Shield, Check, Layers3, X, KeyRound, BookOpen, List, ChevronRight } from 'lucide-react';
+import { organizationApi, userApi, roleApi, dictTypeApi, dictDataApi, type Organization, type User, type Role, type DictType, type DictData } from '../api/system';
 
 type PermissionKey = 'dashboard' | 'stations' | 'licenses' | 'planning' | 'reports' | 'system';
 
@@ -18,19 +18,26 @@ interface PageResponse<T> {
 }
 
 export function SystemManagement() {
-  const [activeTab, setActiveTab] = useState<'organization' | 'users' | 'roles'>('organization');
+  const [activeTab, setActiveTab] = useState<'organization' | 'users' | 'roles' | 'dictionary'>('organization');
   const [showAddOrgDialog, setShowAddOrgDialog] = useState(false);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
+  const [showAddDictTypeDialog, setShowAddDictTypeDialog] = useState(false);
+  const [showAddDictDataDialog, setShowAddDictDataDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editingDictType, setEditingDictType] = useState<DictType | null>(null);
+  const [editingDictData, setEditingDictData] = useState<DictData | null>(null);
+  const [selectedDictType, setSelectedDictType] = useState<DictType | null>(null);
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roleData, setRoleData] = useState<Role[]>([]);
+  const [dictTypes, setDictTypes] = useState<DictType[]>([]);
+  const [dictDataList, setDictDataList] = useState<DictData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [newOrg, setNewOrg] = useState({
@@ -74,6 +81,22 @@ export function SystemManagement() {
 
   const orgTypes = ['Regional', 'Branch', 'Hub', 'Station'];
 
+  const [newDictType, setNewDictType] = useState({
+    name: '',
+    code: '',
+    description: '',
+    status: 'enabled',
+  });
+
+  const [newDictData, setNewDictData] = useState({
+    typeId: '',
+    label: '',
+    value: '',
+    sort: 0,
+    status: 'enabled',
+    remark: '',
+  });
+
   useEffect(() => {
     loadData();
   }, [activeTab]);
@@ -90,11 +113,26 @@ export function SystemManagement() {
       } else if (activeTab === 'roles') {
         const result = await roleApi.page();
         setRoleData((result as ApiResponse<PageResponse<Role>>).data.records);
+      } else if (activeTab === 'dictionary') {
+        const result = await dictTypeApi.page({ keyword: searchTerm });
+        setDictTypes((result as ApiResponse<PageResponse<DictType>>).data.records);
+        if (selectedDictType) {
+          loadDictData(selectedDictType.guid);
+        }
       }
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDictData = async (typeId: string) => {
+    try {
+      const result = await dictDataApi.page({ typeId });
+      setDictDataList((result as ApiResponse<PageResponse<DictData>>).data.records);
+    } catch (error) {
+      console.error('Failed to load dict data:', error);
     }
   };
 
@@ -297,6 +335,170 @@ export function SystemManagement() {
     });
   };
 
+  // 数据字典类型处理函数
+  const handleAddDictType = async () => {
+    try {
+      await dictTypeApi.create({
+        name: newDictType.name,
+        code: newDictType.code,
+        description: newDictType.description,
+        status: newDictType.status,
+      });
+      setShowAddDictTypeDialog(false);
+      resetDictTypeForm();
+      loadData();
+    } catch (error) {
+      alert('Failed to add dictionary type');
+    }
+  };
+
+  const handleEditDictType = async () => {
+    if (!editingDictType) return;
+    try {
+      await dictTypeApi.update(editingDictType.guid, {
+        name: newDictType.name,
+        code: newDictType.code,
+        description: newDictType.description,
+        status: newDictType.status,
+      });
+      setShowAddDictTypeDialog(false);
+      setEditingDictType(null);
+      resetDictTypeForm();
+      loadData();
+    } catch (error) {
+      alert('Failed to update dictionary type');
+    }
+  };
+
+  const handleDeleteDictType = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this dictionary type? All related items will also be deleted.')) return;
+    try {
+      await dictTypeApi.delete(id);
+      if (selectedDictType?.guid === id) {
+        setSelectedDictType(null);
+        setDictDataList([]);
+      }
+      loadData();
+    } catch (error) {
+      alert('Failed to delete dictionary type');
+    }
+  };
+
+  const resetDictTypeForm = () => {
+    setNewDictType({
+      name: '',
+      code: '',
+      description: '',
+      status: 'enabled',
+    });
+  };
+
+  // 数据字典数据处理函数
+  const handleAddDictData = async () => {
+    try {
+      await dictDataApi.create({
+        typeId: newDictData.typeId,
+        label: newDictData.label,
+        value: newDictData.value,
+        sort: newDictData.sort,
+        status: newDictData.status,
+        remark: newDictData.remark,
+      });
+      setShowAddDictDataDialog(false);
+      resetDictDataForm();
+      if (selectedDictType) {
+        loadDictData(selectedDictType.guid);
+      }
+    } catch (error) {
+      alert('Failed to add dictionary item');
+    }
+  };
+
+  const handleEditDictData = async () => {
+    if (!editingDictData) return;
+    try {
+      await dictDataApi.update(editingDictData.guid, {
+        typeId: newDictData.typeId,
+        label: newDictData.label,
+        value: newDictData.value,
+        sort: newDictData.sort,
+        status: newDictData.status,
+        remark: newDictData.remark,
+      });
+      setShowAddDictDataDialog(false);
+      setEditingDictData(null);
+      resetDictDataForm();
+      if (selectedDictType) {
+        loadDictData(selectedDictType.guid);
+      }
+    } catch (error) {
+      alert('Failed to update dictionary item');
+    }
+  };
+
+  const handleDeleteDictData = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this dictionary item?')) return;
+    try {
+      await dictDataApi.delete(id);
+      if (selectedDictType) {
+        loadDictData(selectedDictType.guid);
+      }
+    } catch (error) {
+      alert('Failed to delete dictionary item');
+    }
+  };
+
+  const resetDictDataForm = () => {
+    setNewDictData({
+      typeId: '',
+      label: '',
+      value: '',
+      sort: 0,
+      status: 'enabled',
+      remark: '',
+    });
+  };
+
+  const openEditDictTypeDialog = (dictType: DictType) => {
+    setEditingDictType(dictType);
+    setNewDictType({
+      name: dictType.name,
+      code: dictType.code,
+      description: dictType.description || '',
+      status: dictType.status || 'enabled',
+    });
+    setShowAddDictTypeDialog(true);
+  };
+
+  const openEditDictDataDialog = (dictData: DictData) => {
+    setEditingDictData(dictData);
+    setNewDictData({
+      typeId: dictData.typeId,
+      label: dictData.label,
+      value: dictData.value,
+      sort: dictData.sort || 0,
+      status: dictData.status || 'enabled',
+      remark: dictData.remark || '',
+    });
+    setShowAddDictDataDialog(true);
+  };
+
+  const handleSelectDictType = (dictType: DictType) => {
+    setSelectedDictType(dictType);
+    loadDictData(dictType.guid);
+  };
+
+  const openAddDictDataDialog = () => {
+    if (!selectedDictType) {
+      alert('Please select a dictionary type first');
+      return;
+    }
+    resetDictDataForm();
+    setNewDictData({ ...newDictData, typeId: selectedDictType.guid });
+    setEditingDictData(null);
+    setShowAddDictDataDialog(true);
+  };
+
   const openEditOrgDialog = (org: Organization) => {
     setEditingOrg(org);
     const orgStatus = org.status === 'enabled' || org.status === 'active' ? 'enabled' : 'disabled';
@@ -386,6 +588,19 @@ export function SystemManagement() {
             <div className="flex items-center gap-2">
               <Layers3 className="w-4 h-4" />
               Role Management
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('dictionary')}
+            className={`pb-3 px-2 border-b-2 transition-colors ${
+              activeTab === 'dictionary'
+                ? 'border-primary text-primary font-medium'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Data Dictionary
             </div>
           </button>
         </div>
@@ -931,6 +1146,188 @@ export function SystemManagement() {
         </div>
       )}
 
+      {activeTab === 'dictionary' && (
+        <div className="space-y-6">
+          <div className="bg-card p-6 rounded-lg border border-border shadow-sm flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Data Dictionary</h3>
+              <p className="text-sm text-muted-foreground">Manage system dictionaries and their items.</p>
+            </div>
+            <button
+              onClick={() => { setShowAddDictTypeDialog(true); resetDictTypeForm(); }}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Dictionary Type
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 左侧：字典类型列表 */}
+            <div className="lg:col-span-1">
+              <div className="bg-card rounded-lg border border-border shadow-sm">
+                <div className="p-4 border-b border-border">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search dictionary types..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {loading ? (
+                    <div className="p-8 text-center">Loading...</div>
+                  ) : dictTypes.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">No dictionary types found</div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {dictTypes.map((dictType) => (
+                        <div
+                          key={dictType.guid}
+                          onClick={() => handleSelectDictType(dictType)}
+                          className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+                            selectedDictType?.guid === dictType.guid ? 'bg-muted/70 border-l-2 border-primary' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="w-4 h-4 text-primary" />
+                              <span className="font-medium">{dictType.name}</span>
+                            </div>
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                              dictType.status === 'enabled' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {dictType.status === 'enabled' ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground font-mono">{dictType.code}</div>
+                          {dictType.description && (
+                            <div className="mt-1 text-xs text-muted-foreground truncate">{dictType.description}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧：字典数据列表 */}
+            <div className="lg:col-span-2">
+              <div className="bg-card rounded-lg border border-border shadow-sm">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <List className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {selectedDictType ? `Items of "${selectedDictType.name}"` : 'Select a dictionary type'}
+                    </span>
+                  </div>
+                  {selectedDictType && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={openAddDictDataDialog}
+                        className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-sm flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add Item
+                      </button>
+                      <button
+                        onClick={() => openEditDictTypeDialog(selectedDictType)}
+                        className="px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors text-sm flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        Edit Type
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDictType(selectedDictType.guid)}
+                        className="px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors text-sm flex items-center gap-1 text-red-600"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  {!selectedDictType ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Select a dictionary type from the left panel to view its items</p>
+                    </div>
+                  ) : loading ? (
+                    <div className="p-8 text-center">Loading...</div>
+                  ) : dictDataList.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <List className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>No items found for this dictionary type</p>
+                      <button
+                        onClick={openAddDictDataDialog}
+                        className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-sm"
+                      >
+                        Add First Item
+                      </button>
+                    </div>
+                  ) : (
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Label</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Value</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Sort</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Remark</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {dictDataList.map((item) => (
+                          <tr key={item.guid} className="hover:bg-muted/50">
+                            <td className="px-4 py-3 text-sm font-medium">{item.label}</td>
+                            <td className="px-4 py-3 text-sm font-mono">{item.value}</td>
+                            <td className="px-4 py-3 text-sm">{item.sort}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                item.status === 'enabled' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {item.status === 'enabled' ? 'Enabled' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground max-w-32 truncate">{item.remark || '-'}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => openEditDictDataDialog(item)}
+                                  className="p-1.5 hover:bg-muted rounded transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDictData(item.guid)}
+                                  className="p-1.5 hover:bg-muted rounded transition-colors text-red-600"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddRoleDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -1018,6 +1415,169 @@ export function SystemManagement() {
                 className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
               >
                 {editingRole ? 'Update Role' : 'Save Role'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddDictTypeDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{editingDictType ? 'Edit Dictionary Type' : 'Add Dictionary Type'}</h3>
+              <button
+                onClick={() => { setShowAddDictTypeDialog(false); setEditingDictType(null); resetDictTypeForm(); }}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Type Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newDictType.name}
+                  onChange={(e) => setNewDictType({ ...newDictType, name: e.target.value })}
+                  placeholder="e.g., Frequency Band"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Type Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newDictType.code}
+                  onChange={(e) => setNewDictType({ ...newDictType, code: e.target.value })}
+                  placeholder="e.g., freq_band"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={newDictType.description}
+                  onChange={(e) => setNewDictType({ ...newDictType, description: e.target.value })}
+                  rows={2}
+                  placeholder="Optional description..."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={newDictType.status}
+                  onChange={(e) => setNewDictType({ ...newDictType, status: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-border flex justify-end gap-3">
+              <button
+                onClick={() => { setShowAddDictTypeDialog(false); setEditingDictType(null); resetDictTypeForm(); }}
+                className="px-6 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingDictType ? handleEditDictType : handleAddDictType}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                {editingDictType ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddDictDataDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{editingDictData ? 'Edit Dictionary Item' : 'Add Dictionary Item'}</h3>
+              <button
+                onClick={() => { setShowAddDictDataDialog(false); setEditingDictData(null); resetDictDataForm(); }}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Label <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newDictData.label}
+                  onChange={(e) => setNewDictData({ ...newDictData, label: e.target.value })}
+                  placeholder="e.g., UHF Band"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Value <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newDictData.value}
+                  onChange={(e) => setNewDictData({ ...newDictData, value: e.target.value })}
+                  placeholder="e.g., UHF"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Sort Order</label>
+                <input
+                  type="number"
+                  value={newDictData.sort}
+                  onChange={(e) => setNewDictData({ ...newDictData, sort: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={newDictData.status}
+                  onChange={(e) => setNewDictData({ ...newDictData, status: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Remark</label>
+                <textarea
+                  value={newDictData.remark}
+                  onChange={(e) => setNewDictData({ ...newDictData, remark: e.target.value })}
+                  rows={2}
+                  placeholder="Optional remark..."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-border flex justify-end gap-3">
+              <button
+                onClick={() => { setShowAddDictDataDialog(false); setEditingDictData(null); resetDictDataForm(); }}
+                className="px-6 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingDictData ? handleEditDictData : handleAddDictData}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                {editingDictData ? 'Update' : 'Add'}
               </button>
             </div>
           </div>

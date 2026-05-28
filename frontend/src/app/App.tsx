@@ -8,6 +8,7 @@ import { StationStats } from './components/StationStats';
 import { LicenseAnalysis } from './components/LicenseAnalysis';
 import { DataManagement } from './components/DataManagement';
 import { SystemManagement } from './components/SystemManagement';
+import { NewDashboard } from './components/NewDashboard';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,6 +36,7 @@ export default function App() {
       case 'license-analysis': return <LicenseAnalysis />;
       case 'data-management':  return <DataManagement />;
       case 'system-management': return <SystemManagement />;
+      case 'new-dashboard': return <NewDashboard />;
       default:                 return <Dashboard />;
     }
   };

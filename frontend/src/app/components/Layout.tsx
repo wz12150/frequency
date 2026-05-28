@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Menu, ChevronLeft, Home, Map, Radio, BarChart3, FileCheck, Database, Settings, LogOut, X, Save, LockKeyhole } from 'lucide-react';
+import { Menu, ChevronLeft, Home, Map, Radio, BarChart3, FileCheck, Database, Settings, LogOut, X, Save, LockKeyhole, LayoutDashboard } from 'lucide-react';
 import iconImage from '../../assets/icon.png';
 
 interface LayoutProps {
@@ -23,6 +23,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
   });
 
   const menuItems = [
+    { id: 'new-dashboard', icon: LayoutDashboard, label: 'New Dashboard' },
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
     { id: 'station-map', icon: Map, label: 'Station Map' },
     { id: 'frequency-planning', icon: Radio, label: 'Frequency Planning' },
