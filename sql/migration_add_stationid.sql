@@ -1,0 +1,14 @@
+-- Migration: Add STATIONID to RSBT_SPECIAL_PERMIT_STATION
+-- This allows linking permit stations to existing stations
+
+-- Add STATIONID column
+ALTER TABLE RSBT_SPECIAL_PERMIT_STATION 
+ADD COLUMN STATIONID VARCHAR(64) DEFAULT NULL COMMENT '关联台站ID(RSBT_STATION)' AFTER PERMITID;
+
+-- Add index
+ALTER TABLE RSBT_SPECIAL_PERMIT_STATION 
+ADD INDEX idx_station_id (STATIONID);
+
+-- Add foreign key constraint (optional, can be skipped if FK constraints cause issues)
+-- ALTER TABLE RSBT_SPECIAL_PERMIT_STATION 
+-- ADD CONSTRAINT fk_station_ref FOREIGN KEY (STATIONID) REFERENCES RSBT_STATION(GUID) ON DELETE SET NULL;

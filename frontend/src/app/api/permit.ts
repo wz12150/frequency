@@ -106,6 +106,53 @@ export interface PermitUpdate {
   directorname?: string;
 }
 
+export interface StationPermitVO {
+  guid: string;
+  permitid: string;
+  stationid?: string;        // FK to RSBT_STATION
+  stationName?: string;       // From RSBT_STATION.SITENAME
+  stationType?: string;       // From RSBT_STATION.STATIONTYPE
+  stationProvince?: string;   // From RSBT_STATION.PROVINCE
+  stationUnit?: string;       // From RSBT_STATION.UNIT
+  quantity?: number;
+  outputpower?: number;
+  type?: string;
+}
+
+export interface StationPermitCreate {
+  permitid: string;
+  stationid?: string;
+  quantity?: number;
+  outputpower?: number;
+  type?: string;
+}
+
+export interface StationPermitUpdate {
+  stationid?: string;
+  quantity?: number;
+  outputpower?: number;
+  type?: string;
+}
+
+export interface StationPermitQuery {
+  pageNum?: number;
+  pageSize?: number;
+  permitid?: string;
+}
+
+export const stationPermitApi = {
+  getByPermitId: (permitId: string) => request(`/permit/station-permit/${permitId}`),
+
+  create: (data: StationPermitCreate) =>
+    request('/permit/station-permit', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: string, data: StationPermitUpdate) =>
+    request(`/permit/station-permit/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  delete: (id: string) =>
+    request(`/permit/station-permit/${id}`, { method: 'DELETE' }),
+};
+
 export const permitApi = {
   page: (query: PermitQuery = {}) => {
     const params = new URLSearchParams();
@@ -116,6 +163,17 @@ export const permitApi = {
   },
 
   getById: (id: string) => request(`/permit/${id}`),
+
+  getFrequencies: (permitId: string) => request(`/permit/frequency/${permitId}`),
+
+  createFrequency: (data: any) =>
+    request('/permit/frequency', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateFrequency: (id: string, data: any) =>
+    request(`/permit/frequency/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteFrequency: (id: string) =>
+    request(`/permit/frequency/${id}`, { method: 'DELETE' }),
 
   create: (data: PermitCreate) =>
     request('/permit', { method: 'POST', body: JSON.stringify(data) }),

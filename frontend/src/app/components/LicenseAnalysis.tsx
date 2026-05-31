@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { statisticsApi, PermitUsageByMonthVO, LicenseCountByTypeVO, StationCountDetailVO, ValidityForecastVO, PermitQuery, PermitVO } from '../api/statistics';
+import { LicenseDetail } from './LicenseDetail';
 
 type DetailModalProps = {
   title: string;
@@ -87,6 +88,10 @@ export function LicenseAnalysis() {
   // Validity Period Statistics data
   const [validityForecast, setValidityForecast] = useState<ValidityForecastVO[]>([]);
   const [validityLicenseRecords, setValidityLicenseRecords] = useState<any[]>([]);
+
+  // License Detail state
+  const [showLicenseDetail, setShowLicenseDetail] = useState(false);
+  const [detailPermitId, setDetailPermitId] = useState<string | null>(null);
 
   const businessTypes = ['Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
   const provinces = ['All', 'Ulaanbaatar', 'Dornogovi', 'Central', 'Selenge', 'Khentii'];
@@ -222,6 +227,7 @@ export function LicenseAnalysis() {
 
   function mapPermitToLicenseDetail(p: PermitVO) {
     return {
+      guid: p.guid,
       number: p.code || p.consent || p.guid,
       organization: p.interlocutor || '',
       region: p.address || '',
@@ -374,6 +380,13 @@ export function LicenseAnalysis() {
 
   return (
     <div className="space-y-6">
+      {showLicenseDetail && detailPermitId ? (
+        <LicenseDetail
+          permitId={detailPermitId}
+          onBack={() => { setShowLicenseDetail(false); setDetailPermitId(null); }}
+        />
+      ) : (
+        <>
       <div>
         <h2 className="text-2xl font-semibold mb-2">License Analysis</h2>
         <p className="text-muted-foreground">Frequency license data statistics and resource utilization analysis</p>
@@ -617,15 +630,10 @@ export function LicenseAnalysis() {
                         <td className="text-center py-3 px-4">
                           <button
                             type="button"
-                            onClick={() => setSelectedLicenseDetail({
-                              number: record.number,
-                              organization: record.organization,
-                              region: record.region,
-                              frequency: record.frequency,
-                              startDate: record.startDate,
-                              endDate: record.endDate,
-                              status: record.status,
-                            })}
+                            onClick={() => {
+                              setDetailPermitId(record.guid || record.number);
+                              setShowLicenseDetail(true);
+                            }}
                             className="text-primary hover:text-orange-500 underline underline-offset-2"
                           >
                             Detail
@@ -736,16 +744,10 @@ export function LicenseAnalysis() {
                       </td>
                       <td className="text-center py-3 px-4 font-semibold">{detail.stationCount}</td>
                       <td className="text-center py-3 px-4">
-                        <button type="button" onClick={() => setSelectedStationDetail({
-                          number: detail.number,
-                          organization: detail.organization,
-                          region: detail.region,
-                          frequency: detail.frequency,
-                          startDate: detail.startDate,
-                          endDate: detail.endDate,
-                          status: detail.status,
-                          stationCount: detail.stationCount,
-                        })} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
+                        <button type="button" onClick={() => {
+                          setDetailPermitId(detail.number);
+                          setShowLicenseDetail(true);
+                        }} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
                       </td>
                     </tr>
                   ))}
@@ -754,99 +756,6 @@ export function LicenseAnalysis() {
             </div>
           </div>
         </div>
-      )}
-
-      {selectedLicenseDetail && (
-        <DetailModal
-          title="License Details"
-          subtitle="Detailed frequency authorization information"
-          onClose={() => setSelectedLicenseDetail(null)}
-          fields={[
-            ['License / Authorization', selectedLicenseDetail.number],
-            ['Organization', selectedLicenseDetail.organization],
-            ['Category', selectedLicenseDetail.frequency],
-            ['Law', selectedLicenseDetail.region],
-            ['Type', selectedLicenseDetail.status],
-            ['Start Date', selectedLicenseDetail.startDate],
-            ['End Date', selectedLicenseDetail.endDate],
-            ['Coverage Area', selectedLicenseDetail.frequency],
-            ['Process', 'Approved'],
-            ['Status', selectedLicenseDetail.status],
-            ['Code / No.', selectedLicenseDetail.number.replace('LIC-', '')],
-            ['Decision Date', selectedLicenseDetail.endDate],
-            ['Decision', 'Granted'],
-            ['Description', 'Frequency authorization detail view'],
-            ['Registration', selectedLicenseDetail.organization],
-            ['Address', selectedLicenseDetail.region],
-            ['Phone', 'N/A'],
-            ['Email', 'N/A'],
-            ['Administrative Info', 'Frequency management system'],
-            ['Contact Person', 'N/A'],
-            ['Station Count', selectedLicenseDetail.stationCount ?? 'N/A'],
-          ]}
-        />
-      )}
-
-      {selectedStationDetail && (
-        <DetailModal
-          title="Authorized Station Detail"
-          subtitle="Station-specific frequency authorization information"
-          onClose={() => setSelectedStationDetail(null)}
-          fields={[
-            ['License / Authorization', selectedStationDetail.number],
-            ['Organization', selectedStationDetail.organization],
-            ['Category', selectedStationDetail.frequency],
-            ['Law', selectedStationDetail.region],
-            ['Type', selectedStationDetail.status],
-            ['Start Date', selectedStationDetail.startDate],
-            ['End Date', selectedStationDetail.endDate],
-            ['Coverage Area', selectedStationDetail.frequency],
-            ['Process', 'Approved'],
-            ['Status', selectedStationDetail.status],
-            ['Code / No.', selectedStationDetail.number.replace('LIC-', '')],
-            ['Decision Date', selectedStationDetail.endDate],
-            ['Decision', 'Granted'],
-            ['Description', 'Station authorization detail view'],
-            ['Registration', selectedStationDetail.organization],
-            ['Address', selectedStationDetail.region],
-            ['Phone', 'N/A'],
-            ['Email', 'N/A'],
-            ['Administrative Info', 'Frequency management system'],
-            ['Contact Person', 'N/A'],
-            ['Station Count', selectedStationDetail.stationCount ?? 'N/A'],
-          ]}
-        />
-      )}
-
-      {selectedValidityLicense && (
-        <DetailModal
-          title="Frequency License Detail"
-          subtitle="Detailed frequency authorization information"
-          onClose={() => setSelectedValidityLicense(null)}
-          fields={[
-            ['License / Authorization', selectedValidityLicense.number],
-            ['Organization', selectedValidityLicense.organization],
-            ['Category', selectedValidityLicense.frequency],
-            ['Law', selectedValidityLicense.region],
-            ['Type', selectedValidityLicense.status],
-            ['Start Date', selectedValidityLicense.startDate],
-            ['End Date', selectedValidityLicense.endDate],
-            ['Coverage Area', selectedValidityLicense.frequency],
-            ['Process', 'Approved'],
-            ['Status', selectedValidityLicense.status],
-            ['Code / No.', selectedValidityLicense.number.replace('VL-', '')],
-            ['Decision Date', selectedValidityLicense.endDate],
-            ['Decision', 'Granted'],
-            ['Description', 'Frequency authorization detail view'],
-            ['Registration', selectedValidityLicense.organization],
-            ['Address', selectedValidityLicense.region],
-            ['Phone', 'N/A'],
-            ['Email', 'N/A'],
-            ['Administrative Info', 'Frequency management system'],
-            ['Contact Person', 'N/A'],
-            ['Station Count', selectedValidityLicense.stationCount ?? 'N/A'],
-          ]}
-        />
       )}
 
       {analysisType === 'validity' && (
@@ -943,16 +852,10 @@ export function LicenseAnalysis() {
                       </td>
                       <td className="text-center py-3 px-4">{record.endDate}</td>
                       <td className="text-center py-3 px-4">
-                        <button onClick={() => setSelectedValidityLicense({
-                          number: record.number,
-                          organization: record.organization,
-                          region: record.region,
-                          frequency: record.frequency,
-                          startDate: record.startDate,
-                          endDate: record.endDate,
-                          status: record.status,
-                          stationCount: record.stationCount,
-                        })} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
+                        <button onClick={() => {
+                          setDetailPermitId(record.number);
+                          setShowLicenseDetail(true);
+                        }} className="text-primary hover:text-orange-500 underline underline-offset-2">Detail</button>
                       </td>
                     </tr>
                   ))}
@@ -961,6 +864,8 @@ export function LicenseAnalysis() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

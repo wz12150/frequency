@@ -7,6 +7,7 @@ import com.freqmanage.module.station.dto.StationUpdateDTO;
 import com.freqmanage.module.station.entity.RsbtStation;
 import com.freqmanage.module.station.service.StationService;
 import com.freqmanage.module.station.vo.StationMapVO;
+import com.freqmanage.module.station.vo.StationSelectVO;
 import com.freqmanage.module.station.vo.StationStatsVO;
 import com.freqmanage.module.station.vo.StationVO;
 import com.freqmanage.common.PageResponse;
@@ -78,6 +79,11 @@ public class StationController {
     @GetMapping("/list")
     public ApiResponse<List<RsbtStation>> list() {
         return ApiResponse.ok(stationService.listAll());
+    }
+
+    @GetMapping("/select-list")
+    public ApiResponse<List<StationSelectVO>> selectList() {
+        return ApiResponse.ok(stationService.getSelectList());
     }
 
     @GetMapping("/region-detail")

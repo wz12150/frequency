@@ -12,6 +12,7 @@ import com.freqmanage.module.station.dto.StationUpdateDTO;
 import com.freqmanage.module.station.entity.RsbtStation;
 import com.freqmanage.module.station.mapper.StationMapper;
 import com.freqmanage.module.station.vo.StationMapVO;
+import com.freqmanage.module.station.vo.StationSelectVO;
 import com.freqmanage.module.station.vo.StationStatsVO;
 import com.freqmanage.module.station.vo.StationVO;
 import org.springframework.stereotype.Service;
@@ -140,6 +141,28 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
         return baseMapper.selectList(null);
     }
 
+    public List<StationSelectVO> getSelectList() {
+        List<RsbtStation> stations = baseMapper.selectList(
+            new LambdaQueryWrapper<RsbtStation>()
+                .select(RsbtStation::getGuid, RsbtStation::getSitename, RsbtStation::getStationtype,
+                        RsbtStation::getType, RsbtStation::getProvince, RsbtStation::getUnit, RsbtStation::getLocation)
+                .orderByAsc(RsbtStation::getSitename)
+        );
+        return stations.stream().map(this::convertToSelectVO).collect(Collectors.toList());
+    }
+
+    private StationSelectVO convertToSelectVO(RsbtStation entity) {
+        StationSelectVO vo = new StationSelectVO();
+        vo.setGuid(entity.getGuid());
+        vo.setSitename(entity.getSitename());
+        vo.setStationtype(entity.getStationtype());
+        vo.setType(entity.getType());
+        vo.setProvince(entity.getProvince());
+        vo.setUnit(entity.getUnit());
+        vo.setLocation(entity.getLocation());
+        return vo;
+    }
+
     public void importData(InputStream inputStream) {
         List<RsbtStation> importList = new ArrayList<>();
         com.alibaba.excel.EasyExcel.read(inputStream, RsbtStation.class, new com.alibaba.excel.read.listener.PageReadListener<RsbtStation>(list -> {
@@ -184,6 +207,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
             target.setLatitude(dto.getLatitude());
             target.setStartdate(dto.getStartdate());
             target.setExpirationdate(dto.getExpirationdate());
+            target.setFrequencyLicense(dto.getFrequencyLicense());
         } else if (src instanceof StationUpdateDTO) {
             StationUpdateDTO dto = (StationUpdateDTO) src;
             target.setType(dto.getType());
@@ -212,6 +236,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
             target.setLatitude(dto.getLatitude());
             target.setStartdate(dto.getStartdate());
             target.setExpirationdate(dto.getExpirationdate());
+            target.setFrequencyLicense(dto.getFrequencyLicense());
         }
     }
 
@@ -242,6 +267,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
         vo.setLatitude(entity.getLatitude());
         vo.setStartdate(entity.getStartdate());
         vo.setExpirationdate(entity.getExpirationdate());
+        vo.setFrequencyLicense(entity.getFrequencyLicense());
         return vo;
     }
 

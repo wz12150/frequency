@@ -33,4 +33,5 @@ public class StationCreateDTO {
     private BigDecimal latitude;
     private LocalDate startdate;
     private LocalDate expirationdate;
+    private String frequencyLicense;  // Frequency License 字段
 }

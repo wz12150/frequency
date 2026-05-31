@@ -79,6 +79,7 @@ export interface StationCreate {
   expirationdate?: string;
   unit?: string;
   equipname?: string;
+  frequencyLicense?: string;
 }
 
 export interface StationUpdate {
@@ -108,6 +109,7 @@ export interface StationUpdate {
   expirationdate?: string;
   unit?: string;
   equipname?: string;
+  frequencyLicense?: string;
 }
 
 export interface StationPageResponse {
@@ -115,6 +117,17 @@ export interface StationPageResponse {
   total: number;
   current: number;
   size: number;
+}
+
+// For dropdown selection
+export interface StationSelectVO {
+  guid: string;
+  sitename: string;
+  stationtype: string;
+  type: string;
+  province: string;
+  unit: string;
+  location: string;
 }
 
 export const stationApi = {
@@ -171,4 +184,6 @@ export const stationApi = {
     if (province) params.append('province', province);
     return request(`/station/region-detail?${params}`);
   },
+
+  getSelectList: () => request('/station/select-list'),
 };

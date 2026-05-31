@@ -39,6 +39,7 @@ public class RsbtStation {
     private BigDecimal latitude;
     private LocalDate startdate;
     private LocalDate expirationdate;
+    private String frequencyLicense;  // Frequency License 字段
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Integer deleted;
