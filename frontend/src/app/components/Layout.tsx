@@ -32,7 +32,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
     { id: 'license-analysis', icon: FileCheck, label: 'License Analysis' },
     { id: 'data-management', icon: Database, label: 'Data Management' },
     { id: 'system-management', icon: Settings, label: 'System Management' },
-    { id: 'cockpit', icon: LayoutDashboard, label: '驾驶舱' },
+    { id: 'dashboard3', icon: LayoutDashboard, label: '驾驶舱' },
   ];
 
   return (
@@ -108,7 +108,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
           </div>
         </header>
 
-        <main className={`flex-1 overflow-auto ${currentPage === 'cockpit' ? 'p-0' : 'p-6'}`}>{children}</main>
+        <main className={`flex-1 overflow-auto ${currentPage === 'dashboard3' ? 'p-0' : 'p-6'}`}>{children}</main>
       </div>
 
       {showProfileDialog && (

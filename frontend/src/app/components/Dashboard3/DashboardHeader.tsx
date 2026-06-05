@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { LOGO_IMG } from './logoImg';
 
 export function DashboardHeader() {
-  const [time, setTime] = useState(new Date('2022-11-18T16:28:53'));
+  const [time, setTime] = useState(new Date());
   useEffect(() => {
-    const t = setInterval(() => setTime(p => new Date(p.getTime() + 1000)), 1000);
+    const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -30,7 +30,7 @@ export function DashboardHeader() {
 
       {/* Date + Time */}
       <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
-        <span style={{ color:'#3d6880', fontSize:'12px', fontFamily:'sans-serif' }}>2022-11-18&nbsp;&nbsp;Monday</span>
+        <span style={{ color:'#3d6880', fontSize:'12px', fontFamily:'sans-serif' }}>{time.toLocaleDateString('zh-CN')}&nbsp;&nbsp;{time.toLocaleDateString('zh-CN', { weekday: 'long' })}</span>
         <div style={{ display:'flex', alignItems:'center', gap:'2px' }}>
           {[pad(time.getHours()), pad(time.getMinutes()), pad(time.getSeconds())].map((s, i) => (
             <React.Fragment key={i}>

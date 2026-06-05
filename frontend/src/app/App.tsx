@@ -8,7 +8,7 @@ import { StationStats } from './components/StationStats';
 import { LicenseAnalysis } from './components/LicenseAnalysis';
 import { DataManagement } from './components/DataManagement';
 import { SystemManagement } from './components/SystemManagement';
-import Cockpit from './components/Cockpit/Cockpit';
+import { Dashboard3 } from './components/Dashboard3';
 import { NewDashboard } from './components/NewDashboard';
 import { Dashboard2 } from './components/Dashboard2';
 
@@ -40,7 +40,7 @@ export default function App() {
       case 'system-management': return <SystemManagement />;
       case 'new-dashboard': return <NewDashboard />;
       case 'dashboard2': return <Dashboard2 />;
-      case 'cockpit': return <Cockpit />;
+      case 'dashboard3': return <Dashboard3 />;
       default:                 return <Dashboard />;
     }
   };

@@ -1,5 +1,17 @@
 import React from 'react';
 
+interface LeftPanelProps {
+  data: {
+    totalStations: number;
+    normal: number;
+    expiring: number;
+    expired: number;
+    licenseAuthList: { label: string; value: number }[];
+    stationTypeList: { name: string; value: number; color: string }[];
+  };
+  loading: boolean;
+}
+
 const CARD: React.CSSProperties = {
   background: 'rgba(15,48,88,0.92)',
   border: '1px solid rgba(0,160,210,0.3)',
@@ -55,18 +67,10 @@ function StatCard({ type, value, label }: { type:'ok'|'warn'|'err', value:string
   );
 }
 
-const DONUT = [
-  { name:'Mobile',      pct:20.0, color:'#ffd700' },
-  { name:'Broadcast',   pct:16.0, color:'#00bcd4' },
-  { name:'Radio',       pct:14.0, color:'#4ade80' },
-  { name:'Other',       pct:15.0, color:'#4466ff' },
-  { name:'Aviation',    pct:35.0, color:'#c86ef0' },
-];
-
-function DonutSVG() {
+function DonutSVG({ slices, total }: { slices: { name: string; pct: number; color: string }[]; total: number }) {
   const cx = 53, cy = 53, innerR = 33, outerR = 51, gap = 0.03;
   let angle = -Math.PI / 2;
-  const slices = DONUT.map((d, i) => {
+  const paths = slices.map((d, i) => {
     const sweep = (d.pct / 100) * 2 * Math.PI - gap;
     const a1 = angle + gap / 2;
     const a2 = a1 + sweep;
@@ -82,61 +86,76 @@ function DonutSVG() {
   return (
     <div style={{ position:'relative', width:'106px', height:'106px', flexShrink:0 }}>
       <svg width="106" height="106" viewBox="0 0 106 106" style={{ display:'block' }}>
-        {slices}
+        {paths}
       </svg>
       <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center', pointerEvents:'none' }}>
-        <div style={{ color:'#00e5ff', fontSize:'15px', fontWeight:700, lineHeight:1, fontFamily:'sans-serif' }}>1500</div>
+        <div style={{ color:'#00e5ff', fontSize:'15px', fontWeight:700, lineHeight:1, fontFamily:'sans-serif' }}>{total.toLocaleString()}</div>
         <div style={{ color:'#7ab4cc', fontSize:'9px', marginTop:'2px', fontFamily:'sans-serif' }}>Total</div>
       </div>
     </div>
   );
 }
 
-const AUTH = [
-  '5G licenses: 111','2G/3G/4G licenses: 300',
-  'xxxxxx licenses: 124','xxxxxx licenses: 184',
-  'xxxxx licenses: 167','xxxxxx licenses: 224',
-];
+export function LeftPanel({ data, loading }: LeftPanelProps) {
+  const total = data.totalStations;
+  const stationTypeList = data.stationTypeList;
 
-const TYPES = [
-  { name:'Aviation',        val:210, color:'#c86ef0' },
-  { name:'Radio (Audio)',   val:240, color:'#00bcd4' },
-  { name:'Radio (TV)',      val:300, color:'#4ade80' },
-  { name:'Other',           val:225, color:'#ffd700' },
-  { name:'Mobile Base',     val:525, color:'#4466ff' },
-];
+  const fallbackSlices = [
+    { name: 'Mobile', pct: 20, color: '#ffd700' },
+    { name: 'Broadcast', pct: 16, color: '#00bcd4' },
+    { name: 'Radio', pct: 14, color: '#4ade80' },
+    { name: 'Other', pct: 15, color: '#4466ff' },
+    { name: 'Aviation', pct: 35, color: '#c86ef0' },
+  ];
 
-export function LeftPanel() {
+  const donutSlices = stationTypeList.length > 0
+    ? stationTypeList.map(t => ({ name: t.name, pct: total > 0 ? (t.value / total) * 100 : 0, color: t.color }))
+    : fallbackSlices;
+
+  const maxVal = Math.max(...(stationTypeList.length > 0 ? stationTypeList : fallbackSlices).map(s => s.value), 1);
+
   return (
     <div style={{ width:'282px', minWidth:'282px', display:'flex', flexDirection:'column', gap:'8px', overflow:'hidden' }}>
 
-      {/* Card 1 */}
+      {/* Card 1: Frequency Authorization */}
       <div style={CARD}>
         <STitle text="Frequency Authorization" />
         <div style={{ display:'flex', gap:'7px', marginBottom:'12px' }}>
-          <StatCard type="ok"   value="1496" label="Normal" />
-          <StatCard type="warn" value="12"   label="Expiring" />
-          <StatCard type="err"  value="2"    label="Expired" />
+          <StatCard type="ok"   value={loading ? '-' : String(data.normal)}   label="Normal" />
+          <StatCard type="warn" value={loading ? '-' : String(data.expiring)} label="Expiring" />
+          <StatCard type="err"  value={loading ? '-' : String(data.expired)}  label="Expired" />
         </div>
         <div style={{ height:'1px', background:'rgba(0,150,200,0.18)', marginBottom:'9px' }} />
         <SubLabel text="Licensed Stations" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', rowGap:'5px', columnGap:'4px' }}>
-          {AUTH.map((item, i) => (
+          {data.licenseAuthList.map((item, i) => (
             <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'4px' }}>
               <div style={{ width:'7px', height:'7px', borderRadius:'1px', background:'#1050a0', flexShrink:0, marginTop:'2px' }} />
-              <span style={{ color:'#7ab4cc', fontSize:'10px', lineHeight:1.5, fontFamily:'sans-serif' }}>{i+1} {item}</span>
+              <span style={{ color:'#7ab4cc', fontSize:'10px', lineHeight:1.5, fontFamily:'sans-serif' }}>
+                {i+1} {item.label}: {loading ? '-' : item.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
+          {data.licenseAuthList.length === 0 && !loading && Array.from({ length: 6 }, (_, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'4px' }}>
+              <div style={{ width:'7px', height:'7px', borderRadius:'1px', background:'#1050a0', flexShrink:0, marginTop:'2px' }} />
+              <span style={{ color:'#7ab4cc', fontSize:'10px', lineHeight:1.5, fontFamily:'sans-serif' }}>—</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Card 2 */}
+      {/* Card 2: Station Type Statistics */}
       <div style={{ ...CARD, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <STitle text="Station Type Statistics" />
         <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'10px' }}>
-          <DonutSVG />
+          {loading ? (
+            <div style={{ width:'106px', height:'106px', display:'flex', alignItems:'center', justifyContent:'center', color:'#00e5ff', fontSize:'11px' }}>Loading…</div>
+          ) : (
+            <DonutSVG slices={donutSlices} total={total} />
+          )}
           <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginLeft:'20px' }}>
-            {DONUT.map(d => (
+            {(stationTypeList.length > 0 ? donutSlices : fallbackSlices).map(d => (
               <div key={d.name} style={{ display:'flex', alignItems:'center', gap:'4px' }}>
                 <span style={{ color:'#7ab4cc', fontSize:'10px', width:'36px', textAlign:'right', fontFamily:'sans-serif' }}>{d.pct.toFixed(1)}%</span>
                 <div style={{ width:'9px', height:'9px', borderRadius:'1px', background:d.color, flexShrink:0 }} />
@@ -148,12 +167,12 @@ export function LeftPanel() {
         <div style={{ height:'1px', background:'rgba(0,150,200,0.18)', marginBottom:'9px' }} />
         <SubLabel text="Station Type Details" />
         <div style={{ display:'flex', flexDirection:'column', gap:'5px' }}>
-          {TYPES.map(item => (
+          {(stationTypeList.length > 0 ? stationTypeList : fallbackSlices).map(item => (
             <div key={item.name} style={{ display:'flex', alignItems:'center', gap:'6px' }}>
               <span style={{ color:'#7ab4cc', fontSize:'10px', width:'90px', flexShrink:0, fontFamily:'sans-serif' }}>{item.name}</span>
               <div style={{ flex:1, background:'rgba(0,15,45,0.7)', borderRadius:'2px', height:'16px', overflow:'hidden' }}>
-                <div style={{ width:`${(item.val/600)*100}%`, height:'100%', background:item.color, borderRadius:'2px', display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:'5px', minWidth:'26px' }}>
-                  <span style={{ color:'#fff', fontSize:'10px', fontWeight:700, fontFamily:'sans-serif' }}>{item.val}</span>
+                <div style={{ width:`${(item.value / maxVal) * 100}%`, height:'100%', background:item.color, borderRadius:'2px', display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:'5px', minWidth:'26px' }}>
+                  <span style={{ color:'#fff', fontSize:'10px', fontWeight:700, fontFamily:'sans-serif' }}>{loading ? '-' : item.value.toLocaleString()}</span>
                 </div>
               </div>
             </div>
