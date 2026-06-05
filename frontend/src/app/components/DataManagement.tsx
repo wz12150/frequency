@@ -27,6 +27,7 @@ type StationRecord = {
   province?: string;
   detailedLocation?: string;
   frequency: string;
+  receiveFrequency?: string;
   status: 'normal' | 'expiring' | 'expired';
   openDate?: string;
   expireDate: string;
@@ -37,8 +38,11 @@ type StationRecord = {
   equipmentCount?: string;
   equipmentPower?: string;
   technicalStandard?: string;
+  bandwidth?: string;
   bandwidthProcessingUnitModel?: string;
   ownerName?: string;
+  ownedsite?: string;
+  bbuModel?: string;
   backhaulNetworkAccessMethod?: string;
   stationPurpose?: string;
   modulationType?: string;
@@ -172,7 +176,7 @@ type PlanningFormProps = {
   submitLabel: string;
 };
 
-const stationFields: (keyof StationRecord)[] = ['name', 'frequencyLicense', 'type', 'region', 'province', 'detailedLocation', 'frequency', 'status', 'openDate', 'expireDate', 'latitude', 'longitude', 'power', 'antenna', 'equipmentCount', 'equipmentPower', 'technicalStandard', 'bandwidthProcessingUnitModel', 'ownerName', 'backhaulNetworkAccessMethod', 'stationPurpose', 'modulationType', 'antennaCount', 'equipmentNameAndModel'];
+const stationFields: (keyof StationRecord)[] = ['name', 'frequencyLicense', 'type', 'region', 'province', 'detailedLocation', 'frequency', 'bandwidth', 'status', 'openDate', 'expireDate', 'latitude', 'longitude', 'power', 'antenna', 'equipmentCount', 'equipmentPower', 'technicalStandard', 'bandwidthProcessingUnitModel', 'ownerName', 'backhaulNetworkAccessMethod', 'stationPurpose', 'modulationType', 'antennaCount', 'equipmentNameAndModel'];
 const licenseFields: (keyof LicenseRecord)[] = ['number', 'organization', 'station', 'frequency', 'type', 'power', 'status', 'startDate', 'endDate', 'licenseAuthorization', 'unit', 'category', 'law', 'coverage', 'process', 'code', 'decisionDate', 'decision', 'description', 'registration', 'address', 'phone', 'email', 'administrativeInfo', 'contactPerson'];
 const planningFields: (keyof FrequencyBand)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note'];
 const stationFieldMap: Record<keyof StationRecord, string> = {
@@ -183,6 +187,7 @@ const stationFieldMap: Record<keyof StationRecord, string> = {
   province: 'Province',
   detailedLocation: 'Detailed Location',
   frequency: 'Frequency',
+  bandwidth: 'Bandwidth',
   status: 'Status',
   openDate: 'Open Date',
   expireDate: 'Expire Date',
@@ -231,8 +236,8 @@ const licenseFieldMap: Record<keyof LicenseRecord, string> = {
 };
 const planningFieldMap: Record<keyof FrequencyBand, string> = {
   guid: 'GUID',
-  category: 'Category',
-  subCategory: 'Subcategory',
+  category: 'Radioservices',
+  subCategory: 'Subservices',
   service: 'Level',
   bandName: 'Band Name',
   startFreq: 'Start Frequency',
@@ -273,7 +278,7 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Station Name <span className="text-red-500">*</span></label><input value={value.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Station Name <span className="text-red-500">*</span></label><input value={value.name} onChange={(e) => update('name', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Frequency License</label>
               <select value={value.frequencyLicense ?? ''} onChange={(e) => update('frequencyLicense', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
                 <option value="">-- Select License --</option>
@@ -283,6 +288,8 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
               </select>
             </div>
             <div><label className="block text-sm font-medium mb-2">Technical Standard</label><input value={value.technicalStandard ?? ''} onChange={(e) => update('technicalStandard', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">BBU Model</label><input value={value.bbuModel ?? ''} onChange={(e) => update('bbuModel', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Owned Site</label><input value={value.ownedsite ?? ''} onChange={(e) => update('ownedsite', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Bandwidth Processing Unit Model</label><input value={value.bandwidthProcessingUnitModel ?? ''} onChange={(e) => update('bandwidthProcessingUnitModel', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Owner Name <span className="text-red-500">*</span></label><input value={value.ownerName ?? ''} onChange={(e) => update('ownerName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Backhaul Network Access Method</label><input value={value.backhaulNetworkAccessMethod ?? ''} onChange={(e) => update('backhaulNetworkAccessMethod', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
@@ -290,7 +297,8 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
             <div><label className="block text-sm font-medium mb-2">Modulation Type</label><input value={value.modulationType ?? ''} onChange={(e) => update('modulationType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Station Type <span className="text-red-500">*</span></label><input value={value.type} onChange={(e) => update('type', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Transmit Frequency</label><input value={value.frequency} onChange={(e) => update('frequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Receive Frequency</label><input value={value.frequency} onChange={(e) => update('frequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Receive Frequency</label><input value={value.receiveFrequency ?? ''} onChange={(e) => update('receiveFrequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Bandwidth <span className="text-red-500">*</span></label><input value={value.bandwidth ?? ''} onChange={(e) => update('bandwidth', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Equipment Name and Model</label><input value={value.equipmentNameAndModel ?? ''} onChange={(e) => update('equipmentNameAndModel', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Equipment Count</label><input value={value.equipmentCount ?? ''} onChange={(e) => update('equipmentCount', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Equipment Output Power</label><input value={value.equipmentPower ?? value.power ?? ''} onChange={(e) => updateMany({ equipmentPower: e.target.value, power: e.target.value })} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
@@ -366,8 +374,8 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium mb-2">Category<span className="text-red-500"> *</span></label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Subcategory<span className="text-red-500"> *</span></label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Radioservices<span className="text-red-500"> *</span></label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Subservices<span className="text-red-500"> *</span></label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Level<span className="text-red-500"> *</span></label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Band Name</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Start Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.startFreq} onChange={(e) => update('startFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
@@ -411,7 +419,9 @@ function mapVoToStationRecord(r: any): StationRecord {
     region: r.district ?? '',
     province: r.province ?? '',
     detailedLocation: r.location ?? '',
-    frequency: buildFrequencyString(r.frequencyt, r.frequencyr),
+    frequency: r.frequencyt?.toString() ?? '',
+    receiveFrequency: r.frequencyr?.toString() ?? '',
+    bandwidth: r.bandwidth?.toString() ?? '',
     status: computeStatus(r.expirationdate),
     openDate: r.startdate ?? '',
     expireDate: r.expirationdate ?? '',
@@ -429,6 +439,8 @@ function mapVoToStationRecord(r: any): StationRecord {
     equipmentNameAndModel: r.devicemodel ?? '',
     antenna: r.anttype ?? '',
     frequencyLicense: r.frequencyLicense ?? '',
+    ownedsite: r.ownedsite ?? '',
+    bbuModel: r.bbumodel ?? '',
   };
 }
 
@@ -732,8 +744,13 @@ export function DataManagement() {
         longitude: stationFormRecord.longitude ? parseFloat(stationFormRecord.longitude) : undefined,
         latitude: stationFormRecord.latitude ? parseFloat(stationFormRecord.latitude) : undefined,
         unit: stationFormRecord.ownerName ?? '',
-        equipname: '',
+        equipname: stationFormRecord.equipmentNameAndModel ?? '',
         frequencyLicense: stationFormRecord.frequencyLicense ?? '',
+        frequencyt: stationFormRecord.frequency ? parseFloat(stationFormRecord.frequency) : undefined,
+        frequencyr: stationFormRecord.receiveFrequency ? parseFloat(stationFormRecord.receiveFrequency) : undefined,
+        bandwidth: stationFormRecord.bandwidth ? parseFloat(stationFormRecord.bandwidth) : undefined,
+        ownedsite: stationFormRecord.ownedsite ?? '',
+        bbumodel: stationFormRecord.bbuModel ?? '',
       };
       await stationApi.update(stationFormRecord.id, payload);
       await refreshStationData();
@@ -907,7 +924,7 @@ export function DataManagement() {
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => { setImportTab('station'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
               <button type="button" onClick={() => exportToExcel('station')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setStationFormRecord({ id: '', name: '', frequencyLicense: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
+              <button type="button" onClick={() => { setStationFormRecord({ id: '', name: '', frequencyLicense: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', receiveFrequency: '', bandwidth: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', ownedsite: '', bbuModel: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
@@ -1104,8 +1121,8 @@ export function DataManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4">Category</th>
-                  <th className="text-left py-3 px-4">Subcategory</th>
+                  <th className="text-left py-3 px-4">Radioservices</th>
+                  <th className="text-left py-3 px-4">Subservices</th>
                   <th className="text-left py-3 px-4">Level</th>
                   <th className="text-left py-3 px-4">Band Name</th>
                   <th className="text-left py-3 px-4">Start Frequency</th>
@@ -1206,7 +1223,8 @@ export function DataManagement() {
             { label: 'Modulation Type', value: detailRecord.data.modulationType ?? '-' },
             { label: 'Station Type', value: detailRecord.data.type },
             { label: 'Transmit Frequency', value: detailRecord.data.frequency },
-            { label: 'Receive Frequency', value: detailRecord.data.frequency },
+            { label: 'Receive Frequency', value: detailRecord.data.receiveFrequency ?? '-' },
+            { label: 'Bandwidth', value: detailRecord.data.bandwidth ?? '-' },
             { label: 'Equipment Name and Model', value: detailRecord.data.equipmentNameAndModel ?? '-' },
             { label: 'Equipment Count', value: detailRecord.data.equipmentCount ?? '-' },
             { label: 'Equipment Output Power', value: detailRecord.data.equipmentPower ?? detailRecord.data.power ?? '-' },
@@ -1264,8 +1282,13 @@ export function DataManagement() {
                     longitude: stationFormRecord.longitude ? parseFloat(stationFormRecord.longitude) : undefined,
                     latitude: stationFormRecord.latitude ? parseFloat(stationFormRecord.latitude) : undefined,
                     unit: stationFormRecord.ownerName ?? '',
-                    equipname: '',
+                    equipname: stationFormRecord.equipmentNameAndModel ?? '',
                     frequencyLicense: stationFormRecord.frequencyLicense ?? '',
+                    frequencyt: stationFormRecord.frequency ? parseFloat(stationFormRecord.frequency) : undefined,
+                    frequencyr: stationFormRecord.receiveFrequency ? parseFloat(stationFormRecord.receiveFrequency) : undefined,
+                    bandwidth: stationFormRecord.bandwidth ? parseFloat(stationFormRecord.bandwidth) : undefined,
+                    ownedsite: stationFormRecord.ownedsite ?? '',
+                    bbumodel: stationFormRecord.bbuModel ?? '',
                   };
                   await stationApi.create(payload);
                   await refreshStationData();

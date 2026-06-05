@@ -25,12 +25,14 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
   const menuItems = [
     { id: 'new-dashboard', icon: LayoutDashboard, label: 'New Dashboard' },
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
+    { id: 'dashboard2', icon: LayoutDashboard, label: 'Dashboard2' },
     { id: 'station-map', icon: Map, label: 'Station Map' },
     { id: 'frequency-planning', icon: Radio, label: 'Frequency Planning' },
     { id: 'station-stats', icon: BarChart3, label: 'Station Statistics' },
     { id: 'license-analysis', icon: FileCheck, label: 'License Analysis' },
     { id: 'data-management', icon: Database, label: 'Data Management' },
     { id: 'system-management', icon: Settings, label: 'System Management' },
+    { id: 'cockpit', icon: LayoutDashboard, label: '驾驶舱' },
   ];
 
   return (
@@ -106,7 +108,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className={`flex-1 overflow-auto ${currentPage === 'cockpit' ? 'p-0' : 'p-6'}`}>{children}</main>
       </div>
 
       {showProfileDialog && (

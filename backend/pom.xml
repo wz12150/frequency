@@ -21,6 +21,7 @@
         <easyexcel.version>4.0.3</easyexcel.version>
         <hutool.version>5.8.33</hutool.version>
         <lombok.version>1.18.40</lombok.version>
+        <start-class>com.freqmanage.FrequencyManageApplication</start-class>
     </properties>
     <dependencies>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
@@ -38,7 +39,6 @@
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
     </dependencies>
     <build>
-        <directory>${user.home}/.freqmanage-backend-target</directory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -60,7 +60,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.freqmanage.FrequencyManageApplication</mainClass>
-                    <fork>false</fork>
                 </configuration>
             </plugin>
         </plugins>

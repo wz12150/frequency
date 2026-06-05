@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10频管分析系统 - 大屏展示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #081830 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 58, 95, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(34, 211, 238, 0.4);
+            border-radius: 3px;
+        }
+
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.3), inset 0 0 20px rgba(34, 211, 238, 0.05);
+        }
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.05);
+        }
+
+        /* Card styling */
+        .dashboard-card {
+            background: linear-gradient(145deg, rgba(15, 30, 56, 0.9) 0%, rgba(30, 58, 95, 0.6) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), transparent);
+        }
+
+        /* Number display */
+        .stat-number {
+            background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 50%, #0ea5e9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        }
+
+        /* Map placeholder styling */
+        .map-container {
+            background: linear-gradient(135deg, rgba(10, 25, 53, 0.95) 0%, rgba(20, 40, 80, 0.8) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .map-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M0 30 Q15 25 30 30 T60 30' fill='none' stroke='rgba(59,130,246,0.1)' stroke-width='1'/%3E%3Cpath d='M0 45 Q15 40 30 45 T60 45' fill='none' stroke='rgba(59,130,246,0.08)' stroke-width='1'/%3E%3Cpath d='M0 15 Q15 10 30 15 T60 15' fill='none' stroke='rgba(59,130,246,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        /* Chart placeholder */
+        .chart-placeholder {
+            background: linear-gradient(135deg, rgba(15, 30, 56, 0.7) 0%, rgba(30, 58, 95, 0.5) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* Label tag */
+        .label-tag {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.4);
+            border-radius: 4px;
+            font-size: 10px;
+            padding: 2px 8px;
+            color: #22d3ee;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background: rgba(30, 58, 95, 0.5);
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #22d3ee, #0ea5e9);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        /* Animated border */
+        @keyframes borderGlow {
+            0%, 100% { border-color: rgba(34, 211, 238, 0.3); }
+            50% { border-color: rgba(34, 211, 238, 0.6); }
+        }
+        .animate-border {
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        /* Pulse animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .pulse-dot {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Grid background */
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="grid-bg">
+    <!-- Header -->
+    <header class="px-6 py-4 flex items-center justify-between border-b border-cyan-500/20">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white">10频管分析系统</h1>
+                <p class="text-xs text-slate-400">Frequency Management Analysis Platform</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-right">
+                <p class="text-xs text-slate-400">当前时间</p>
+                <p class="text-lg font-mono text-cyan-400" id="currentTime">--:--:--</p>
+            </div>
+            <div class="label-tag">2026年数据</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 80px);">
+
+        <!-- Left Column -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <!-- Statistics Cards -->
+            <div class="dashboard-card p-4 glow-cyan">
+                <h3 class="text-sm font-medium text-cyan-400 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 pulse-dot"></span>
+                    频管专题统计分析
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="stat-number text-2xl font-bold">12,586</p>
+                        <p class="text-xs text-slate-400 mt-1">基站总数</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="stat-number text-2xl font-bold">8,247</p>
+                        <p class="text-xs text-slate-400 mt-1">频点总数</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="stat-number text-2xl font-bold">3,592</p>
+                        <p class="text-xs text-slate-400 mt-1">许可总数</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="stat-number text-2xl font-bold">96.8%</p>
+                        <p class="text-xs text-slate-400 mt-1">覆盖率</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- China Regional Map -->
+            <div class="map-container flex-1 p-4 flex flex-col">
+                <h3 class="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                    中国区域地图
+                </h3>
+                <div class="flex-1 rounded-lg bg-slate-900/80 flex items-center justify-center relative overflow-hidden">
+                    <!-- Map SVG Placeholder -->
+                    <svg viewBox="0 0 400 350" class="w-full h-full opacity-70">
+                        <path d="M320 80 L340 70 L350 85 L345 100 L355 110 L340 120 L330 115 L325 125 L335 140 L325 150 L310 145 L300 150 L295 140 L280 145 L270 140 L260 150 L250 145 L240 150 L230 145 L220 155 L210 150 L200 160 L190 155 L180 160 L170 155 L160 165 L150 160 L140 165 L130 160 L120 165 L110 160 L100 165 L90 160 L80 165 L70 160 L60 170 L50 165 L55 155 L45 145 L55 135 L65 130 L75 120 L85 115 L95 110 L100 100 L110 95 L120 100 L125 90 L135 85 L145 90 L155 85 L165 90 L175 85 L185 90 L195 85 L205 90 L215 85 L225 90 L235 85 L245 90 L255 85 L265 90 L275 85 L285 90 L295 85 L305 90 L315 85 L325 90 L335 85 L345 90 L350 80 L340 75 L325 80 Z"
+                              fill="rgba(59,130,246,0.3)" stroke="rgba(34,211,238,0.6)" stroke-width="1.5"/>
+                        <circle cx="200" cy="150" r="8" fill="rgba(34,211,238,0.8)">
+                            <animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="280" cy="120" r="5" fill="rgba(34,211,238,0.6)"/>
+                        <circle cx="150" cy="130" r="5" fill="rgba(34,211,238,0.6)"/>
+                        <circle cx="320" cy="100" r="4" fill="rgba(34,211,238,0.5)"/>
+                        <circle cx="100" cy="140" r="4" fill="rgba(34,211,238,0.5)"/>
+                        <text x="200" y="175" fill="#22d3ee" font-size="10" text-anchor="middle">华北区域</text>
+                    </svg>
+                    <!-- Legend -->
+                    <div class="absolute bottom-2 right-2 flex gap-3 text-xs">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400"></span>核心节点</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>普通节点</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column -->
+        <div class="col-span-6 flex flex-col gap-4">
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="dashboard-card p-3 text-center animate-border">
+                    <p class="stat-number text-xl font-bold">2,847</p>
+                    <p class="text-xs text-slate-400">今日采集量</p>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-bar-fill" style="width: 72%"></div>
+                    </div>
+                </div>
+                <div class="dashboard-card p-3 text-center animate-border">
+                    <p class="stat-number text-xl font-bold">156</p>
+                    <p class="text-xs text-slate-400">活跃基站</p>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-bar-fill" style="width: 85%"></div>
+                    </div>
+                </div>
+                <div class="dashboard-card p-3 text-center animate-border">
+                    <p class="stat-number text-xl font-bold">89.2%</p>
+                    <p class="text-xs text-slate-400">频谱利用率</p>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-bar-fill" style="width: 89%"></div>
+                    </div>
+                </div>
+                <div class="dashboard-card p-3 text-center animate-border">
+                    <p class="stat-number text-xl font-bold">23</p>
+                    <p class="text-xs text-slate-400">告警数量</p>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-bar-fill" style="width: 23%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Charts Area -->
+            <div class="flex-1 grid grid-cols-2 gap-4">
+                <!-- Frequency Chart -->
+                <div class="dashboard-card p-4 flex flex-col">
+                    <h3 class="text-sm font-medium text-cyan-400 mb-3">频谱分布统计</h3>
+                    <div class="chart-placeholder flex-1" id="frequencyChart"></div>
+                </div>
+
+                <!-- Trend Chart -->
+                <div class="dashboard-card p-4 flex flex-col">
+                    <h3 class="text-sm font-medium text-cyan-400 mb-3">年度趋势分析</h3>
+                    <div class="chart-placeholder flex-1" id="trendChart"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Charts -->
+            <div class="grid grid-cols-3 gap-4">
+                <!-- Pie Chart -->
+                <div class="dashboard-card p-4">
+                    <h3 class="text-sm font-medium text-cyan-400 mb-2">基站类型分布</h3>
+                    <div class="chart-placeholder h-32" id="pieChart"></div>
+                </div>
+                <!-- Bar Chart -->
+                <div class="dashboard-card p-4">
+                    <h3 class="text-sm font-medium text-cyan-400 mb-2">区域对比</h3>
+                    <div class="chart-placeholder h-32" id="barChart"></div>
+                </div>
+                <!-- Radar Chart -->
+                <div class="dashboard-card p-4">
+                    <h3 class="text-sm font-medium text-cyan-400 mb-2">指标雷达</h3>
+                    <div class="chart-placeholder h-32" id="radarChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <!-- Full China Map -->
+            <div class="map-container flex-[2] p-4 flex flex-col">
+                <h3 class="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    中国地图 - 全景展示
+                </h3>
+                <div class="flex-1 rounded-lg bg-slate-900/80 flex items-center justify-center relative overflow-hidden">
+                    <!-- Detailed China Map SVG -->
+                    <svg viewBox="0 0 500 450" class="w-full h-full opacity-80">
+                        <!-- Simplified China outline -->
+                        <path d="M380 100 L400 90 L420 100 L430 115 L420 130 L430 145 L420 155 L430 165 L420 180 L400 185 L390 195 L375 190 L365 200 L350 195 L340 200 L325 195 L310 200 L295 195 L280 200 L265 195 L250 200 L235 195 L220 200 L205 195 L190 200 L175 195 L160 200 L145 195 L130 200 L115 195 L100 200 L85 190 L90 175 L80 165 L85 150 L75 140 L80 125 L70 115 L80 100 L90 90 L105 85 L120 90 L135 85 L150 90 L165 85 L180 90 L195 85 L210 90 L225 85 L240 90 L255 85 L270 90 L285 85 L300 90 L315 85 L330 90 L345 85 L360 90 L375 85 L390 100 L380 95 Z"
+                              fill="rgba(30,58,95,0.6)" stroke="rgba(59,130,246,0.8)" stroke-width="2"/>
+
+                        <!-- Province markers -->
+                        <circle cx="350" cy="180" r="12" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="2">
+                            <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="280" cy="160" r="8" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="320" cy="220" r="8" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="240" cy="180" r="8" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="200" cy="150" r="8" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="160" cy="170" r="8" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="120" cy="200" r="6" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+                        <circle cx="380" cy="140" r="6" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+
+                        <!-- Province labels -->
+                        <text x="350" y="200" fill="#22d3ee" font-size="9" text-anchor="middle">北京</text>
+                        <text x="280" y="175" fill="#22d3ee" font-size="9" text-anchor="middle">内蒙古</text>
+                        <text x="320" y="235" fill="#22d3ee" font-size="9" text-anchor="middle">河北</text>
+                        <text x="240" y="195" fill="#22d3ee" font-size="9" text-anchor="middle">辽宁</text>
+                        <text x="200" y="165" fill="#22d3ee" font-size="9" text-anchor="middle">吉林</text>
+                        <text x="160" y="185" fill="#22d3ee" font-size="9" text-anchor="middle">黑龙江</text>
+                        <text x="380" y="155" fill="#22d3ee" font-size="9" text-anchor="middle">新疆</text>
+                    </svg>
+                    <!-- Floating data card -->
+                    <div class="absolute top-4 left-4 bg-slate-900/90 rounded-lg p-3 border border-cyan-500/30">
+                        <p class="text-xs text-cyan-400">实时监控</p>
+                        <p class="text-lg font-bold text-white">在线设备 <span class="text-cyan-400">1,247</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data List -->
+            <div class="dashboard-card flex-1 p-4 flex flex-col">
+                <h3 class="text-sm font-medium text-cyan-400 mb-3 flex items-center justify-between">
+                    <span>实时数据监控</span>
+                    <span class="label-tag">LIVE</span>
+                </h3>
+                <div class="flex-1 overflow-auto space-y-2">
+                    <div class="bg-slate-800/50 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></span>
+                            <span class="text-xs">基站 A-001</span>
+                        </div>
+                        <span class="text-xs text-cyan-400">在线</span>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></span>
+                            <span class="text-xs">基站 A-002</span>
+                        </div>
+                        <span class="text-xs text-cyan-400">在线</span>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                            <span class="text-xs">基站 A-003</span>
+                        </div>
+                        <span class="text-xs text-yellow-400">告警</span>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></span>
+                            <span class="text-xs">基站 B-001</span>
+                        </div>
+                        <span class="text-xs text-cyan-400">在线</span>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                            <span class="text-xs">基站 B-002</span>
+                        </div>
+                        <span class="text-xs text-red-400">离线</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent =
+                now.toLocaleTimeString('zh-CN', { hour12: false });
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Initialize ECharts
+        const charts = {};
+
+        // Frequency Chart
+        charts.frequency = echarts.init(document.getElementById('frequencyChart'));
+        charts.frequency.setOption({
+            color: ['#22d3ee', '#0ea5e9', '#3b82f6', '#6366f1'],
+            grid: { left: 40, right: 20, top: 10, bottom: 25 },
+            xAxis: {
+                type: 'category',
+                data: ['800M', '1.8G', '2.1G', '2.6G', '3.5G', '4.9G'],
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 },
+                splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.1)' } }
+            },
+            series: [{
+                type: 'bar',
+                data: [1200, 1850, 2100, 1580, 980, 650],
+                barWidth: '50%',
+                itemStyle: {
+                    borderRadius: [4, 4, 0, 0],
+                    gradient: { x: 0, y: 0, x2: 0, y2: 1, colorStops: [
+                        { offset: 0, color: '#22d3ee' },
+                        { offset: 1, color: 'rgba(34, 211, 238, 0.3)' }
+                    ]}
+                }
+            }]
+        });
+
+        // Trend Chart
+        charts.trend = echarts.init(document.getElementById('trendChart'));
+        charts.trend.setOption({
+            color: ['#22d3ee', '#0ea5e9'],
+            grid: { left: 40, right: 20, top: 10, bottom: 25 },
+            xAxis: {
+                type: 'category',
+                data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 },
+                splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.1)' } }
+            },
+            series: [{
+                type: 'line',
+                data: [4200, 4800, 5100, 5600, 6200, 6850],
+                smooth: true,
+                lineStyle: { width: 2, color: '#22d3ee' },
+                areaStyle: {
+                    color: {
+                        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [
+                            { offset: 0, color: 'rgba(34, 211, 238, 0.4)' },
+                            { offset: 1, color: 'rgba(34, 211, 238, 0.05)' }
+                        ]
+                    }
+                },
+                symbol: 'circle',
+                symbolSize: 6,
+                itemStyle: { color: '#22d3ee', borderColor: '#fff', borderWidth: 2 }
+            }]
+        });
+
+        // Pie Chart
+        charts.pie = echarts.init(document.getElementById('pieChart'));
+        charts.pie.setOption({
+            color: ['#22d3ee', '#0ea5e9', '#3b82f6', '#6366f1'],
+            tooltip: { trigger: 'item', textStyle: { fontSize: 10 } },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['50%', '50%'],
+                label: { show: false },
+                data: [
+                    { value: 35, name: '广播' },
+                    { value: 25, name: '通信' },
+                    { value: 20, name: '雷达' },
+                    { value: 20, name: '其他' }
+                ]
+            }]
+        });
+
+        // Bar Chart
+        charts.bar = echarts.init(document.getElementById('barChart'));
+        charts.bar.setOption({
+            color: ['#22d3ee', '#0ea5e9', '#3b82f6'],
+            grid: { left: 35, right: 10, top: 10, bottom: 25 },
+            xAxis: {
+                type: 'category',
+                data: ['华北', '华东', '华南'],
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: { color: '#94a3b8', fontSize: 9 },
+                splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.1)' } }
+            },
+            series: [{
+                type: 'bar',
+                data: [
+                    { value: 3200, itemStyle: { color: '#22d3ee' } },
+                    { value: 2800, itemStyle: { color: '#0ea5e9' } },
+                    { value: 2400, itemStyle: { color: '#3b82f6' } }
+                ],
+                barWidth: '40%'
+            }]
+        });
+
+        // Radar Chart
+        charts.radar = echarts.init(document.getElementById('radarChart'));
+        charts.radar.setOption({
+            color: ['#22d3ee'],
+            radar: {
+                indicator: [
+                    { name: '覆盖率', max: 100 },
+                    { name: '利用率', max: 100 },
+                    { name: '稳定性', max: 100 },
+                    { name: '响应速度', max: 100 },
+                    { name: '安全性', max: 100 }
+                ],
+                radius: '65%',
+                axisName: { color: '#94a3b8', fontSize: 8 },
+                splitNumber: 3,
+                splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.15)' } },
+                splitArea: { show: false }
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: [96, 89, 92, 85, 94],
+                    areaStyle: { color: 'rgba(34, 211, 238, 0.2)' },
+                    lineStyle: { color: '#22d3ee', width: 2 },
+                    itemStyle: { color: '#22d3ee' }
+                }]
+            }]
+        });
+
+        // Resize charts on window resize
+        window.addEventListener('resize', () => {
+            Object.values(charts).forEach(chart => chart.resize());
+        });
+    </script>
+</body>
+</html>

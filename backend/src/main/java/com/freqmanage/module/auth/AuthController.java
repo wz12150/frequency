@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
@@ -32,6 +35,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        log.info("========== 收到登录请求 ==========");
+        log.info("请求路径: /api/auth/login");
+        log.info("请求方法: POST");
+        log.info("请求体: username={}, password=***", request.getUsername());
         RsbtUser user = userService.getByUsernameEntity(request.getUsername());
         if (user == null) {
             throw new BizException(401, "用户名或密码错误");

@@ -1,6 +1,27 @@
 {
   "permissions": {
-    "allow": ["*"],
+    "allow": [
+      "Bash(mysql -u root -pa719721 *)",
+      "Bash(mysql -u root -p'a719721' *)",
+      "Bash(mysql -u root -p'a7197210' *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm dev *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm approve-builds *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:84)",
+      "Bash(ls -la ~/.claude/)",
+      "Bash(mkdir -p ~/.claude/skills)",
+      "Bash(cp -R ~/Downloads/skills/* ~/.claude/skills/)",
+      "Read(//Users/piaoxue/.claude/**)",
+      "Read(//private/tmp/**)",
+      "Read(//tmp/**)",
+      "Bash(base64 /tmp/dashboard_design.png | head -c 100)",
+      "Bash(base64 -i /tmp/dashboard_design.png | base64 -d > /tmp/dashboard_view.png && file /tmp/dashboard_view.png)"
+    ],
     "defaultAllow": true
-  }
+  },
+  "additionalDirectories": [
+    "/tmp"
+  ]
 }
