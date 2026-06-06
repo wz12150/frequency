@@ -176,7 +176,33 @@ type PlanningFormProps = {
   submitLabel: string;
 };
 
-const stationFields: (keyof StationRecord)[] = ['name', 'frequencyLicense', 'type', 'region', 'province', 'detailedLocation', 'frequency', 'bandwidth', 'status', 'openDate', 'expireDate', 'latitude', 'longitude', 'power', 'antenna', 'equipmentCount', 'equipmentPower', 'technicalStandard', 'bandwidthProcessingUnitModel', 'ownerName', 'backhaulNetworkAccessMethod', 'stationPurpose', 'modulationType', 'antennaCount', 'equipmentNameAndModel'];
+const stationFields: (keyof StationRecord)[] = [
+  'name',
+  'frequencyLicense',
+  'technicalStandard',
+  'bbuModel',
+  'ownedsite',
+  'backhaulNetworkAccessMethod',
+  'stationPurpose',
+  'modulationType',
+  'type',
+  'frequency',
+  'receiveFrequency',
+  'bandwidth',
+  'equipmentNameAndModel',
+  'equipmentCount',
+  'equipmentPower',
+  'antenna',
+  'antennaCount',
+  'province',
+  'region',
+  'detailedLocation',
+  'status',
+  'openDate',
+  'expireDate',
+  'latitude',
+  'longitude',
+];
 const licenseFields: (keyof LicenseRecord)[] = ['number', 'organization', 'station', 'frequency', 'type', 'power', 'status', 'startDate', 'endDate', 'licenseAuthorization', 'unit', 'category', 'law', 'coverage', 'process', 'code', 'decisionDate', 'decision', 'description', 'registration', 'address', 'phone', 'email', 'administrativeInfo', 'contactPerson'];
 const planningFields: (keyof FrequencyBand)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note'];
 const stationFieldMap: Record<keyof StationRecord, string> = {
