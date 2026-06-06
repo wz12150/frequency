@@ -1612,8 +1612,9 @@ export function DataManagement() {
                     const data = stationRecords;
                     const fieldLabelMap: Record<string, string> = {};
                     stationExportFields.forEach(f => { fieldLabelMap[f.key] = f.label; });
+                    const headerRow = exportOptions.fields.map((field) => fieldLabelMap[field] ?? String(field));
                     const rows = data.map((item) => exportOptions.fields.map((field) => (item as any)[field] ?? ''));
-                    const worksheet = XLSX.utils.aoa_to_sheet([[...exportOptions.fields.map((field) => fieldLabelMap[field] ?? String(field)), ...rows]]);
+                    const worksheet = XLSX.utils.aoa_to_sheet([headerRow, ...rows]);
                     const workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, 'Station Data');
                     XLSX.writeFile(workbook, `station-data-${new Date().toISOString().split('T')[0]}.xlsx`);
