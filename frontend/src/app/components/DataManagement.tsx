@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Plus, Edit, Trash2, FileUp, FileDown, X, Upload, Download, Search, Eye, ArrowLeft, ChevronRight, Info, MapPin } from 'lucide-react';
+import { DatePicker } from './ui/date-picker';
 import { RecordDetailCard } from './RecordDetailCard';
 import { LicenseDetail } from './LicenseDetail';
 import { LicenseForm } from './LicenseForm';
@@ -365,8 +366,8 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
             <div><label className="block text-sm font-medium mb-2">Region <span className="text-red-500">*</span></label><input value={value.region} onChange={(e) => update('region', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Detailed Location</label><input value={value.detailedLocation ?? ''} onChange={(e) => update('detailedLocation', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Status</label><select value={value.status} onChange={(e) => update('status', e.target.value as StationRecord['status'])} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"><option value="normal">Normal</option><option value="expiring">Expiring</option><option value="expired">Expired</option></select></div>
-            <div><label className="block text-sm font-medium mb-2">Open Date <span className="text-red-500">*</span></label><input type="date" value={value.openDate ?? ''} onChange={(e) => update('openDate', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Expire Date <span className="text-red-500">*</span></label><input type="date" value={value.expireDate} onChange={(e) => update('expireDate', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Open Date <span className="text-red-500">*</span></label><DatePicker value={value.openDate ?? ''} onChange={(v) => update('openDate', v)} /></div>
+            <div><label className="block text-sm font-medium mb-2">Expire Date <span className="text-red-500">*</span></label><DatePicker value={value.expireDate ?? ''} onChange={(v) => update('expireDate', v)} /></div>
             <div><label className="block text-sm font-medium mb-2">Latitude <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <input
@@ -974,9 +975,27 @@ export function DataManagement() {
   };
 
   const downloadImportTemplate = () => {
-    const templateFileName = importTab === 'planning'
-      ? 'frequency-data.xlsx'
-      : 'station-license-data.xlsx';
+    let templateFileName: string;
+    if (importTab === 'station') {
+      // 动态生成 Station 导入模板（使用 stationFields 顺序）
+      const fields = [
+        'Station Name', 'Frequency License', 'Technical Standard', 'BBU Model',
+        'Owner Name', 'Backhaul Network Access Method', 'Station Purpose', 'Modulation Type',
+        'Station Type', 'Transmit Frequency (MHz)', 'Receive Frequency (MHz)', 'Bandwidth',
+        'Equipment Name and Model', 'Equipment Count', 'Equipment Output Power',
+        'Antenna Type', 'Antenna Count', 'Province', 'Region', 'Detailed Location',
+        'Status', 'Open Date', 'Expire Date', 'Latitude', 'Longitude',
+      ];
+      const worksheet = XLSX.utils.aoa_to_sheet([fields]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Station Import');
+      XLSX.writeFile(workbook, 'station-data.xlsx');
+      return;
+    } else if (importTab === 'planning') {
+      templateFileName = 'frequency-data.xlsx';
+    } else {
+      templateFileName = 'station-license-data.xlsx';
+    }
     const link = document.createElement('a');
     link.href = `/docs/${templateFileName}`;
     link.download = templateFileName;
