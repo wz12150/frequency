@@ -1599,6 +1599,33 @@ export function DataManagement() {
                   ))}
                 </div>
               </div>
+              {exportOptions.fields.length > 0 && stationRecords.length > 0 && (
+                <div className="border border-border rounded-lg p-3 mt-4">
+                  <h4 className="text-sm font-medium mb-2">Preview (first 3 rows):</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border">
+                          {exportOptions.fields.slice(0, 5).map(field => (
+                            <th key={field} className="text-left py-1 px-2 font-medium">{stationExportFields.find(f => f.key === field)?.label}</th>
+                          ))}
+                          {exportOptions.fields.length > 5 && <th className="text-left py-1 px-2">...</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stationRecords.slice(0, 3).map((record, idx) => (
+                          <tr key={idx} className="border-b border-border">
+                            {exportOptions.fields.slice(0, 5).map(field => (
+                              <td key={field} className="py-1 px-2">{(record as any)[field] ?? '-'}</td>
+                            ))}
+                            {exportOptions.fields.length > 5 && <td className="py-1 px-2">...</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-2 border-t border-border">
                 <div className="text-sm text-muted-foreground">
                   {exportOptions.fields.length} field(s) selected
