@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Edit2, Trash2, Building2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -16,6 +16,7 @@ import {
 import { FrequencyForm } from "./FrequencyForm";
 import { StationForm } from "./StationForm";
 import { permitApi, PermitVO } from "../api/permit";
+import { stationPermitApi } from "../api/permit";
 
 type LicenseDetailProps = {
   permitId: string;
@@ -56,10 +57,6 @@ type FrequencyData = {
 type StationData = {
   guid: string;
   permitid: string;
-  stationid?: string;
-  stationName?: string;
-  stationType?: string;
-  stationProvince?: string;
   type?: string;
   quantity?: number;
   outputpower?: number;
@@ -109,8 +106,43 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     };
     if (permitId) {
       fetchPermit();
+      fetchFrequencies();
+      fetchStations();
     }
   }, [permitId]);
+
+  const fetchFrequencies = async () => {
+    try {
+      const res = await permitApi.getFrequencies(permitId);
+      if (res.code === 200 && res.data) {
+        setFrequencies(res.data.map((f: any) => ({
+          guid: f.guid,
+          permitid: f.permitid,
+          frequency: f.frequency,
+          badnwidth: f.badnwidth,
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch frequencies:', error);
+    }
+  };
+
+  const fetchStations = async () => {
+    try {
+      const res = await stationPermitApi.getByPermitId(permitId);
+      if (res.code === 200 && res.data) {
+        setStations(res.data.map((s: any) => ({
+          guid: s.guid,
+          permitid: s.permitid,
+          type: s.type,
+          quantity: s.quantity,
+          outputpower: s.outputpower,
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch stations:', error);
+    }
+  };
 
   const [frequencies, setFrequencies] = useState<FrequencyData[]>([]);
 
@@ -128,7 +160,6 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
   const [editingStation, setEditingStation] = useState<{
     guid?: string;
     permitid: string;
-    stationid?: string;
     quantity?: number;
     outputpower?: number;
     type?: string;
@@ -149,31 +180,59 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     setShowFrequencyForm(true);
   };
 
-  const handleDeleteFrequency = (guid: string) => {
-    setFrequencies((prev) => prev.filter((f) => f.guid !== guid));
+  const handleDeleteFrequency = async (guid: string) => {
+    try {
+      await permitApi.deleteFrequency(guid);
+      setFrequencies((prev) => prev.filter((f) => f.guid !== guid));
+    } catch (error) {
+      console.error('Failed to delete frequency:', error);
+      alert('删除失败');
+    }
   };
 
-  const handleSaveFrequency = () => {
+  const handleSaveFrequency = async () => {
     if (!editingFrequency) return;
 
-    if (editingFrequency.guid) {
-      setFrequencies((prev) =>
-        prev.map((f) =>
-          f.guid === editingFrequency.guid
-            ? { ...f, frequency: editingFrequency.frequency!, badnwidth: editingFrequency.badnwidth! }
-            : f
-        )
-      );
-    } else {
-      setFrequencies((prev) => [
-        ...prev,
-        {
-          guid: `freq-${Date.now()}`,
+    if (!editingFrequency.frequency) {
+      alert('请输入Frequency');
+      return;
+    }
+
+    try {
+      if (editingFrequency.guid) {
+        await permitApi.updateFrequency(editingFrequency.guid, {
+          frequency: editingFrequency.frequency,
+          badnwidth: editingFrequency.badnwidth,
+        });
+        setFrequencies((prev) =>
+          prev.map((f) =>
+            f.guid === editingFrequency.guid
+              ? { ...f, frequency: editingFrequency.frequency!, badnwidth: editingFrequency.badnwidth! }
+              : f
+          )
+        );
+      } else {
+        const res = await permitApi.createFrequency({
           permitid: editingFrequency.permitid,
           frequency: editingFrequency.frequency!,
-          badnwidth: editingFrequency.badnwidth!,
-        },
-      ]);
+          badnwidth: editingFrequency.badnwidth,
+        });
+        if (res.code === 200 && res.data) {
+          setFrequencies((prev) => [
+            ...prev,
+            {
+              guid: res.data.guid,
+              permitid: editingFrequency.permitid,
+              frequency: editingFrequency.frequency!,
+              badnwidth: editingFrequency.badnwidth!,
+            },
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save frequency:', error);
+      alert('保存失败');
+      return;
     }
     setShowFrequencyForm(false);
     setEditingFrequency(null);
@@ -188,7 +247,6 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     setEditingStation({
       guid: station.guid,
       permitid: station.permitid,
-      stationid: station.stationid,
       type: station.type,
       quantity: station.quantity,
       outputpower: station.outputpower,
@@ -196,65 +254,103 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     setShowStationForm(true);
   };
 
-  const handleDeleteStation = (guid: string) => {
-    setStations((prev) => prev.filter((s) => s.guid !== guid));
+  const handleDeleteStation = async (guid: string) => {
+    try {
+      await stationPermitApi.delete(guid);
+      setStations((prev) => prev.filter((s) => s.guid !== guid));
+    } catch (error) {
+      console.error('Failed to delete station:', error);
+      alert('删除失败');
+    }
   };
 
-  const handleSaveStation = () => {
+  const handleSaveStation = async () => {
     if (!editingStation) return;
 
-    if (editingStation.guid) {
-      setStations((prev) =>
-        prev.map((s) =>
-          s.guid === editingStation.guid
-            ? {
-                ...s,
-                stationid: editingStation.stationid,
-                type: editingStation.type,
-                quantity: editingStation.quantity,
-                outputpower: editingStation.outputpower,
-              }
-            : s
-        )
-      );
-    } else {
-      setStations((prev) => [
-        ...prev,
-        {
-          guid: `stat-${Date.now()}`,
-          permitid: editingStation.permitid,
-          stationid: editingStation.stationid,
+    if (!editingStation.type) {
+      alert('请输入Station Type');
+      return;
+    }
+
+    try {
+      if (editingStation.guid) {
+        await stationPermitApi.update(editingStation.guid, {
           type: editingStation.type,
           quantity: editingStation.quantity,
           outputpower: editingStation.outputpower,
-        },
-      ]);
+        });
+        setStations((prev) =>
+          prev.map((s) =>
+            s.guid === editingStation.guid
+              ? {
+                  ...s,
+                  type: editingStation.type,
+                  quantity: editingStation.quantity,
+                  outputpower: editingStation.outputpower,
+                }
+              : s
+          )
+        );
+      } else {
+        const payload = {
+          permitid: editingStation.permitid,
+          type: editingStation.type,
+          quantity: editingStation.quantity,
+          outputpower: editingStation.outputpower,
+        };
+        console.log('Creating station permit with payload:', payload);
+        const res = await stationPermitApi.create(payload);
+        console.log('Create station permit response:', res);
+
+        // 兼容不同的响应格式
+        const newGuid = res?.data?.guid || res?.guid || res?.data?.stationPermitGuid;
+        if (newGuid) {
+          setStations((prev) => [
+            ...prev,
+            {
+              guid: newGuid,
+              permitid: editingStation.permitid,
+              type: editingStation.type,
+              quantity: editingStation.quantity,
+              outputpower: editingStation.outputpower,
+            },
+          ]);
+        } else {
+          // 如果没有返回 guid，刷新整个列表
+          console.warn('No guid returned, refreshing station list');
+          await fetchStations();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save station:', error);
+      alert('保存失败: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      return;
     }
     setShowStationForm(false);
     setEditingStation(null);
   };
 
   const permitFields: Array<[string, string]> = permit ? [
-    ["Consent", permit.consent],
-    ["Interlocutor", permit.interlocutor],
+    ["License / Authorization", permit.consent],
+    ["Organization", permit.interlocutor],
     ["Category", permit.category],
+    ["Law", permit.legal ?? ''],
     ["Type", permit.type],
-    ["Status", permit.status],
     ["Start Date", permit.startdate],
     ["End Date", permit.enddate],
-    ["Code", permit.code],
+    ["Coverage Range", permit.scope],
+    ["Process", permit.process],
+    ["Status", permit.status],
+    ["Code / No.", permit.code],
     ["Decision Date", permit.decisiondate],
     ["Decision", permit.decision],
-    ["Process", permit.process],
-    ["Scope", permit.scope],
+    ["Description", permit.note],
+    ["Registration", permit.register ?? ''],
     ["Address", permit.address],
     ["Phone", permit.phone],
     ["Email", permit.email],
-    ["Director Name", permit.directorname],
-    ["Note", permit.note],
-    ["Legal", permit.legal ?? ''],
-    ["Register", permit.register ?? ''],
     ["Administrative Info", permit.administrativeinfo ?? ''],
+    ["Contact Person", permit.directorname],
   ] : [];
 
   if (loading) {
@@ -309,7 +405,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
       </div>
 
       {/* Tabs */}
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 overflow-y-auto flex-1 max-h-[calc(100vh-180px)]">
         <Tabs defaultValue="info">
           <TabsList>
             <TabsTrigger value="info">License Info</TabsTrigger>
@@ -356,7 +452,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Frequency (MHz)</TableHead>
-                      <TableHead>Bandwidth (MHz)</TableHead>
+                      <TableHead>Bandwidth (kHz)</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -409,9 +505,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Station Name</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Province</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Power (W)</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -420,14 +514,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
                   <TableBody>
                     {stations.map((station) => (
                       <TableRow key={station.guid}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            {station.stationName || station.stationid || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell>{station.stationType || station.type || '-'}</TableCell>
-                        <TableCell>{station.stationProvince || '-'}</TableCell>
+                        <TableCell>{station.type || '-'}</TableCell>
                         <TableCell>{station.quantity ?? '-'}</TableCell>
                         <TableCell>{station.outputpower ?? '-'}</TableCell>
                         <TableCell className="text-right">
