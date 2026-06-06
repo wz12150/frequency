@@ -885,28 +885,48 @@ export function DataManagement() {
       try {
         for (const row of rows) {
           const payload = {
-            type: String(row.type ?? row.Type ?? ''),
-            stationtype: String(row.type ?? row.Type ?? ''),
-            province: String(row.province ?? row.Province ?? ''),
-            district: String(row.region ?? row.Region ?? ''),
-            location: String(row.detailedLocation ?? row['Detailed Location'] ?? ''),
+            // 基本信息（与表单顺序对应）
             sitename: String(row.name ?? row.Name ?? ''),
-            devicemodel: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
-            devicequantity: row.equipmentCount ?? row['Equipment Count'] ? parseInt(String(row.equipmentCount ?? row['Equipment Count'])) : undefined,
-            outputpower: row.equipmentPower ?? row['Equipment Output Power'] ? parseFloat(String(row.equipmentPower ?? row['Equipment Output Power'])) : undefined,
-            anttype: String(row.antenna ?? row['Antenna Type'] ?? ''),
-            antquantity: row.antennaCount ?? row['Antenna Count'] ? parseInt(String(row.antennaCount ?? row['Antenna Count'])) : undefined,
+            frequencyLicense: String(row.frequencyLicense ?? row['Frequency License'] ?? ''),
             technology: String(row.technicalStandard ?? row['Technical Standard'] ?? ''),
+            bbumodel: String(row.bbuModel ?? row.BBUModel ?? row['BBU Model'] ?? ''),
+            ownedsite: String(row.ownedsite ?? row.OwnedSite ?? row['Owner Name'] ?? row.unit ?? row.Unit ?? ''),
             backbone: String(row.backhaulNetworkAccessMethod ?? row['Backhaul Network Access Method'] ?? ''),
             stationpurpose: String(row.stationPurpose ?? row['Station Purpose'] ?? ''),
             modulation: String(row.modulationType ?? row['Modulation Type'] ?? ''),
+
+            // 频率相关
+            type: String(row.type ?? row.Type ?? ''),
+            stationtype: String(row.type ?? row.Type ?? ''),
+            frequencyt: row.frequencyt ?? row.FrequencyT ?? row.frequency ?? row.Frequency ?? row['Transmit Frequency'] ? parseFloat(String(row.frequencyt ?? row.FrequencyT ?? row.frequency ?? row.Frequency ?? row['Transmit Frequency'])) : undefined,
+            frequencyr: row.frequencyr ?? row.FrequencyR ?? row.receiveFrequency ?? row['Receive Frequency'] ? parseFloat(String(row.frequencyr ?? row.FrequencyR ?? row.receiveFrequency ?? row['Receive Frequency'])) : undefined,
+            bandwidth: row.bandwidth ?? row.Bandwidth ? parseFloat(String(row.bandwidth ?? row.Bandwidth)) : undefined,
+
+            // 设备信息
+            devicemodel: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
+            devicequantity: row.equipmentCount ?? row['Equipment Count'] ? parseInt(String(row.equipmentCount ?? row['Equipment Count'])) : undefined,
+            outputpower: row.equipmentPower ?? row['Equipment Output Power'] ? parseFloat(String(row.equipmentPower ?? row['Equipment Output Power'])) : undefined,
+
+            // 天线信息
+            anttype: String(row.antenna ?? row['Antenna Type'] ?? ''),
+            antquantity: row.antennaCount ?? row['Antenna Count'] ? parseInt(String(row.antennaCount ?? row['Antenna Count'])) : undefined,
+
+            // 位置信息
+            province: String(row.province ?? row.Province ?? ''),
+            district: String(row.region ?? row.Region ?? ''),
+            location: String(row.detailedLocation ?? row['Detailed Location'] ?? ''),
+
+            // 日期
             startdate: String(row.openDate ?? row['Open Date'] ?? ''),
             expirationdate: String(row.expireDate ?? row['Expire Date'] ?? ''),
+
+            // 坐标
             longitude: row.longitude ?? row.Longitude ? parseFloat(String(row.longitude ?? row.Longitude)) : undefined,
             latitude: row.latitude ?? row.Latitude ? parseFloat(String(row.latitude ?? row.Latitude)) : undefined,
-            unit: String(row.ownerName ?? row['Owner Name'] ?? ''),
-            equipname: '',
-            frequencyLicense: String(row.frequencyLicense ?? row['Frequency License'] ?? ''),
+
+            // 额外字段
+            unit: String(row.ownedsite ?? row.OwnedSite ?? row['Owner Name'] ?? ''),
+            equipname: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
           };
           await stationApi.create(payload);
         }
