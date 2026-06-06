@@ -181,6 +181,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
   };
 
   const handleDeleteFrequency = async (guid: string) => {
+    if (!confirm('确定要删除这条频率记录吗？')) return;
     try {
       await permitApi.deleteFrequency(guid);
       setFrequencies((prev) => prev.filter((f) => f.guid !== guid));
@@ -265,6 +266,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
   };
 
   const handleDeleteStation = async (guid: string) => {
+    if (!confirm('确定要删除这条站台记录吗？')) return;
     try {
       await stationPermitApi.delete(guid);
       setStations((prev) => prev.filter((s) => s.guid !== guid));
