@@ -1518,21 +1518,85 @@ export function DataManagement() {
 
       {showExportDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-lg bg-card shadow-2xl border border-border">
+          <div className="w-full max-w-2xl rounded-lg bg-card shadow-2xl border border-border">
             <div className="flex items-center justify-between border-b border-border p-6">
-              <h3 className="text-xl font-semibold">Export Excel</h3>
+              <h3 className="text-xl font-semibold">Export Station Data</h3>
               <button type="button" onClick={() => setShowExportDialog(false)} className="p-2 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="flex gap-2">
-                {(['station', 'license', 'planning'] as DataTab[]).map((tab) => (
-                  <button key={tab} type="button" onClick={() => exportToExcel(tab)} className={`px-4 py-2 rounded-lg border ${activeTab === tab ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}>
-                    {tab === 'station' ? 'Station Data' : tab === 'license' ? 'License Data' : 'Planning Data'}
-                  </button>
-                ))}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-3">Select fields to export (in input form order):</h4>
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-border rounded-lg p-3">
+                  {stationExportFields.map((field) => (
+                    <label key={field.key} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={exportOptions.fields.includes(field.key)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setExportOptions(prev => ({
+                              ...prev,
+                              fields: [...prev.fields, field.key]
+                            }));
+                          } else {
+                            setExportOptions(prev => ({
+                              ...prev,
+                              fields: prev.fields.filter(f => f !== field.key)
+                            }));
+                          }
+                        }}
+                        className="rounded border-border"
+                      />
+                      <span>{field.label}</span>
+                      {field.required && <span className="text-red-500 text-xs">*</span>}
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowExportDialog(false)} className="px-5 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Close</button>
+              <div className="flex justify-between items-center pt-2 border-t border-border">
+                <div className="text-sm text-muted-foreground">
+                  {exportOptions.fields.length} field(s) selected
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExportOptions(prev => ({ ...prev, fields: stationExportFields.map(f => f.key) }))}
+                    className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportOptions(prev => ({ ...prev, fields: stationExportFields.filter(f => f.required).map(f => f.key) }))}
+                    className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm"
+                  >
+                    Select Required Only
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setShowExportDialog(false)} className="px-5 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (exportOptions.fields.length === 0) {
+                      alert('Please select at least one field to export');
+                      return;
+                    }
+                    const data = stationRecords;
+                    const fieldLabelMap: Record<string, string> = {};
+                    stationExportFields.forEach(f => { fieldLabelMap[f.key] = f.label; });
+                    const rows = data.map((item) => exportOptions.fields.map((field) => (item as any)[field] ?? ''));
+                    const worksheet = XLSX.utils.aoa_to_sheet([[...exportOptions.fields.map((field) => fieldLabelMap[field] ?? String(field)), ...rows]]);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Station Data');
+                    XLSX.writeFile(workbook, `station-data-${new Date().toISOString().split('T')[0]}.xlsx`);
+                    setShowExportDialog(false);
+                  }}
+                  className="px-5 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Export Excel
+                </button>
               </div>
             </div>
           </div>
