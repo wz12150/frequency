@@ -51,7 +51,7 @@ type FrequencyData = {
   guid: string;
   permitid: string;
   frequency: number;
-  badnwidth: number;
+  bandwidth: number;
 };
 
 type StationData = {
@@ -119,7 +119,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
           guid: f.guid,
           permitid: f.permitid,
           frequency: f.frequency,
-          badnwidth: f.badnwidth,
+          bandwidth: f.bandwidth,
         })));
       }
     } catch (error) {
@@ -153,7 +153,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     guid?: string;
     permitid: string;
     frequency?: number;
-    badnwidth?: number;
+    bandwidth?: number;
   } | null>(null);
 
   const [showStationForm, setShowStationForm] = useState(false);
@@ -175,7 +175,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
       guid: freq.guid,
       permitid: freq.permitid,
       frequency: freq.frequency,
-      badnwidth: freq.badnwidth,
+      bandwidth: freq.bandwidth,
     });
     setShowFrequencyForm(true);
   };
@@ -202,36 +202,46 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
       if (editingFrequency.guid) {
         await permitApi.updateFrequency(editingFrequency.guid, {
           frequency: editingFrequency.frequency,
-          badnwidth: editingFrequency.badnwidth,
+          bandwidth: editingFrequency.bandwidth,
         });
         setFrequencies((prev) =>
           prev.map((f) =>
             f.guid === editingFrequency.guid
-              ? { ...f, frequency: editingFrequency.frequency!, badnwidth: editingFrequency.badnwidth! }
+              ? { ...f, frequency: editingFrequency.frequency!, bandwidth: editingFrequency.bandwidth! }
               : f
           )
         );
       } else {
-        const res = await permitApi.createFrequency({
+        const payload = {
           permitid: editingFrequency.permitid,
           frequency: editingFrequency.frequency!,
-          badnwidth: editingFrequency.badnwidth,
-        });
-        if (res.code === 200 && res.data) {
+          bandwidth: editingFrequency.bandwidth,
+        };
+        console.log('Creating frequency with payload:', payload);
+        const res = await permitApi.createFrequency(payload);
+        console.log('Create frequency response:', res);
+
+        // 兼容不同的响应格式
+        const newGuid = res?.data?.guid || res?.guid || res?.data?.frequencyGuid;
+        if (newGuid) {
           setFrequencies((prev) => [
             ...prev,
             {
-              guid: res.data.guid,
+              guid: newGuid,
               permitid: editingFrequency.permitid,
               frequency: editingFrequency.frequency!,
-              badnwidth: editingFrequency.badnwidth!,
+              bandwidth: editingFrequency.bandwidth!,
             },
           ]);
+        } else {
+          // 如果没有返回 guid，刷新整个列表
+          console.warn('No guid returned, refreshing frequency list');
+          await fetchFrequencies();
         }
       }
     } catch (error) {
       console.error('Failed to save frequency:', error);
-      alert('保存失败');
+      alert('保存失败: ' + (error instanceof Error ? error.message : 'Unknown error'));
       return;
     }
     setShowFrequencyForm(false);
@@ -460,7 +470,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
                     {frequencies.map((freq) => (
                       <TableRow key={freq.guid}>
                         <TableCell className="font-medium">{freq.frequency}</TableCell>
-                        <TableCell>{freq.badnwidth}</TableCell>
+                        <TableCell>{freq.bandwidth}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
