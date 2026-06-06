@@ -422,6 +422,7 @@ function mapVoToStationRecord(r: any): StationRecord {
     frequency: r.frequencyt?.toString() ?? '',
     receiveFrequency: r.frequencyr?.toString() ?? '',
     bandwidth: r.bandwidth?.toString() ?? '',
+    bandwidthProcessingUnitModel: r.bandwidthprocessingunitmodel ?? '',
     status: computeStatus(r.expirationdate),
     openDate: r.startdate ?? '',
     expireDate: r.expirationdate ?? '',
@@ -749,6 +750,7 @@ export function DataManagement() {
         frequencyt: stationFormRecord.frequency ? parseFloat(stationFormRecord.frequency) : undefined,
         frequencyr: stationFormRecord.receiveFrequency ? parseFloat(stationFormRecord.receiveFrequency) : undefined,
         bandwidth: stationFormRecord.bandwidth ? parseFloat(stationFormRecord.bandwidth) : undefined,
+        bandwidthprocessingunitmodel: stationFormRecord.bandwidthProcessingUnitModel ?? '',
         ownedsite: stationFormRecord.ownedsite ?? '',
         bbumodel: stationFormRecord.bbuModel ?? '',
       };
@@ -1287,6 +1289,7 @@ export function DataManagement() {
                     frequencyt: stationFormRecord.frequency ? parseFloat(stationFormRecord.frequency) : undefined,
                     frequencyr: stationFormRecord.receiveFrequency ? parseFloat(stationFormRecord.receiveFrequency) : undefined,
                     bandwidth: stationFormRecord.bandwidth ? parseFloat(stationFormRecord.bandwidth) : undefined,
+                    bandwidthprocessingunitmodel: stationFormRecord.bandwidthProcessingUnitModel ?? '',
                     ownedsite: stationFormRecord.ownedsite ?? '',
                     bbumodel: stationFormRecord.bbuModel ?? '',
                   };

@@ -24,6 +24,7 @@ public class RsbtStation {
     private BigDecimal frequencyt;
     private BigDecimal frequencyr;
     private BigDecimal bandwidth;
+    private String bandwidthprocessingunitmodel;
     private String devicemodel;
     private Integer devicequantity;
     private BigDecimal outputpower;

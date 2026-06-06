@@ -192,6 +192,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
             target.setFrequencyt(dto.getFrequencyt());
             target.setFrequencyr(dto.getFrequencyr());
             target.setBandwidth(dto.getBandwidth());
+            target.setBandwidthprocessingunitmodel(dto.getBandwidthprocessingunitmodel());
             target.setDevicemodel(dto.getDevicemodel());
             target.setDevicequantity(dto.getDevicequantity());
             target.setOutputpower(dto.getOutputpower());
@@ -221,6 +222,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
             target.setFrequencyt(dto.getFrequencyt());
             target.setFrequencyr(dto.getFrequencyr());
             target.setBandwidth(dto.getBandwidth());
+            target.setBandwidthprocessingunitmodel(dto.getBandwidthprocessingunitmodel());
             target.setDevicemodel(dto.getDevicemodel());
             target.setDevicequantity(dto.getDevicequantity());
             target.setOutputpower(dto.getOutputpower());
@@ -254,6 +256,7 @@ public class StationService extends ServiceImpl<StationMapper, RsbtStation> {
         vo.setFrequencyt(entity.getFrequencyt());
         vo.setFrequencyr(entity.getFrequencyr());
         vo.setBandwidth(entity.getBandwidth());
+        vo.setBandwidthprocessingunitmodel(entity.getBandwidthprocessingunitmodel());
         vo.setDevicemodel(entity.getDevicemodel());
         vo.setDevicequantity(entity.getDevicequantity());
         vo.setOutputpower(entity.getOutputpower());

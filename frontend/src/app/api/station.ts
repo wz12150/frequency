@@ -64,6 +64,7 @@ export interface StationCreate {
   frequencyt?: number;
   frequencyr?: number;
   bandwidth?: number;
+  bandwidthprocessingunitmodel?: string;
   devicemodel?: string;
   devicequantity?: number;
   outputpower?: number;
@@ -94,6 +95,7 @@ export interface StationUpdate {
   frequencyt?: number;
   frequencyr?: number;
   bandwidth?: number;
+  bandwidthprocessingunitmodel?: string;
   devicemodel?: string;
   devicequantity?: number;
   outputpower?: number;

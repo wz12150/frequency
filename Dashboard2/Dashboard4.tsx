@@ -25,7 +25,7 @@ interface MapData {
   stations: number;
 }
 
-export function Dashboard3() {
+export function Dashboard4() {
   const [apiData, setApiData] = useState<DashboardOverviewVO | null>(null);
   const [loading, setLoading] = useState(true);
 
