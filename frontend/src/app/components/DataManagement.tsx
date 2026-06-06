@@ -992,9 +992,9 @@ export function DataManagement() {
       XLSX.writeFile(workbook, 'station-data.xlsx');
       return;
     } else if (importTab === 'planning') {
-      templateFileName = 'frequency-data.xlsx';
+      templateFileName = 'frequency-planning-data.xlsx';
     } else {
-      templateFileName = 'station-license-data.xlsx';
+      templateFileName = 'frequency-license-data.xlsx';
     }
     const link = document.createElement('a');
     link.href = `/docs/${templateFileName}`;
