@@ -17,6 +17,13 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from './ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 type DataTab = 'station' | 'license' | 'planning';
 
@@ -531,20 +538,28 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
             <div><label className="block text-sm font-medium mb-2">Step</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Signal Bandwidth</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Service Type</label>
-              <select value={value.serviceType ?? ''} onChange={(e) => update('serviceType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
-                <option value="">-- Select Service Type --</option>
-                {serviceTypeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <Select value={value.serviceType ?? ''} onValueChange={(v) => update('serviceType', v)}>
+                <SelectTrigger className="w-full h-10">
+                  <SelectValue placeholder="-- Select Service Type --" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {serviceTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div><label className="block text-sm font-medium mb-2">Band Type</label>
-              <select value={value.bandType ?? ''} onChange={(e) => update('bandType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
-                <option value="">-- Select Band Type --</option>
-                {bandTypeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <Select value={value.bandType ?? ''} onValueChange={(v) => update('bandType', v)}>
+                <SelectTrigger className="w-full h-10">
+                  <SelectValue placeholder="-- Select Band Type --" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {bandTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Notes</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
           </div>
@@ -893,33 +908,43 @@ export function DataManagement() {
 
   // 加载 ServiceType 和 BandType 字典数据
   useEffect(() => {
-    if (!showImportDialog && activeTab !== 'planning') return;
     const loadDictData = async () => {
       try {
+        console.log('[DictData] 开始加载字典数据');
         const typeResult = await dictTypeApi.list();
+        console.log('[DictData] dictTypeApi.list 返回:', typeResult);
         const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
-        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'ServiceType');
-        const bandTypeDict = dictTypes.find((d: any) => d.code === 'BandType');
+        console.log('[DictData] dictTypes:', dictTypes);
+        // 根据实际的 code 值匹配：ServiceType -> service_type, BandType -> freq_band
+        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'service_type');
+        const bandTypeDict = dictTypes.find((d: any) => d.code === 'freq_band');
+        console.log('[DictData] serviceTypeDict:', serviceTypeDict);
+        console.log('[DictData] bandTypeDict:', bandTypeDict);
         const promises = [];
         if (serviceTypeDict?.guid) {
           promises.push(dictDataApi.list(serviceTypeDict.guid).then((res: any) => {
+            console.log('[DictData] dictDataApi.list 返回 (ServiceType):', res);
             const data = res?.data ?? res ?? [];
+            console.log('[DictData] ServiceType data:', data);
             setServiceTypeOptions(Array.isArray(data) ? data : data.records ?? []);
           }));
         }
         if (bandTypeDict?.guid) {
           promises.push(dictDataApi.list(bandTypeDict.guid).then((res: any) => {
+            console.log('[DictData] dictDataApi.list 返回 (BandType):', res);
             const data = res?.data ?? res ?? [];
+            console.log('[DictData] BandType data:', data);
             setBandTypeOptions(Array.isArray(data) ? data : data.records ?? []);
           }));
         }
         await Promise.all(promises);
+        console.log('[DictData] 加载完成, serviceTypeOptions:', serviceTypeOptions, 'bandTypeOptions:', bandTypeOptions);
       } catch (err) {
         console.error('加载数据字典失败:', err);
       }
     };
     loadDictData();
-  }, [showImportDialog, activeTab]);
+  }, []);
 
   const refreshPlanningData = async () => {
     const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
@@ -1486,6 +1511,18 @@ export function DataManagement() {
             <div className="flex items-center gap-2 flex-1 justify-end">
               <button type="button" onClick={() => { setImportTab('planning'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import</button>
               <button type="button" onClick={() => exportToExcel('planning')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export</button>
+              <button type="button" onClick={async () => {
+                if (!confirm('确定要删除所有 Planning 数据吗？此操作不可恢复！')) return;
+                if (!confirm('再次确认：删除所有 Planning 数据？')) return;
+                try {
+                  await planningApi.deleteAll();
+                  await refreshPlanningData();
+                  alert('所有 Planning 数据已删除');
+                } catch (error) {
+                  console.error('删除失败:', error);
+                  alert('删除失败');
+                }
+              }} className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"><Trash2 className="w-4 h-4" />Delete All</button>
               <button type="button" onClick={() => { setPlanningFormRecord({ guid: '', category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '', serviceType: '', bandType: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add</button>
             </div>
           </div>
@@ -1572,7 +1609,7 @@ export function DataManagement() {
 
       {planningDialogMode && planningFormRecord && (
         <PlanningForm
-          title={planningDialogMode === 'add' ? 'Add Custom Band' : 'Edit Planning Data'}
+          title={planningDialogMode === 'add' ? 'Add Frequency Planning Band' : 'Edit Planning Data'}
           description={planningDialogMode === 'add' ? 'Create a new planning record for the table.' : 'Update the selected planning record.'}
           value={planningFormRecord}
           onChange={(data) => setPlanningFormRecord(data)}

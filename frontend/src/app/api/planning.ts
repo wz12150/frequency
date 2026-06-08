@@ -124,6 +124,9 @@ export const planningApi = {
   delete: (id: string) =>
     request(`/planning/${id}`, { method: 'DELETE' }),
 
+  deleteAll: () =>
+    request('/planning/deleteAll', { method: 'DELETE' }),
+
   list: () => request('/planning/list'),
 
   export: () => request('/planning/export'),

@@ -1183,7 +1183,7 @@ export function SystemManagement() {
                     />
                   </div>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
                   {loading ? (
                     <div className="p-8 text-center">Loading...</div>
                   ) : dictTypes.length === 0 ? (
@@ -1209,10 +1209,6 @@ export function SystemManagement() {
                               {dictType.status === 'enabled' ? 'Enabled' : 'Disabled'}
                             </span>
                           </div>
-                          <div className="mt-1 text-xs text-muted-foreground font-mono">{dictType.code}</div>
-                          {dictType.description && (
-                            <div className="mt-1 text-xs text-muted-foreground truncate">{dictType.description}</div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -1257,7 +1253,7 @@ export function SystemManagement() {
                     </div>
                   )}
                 </div>
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
                   {!selectedDictType ? (
                     <div className="p-8 text-center text-muted-foreground">
                       <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -1278,7 +1274,7 @@ export function SystemManagement() {
                     </div>
                   ) : (
                     <table className="w-full">
-                      <thead className="bg-muted sticky top-0">
+                      <thead className="bg-muted">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-medium">Label</th>
                           <th className="px-4 py-3 text-left text-xs font-medium">Value</th>

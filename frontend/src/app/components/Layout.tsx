@@ -23,10 +23,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
   });
 
   const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard1' },
-    { id: 'dashboard2', icon: LayoutDashboard, label: 'Dashboard2' },
-    { id: 'new-dashboard', icon: LayoutDashboard, label: 'Dashboard3' },
-    { id: 'dashboard4', icon: LayoutDashboard, label: 'Dashboard4' },
+    { id: 'dashboard2', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'station-map', icon: Map, label: 'Station Map' },
     { id: 'frequency-planning', icon: Radio, label: 'Frequency Planning' },
     { id: 'station-stats', icon: BarChart3, label: 'Station Statistics' },
