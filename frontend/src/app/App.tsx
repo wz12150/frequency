@@ -14,7 +14,7 @@ import { Dashboard2 } from './components/Dashboard2';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPage, setCurrentPage] = useState<string>('dashboard');
+  const [currentPage, setCurrentPage] = useState<string>('dashboard2');
 
   const handleLogin = () => {
     setIsLoggedIn(true);
