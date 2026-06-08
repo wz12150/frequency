@@ -332,8 +332,8 @@ export function FrequencyPlanning() {
         const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
 
         // 查找 ServiceType 和 BandType 的 typeId
-        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'ServiceType');
-        const bandTypeDict = dictTypes.find((d: any) => d.code === 'BandType');
+        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'service_type');
+        const bandTypeDict = dictTypes.find((d: any) => d.code === 'freq_band');
 
         // 并行获取字典数据
         const promises = [];
