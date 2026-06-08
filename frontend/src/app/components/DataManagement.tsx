@@ -409,9 +409,10 @@ type StationFormProps = {
   submitLabel: string;
   onOpenCoordinatePicker: () => void;
   licenseOptions: LicenseRecord[];
+  stationTypeOptions: DictData[];
 };
 
-function StationForm({ title, description, value, onChange, onClose, onSubmit, submitLabel, onOpenCoordinatePicker, licenseOptions }: StationFormProps) {
+function StationForm({ title, description, value, onChange, onClose, onSubmit, submitLabel, onOpenCoordinatePicker, licenseOptions, stationTypeOptions }: StationFormProps) {
   const update = <K extends keyof StationRecord>(key: K, next: StationRecord[K]) => {
     onChange({ ...value, [key]: next });
   };
@@ -448,7 +449,12 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
             <div><label className="block text-sm font-medium mb-2">Backhaul Network Access Method</label><input value={value.backhaulNetworkAccessMethod ?? ''} onChange={(e) => update('backhaulNetworkAccessMethod', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Station Purpose</label><input value={value.stationPurpose ?? ''} onChange={(e) => update('stationPurpose', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Modulation Type</label><input value={value.modulationType ?? ''} onChange={(e) => update('modulationType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Station Type <span className="text-red-500">*</span></label><input value={value.type} onChange={(e) => update('type', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
+            <div><label className="block text-sm font-medium mb-2">Station Type <span className="text-red-500">*</span></label>
+              <select value={value.type} onChange={(e) => update('type', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required>
+                <option value="">-- Select Station Type --</option>
+                {stationTypeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
             <div><label className="block text-sm font-medium mb-2">Transmit Frequency (MHz) <span className="text-red-500">*</span></label><input value={value.frequency} onChange={(e) => update('frequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Receive Frequency (MHz)</label><input value={value.receiveFrequency ?? ''} onChange={(e) => update('receiveFrequency', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Bandwidth <span className="text-red-500">*</span></label><input value={value.bandwidth ?? ''} onChange={(e) => update('bandwidth', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
@@ -648,6 +654,7 @@ export function DataManagement() {
   const [coordinatePickerOpen, setCoordinatePickerOpen] = useState(false);
   const [serviceTypeOptions, setServiceTypeOptions] = useState<DictData[]>([]);
   const [bandTypeOptions, setBandTypeOptions] = useState<DictData[]>([]);
+  const [stationTypeOptions, setStationTypeOptions] = useState<DictData[]>([]);
 
   // 分页状态 - pageSize 9999 for fetching all data, display uses actual pagination
   const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 9999 });
@@ -915,11 +922,13 @@ export function DataManagement() {
         console.log('[DictData] dictTypeApi.list 返回:', typeResult);
         const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
         console.log('[DictData] dictTypes:', dictTypes);
-        // 根据实际的 code 值匹配：ServiceType -> service_type, BandType -> freq_band
+        // 根据实际的 code 值匹配：ServiceType -> service_type, BandType -> freq_band, StationType -> station_type
         const serviceTypeDict = dictTypes.find((d: any) => d.code === 'service_type');
         const bandTypeDict = dictTypes.find((d: any) => d.code === 'freq_band');
+        const stationTypeDict = dictTypes.find((d: any) => d.code === 'station_type');
         console.log('[DictData] serviceTypeDict:', serviceTypeDict);
         console.log('[DictData] bandTypeDict:', bandTypeDict);
+        console.log('[DictData] stationTypeDict:', stationTypeDict);
         const promises = [];
         if (serviceTypeDict?.guid) {
           promises.push(dictDataApi.list(serviceTypeDict.guid).then((res: any) => {
@@ -935,6 +944,14 @@ export function DataManagement() {
             const data = res?.data ?? res ?? [];
             console.log('[DictData] BandType data:', data);
             setBandTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+          }));
+        }
+        if (stationTypeDict?.guid) {
+          promises.push(dictDataApi.list(stationTypeDict.guid).then((res: any) => {
+            console.log('[DictData] dictDataApi.list 返回 (StationType):', res);
+            const data = res?.data ?? res ?? [];
+            console.log('[DictData] StationType data:', data);
+            setStationTypeOptions(Array.isArray(data) ? data : data.records ?? []);
           }));
         }
         await Promise.all(promises);
@@ -1665,6 +1682,7 @@ export function DataManagement() {
           onClose={() => { setStationDialogMode(null); setStationFormRecord(null); }}
           onOpenCoordinatePicker={() => setCoordinatePickerOpen(true)}
           licenseOptions={licenseRecords}
+          stationTypeOptions={stationTypeOptions}
           onSubmit={() => {
             if (!stationFormRecord.name || !stationFormRecord.ownedsite || !stationFormRecord.type || !stationFormRecord.province || !stationFormRecord.region || !stationFormRecord.frequency || !stationFormRecord.openDate || !stationFormRecord.expireDate || !stationFormRecord.latitude || !stationFormRecord.longitude) {
               alert('Please fill in all required fields: Station Name, Owner Name, Station Type, Province, Region, Transmit Frequency, Open Date, Expire Date, Latitude, Longitude');

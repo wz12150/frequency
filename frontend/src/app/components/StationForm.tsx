@@ -28,6 +28,7 @@ export type StationFormProps = {
   onClose: () => void;
   onSubmit: () => void;
   submitLabel: string;
+  stationTypeOptions?: { label: string; value: string }[];
 };
 
 export function StationForm({
@@ -38,8 +39,9 @@ export function StationForm({
   onClose,
   onSubmit,
   submitLabel,
+  stationTypeOptions,
 }: StationFormProps) {
-  const handleChange = (field: keyof StationFormProps["value"]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (field: keyof StationFormProps["value"]) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const newValue = { ...value };
 
     switch (field) {
@@ -74,13 +76,25 @@ export function StationForm({
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="type">Station Type <span className="text-red-500">*</span></Label>
-            <Input
-              id="type"
-              type="text"
-              placeholder="Enter station type"
-              value={value.type ?? ""}
-              onChange={handleChange("type")}
-            />
+            {stationTypeOptions && stationTypeOptions.length > 0 ? (
+              <select
+                id="type"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={value.type ?? ""}
+                onChange={handleChange("type")}
+              >
+                <option value="">Select station type</option>
+                {stationTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            ) : (
+              <Input
+                id="type"
+                type="text"
+                placeholder="Enter station type"
+                value={value.type ?? ""}
+                onChange={handleChange("type")}
+              />
+            )}
           </div>
 
           <div className="grid gap-2">

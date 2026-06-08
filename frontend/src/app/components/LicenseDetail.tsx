@@ -17,6 +17,7 @@ import { FrequencyForm } from "./FrequencyForm";
 import { StationForm } from "./StationForm";
 import { permitApi, PermitVO } from "../api/permit";
 import { stationPermitApi } from "../api/permit";
+import { dictTypeApi, dictDataApi } from "../api/system";
 
 type LicenseDetailProps = {
   permitId: string;
@@ -111,6 +112,25 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
     }
   }, [permitId]);
 
+  // 加载 Station Type 字典数据
+  useEffect(() => {
+    const loadStationTypeOptions = async () => {
+      try {
+        const typeResult = await dictTypeApi.list();
+        const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
+        const stationTypeDict = dictTypes.find((d: any) => d.code === 'station_type');
+        if (stationTypeDict?.guid) {
+          const dataResult = await dictDataApi.list(stationTypeDict.guid);
+          const data = (dataResult as any)?.data ?? dataResult ?? [];
+          setStationTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+        }
+      } catch (error) {
+        console.error('Failed to load station type options:', error);
+      }
+    };
+    loadStationTypeOptions();
+  }, []);
+
   const fetchFrequencies = async () => {
     try {
       const res = await permitApi.getFrequencies(permitId);
@@ -157,6 +177,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
   } | null>(null);
 
   const [showStationForm, setShowStationForm] = useState(false);
+  const [stationTypeOptions, setStationTypeOptions] = useState<{label: string; value: string}[]>([]);
   const [editingStation, setEditingStation] = useState<{
     guid?: string;
     permitid: string;
@@ -595,6 +616,7 @@ export function LicenseDetail({ permitId, onBack }: LicenseDetailProps) {
           }}
           onSubmit={handleSaveStation}
           submitLabel={editingStation.guid ? "Update" : "Add"}
+          stationTypeOptions={stationTypeOptions}
         />
       )}
     </div>
