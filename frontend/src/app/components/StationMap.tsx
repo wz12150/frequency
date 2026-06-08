@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Search, MapPin, Layers, Download, RefreshCw, Save, CheckCircle2,
-  ChevronDown, ChevronUp, SlidersHorizontal, X, Radio,
+  ChevronDown, ChevronUp, SlidersHorizontal, X,
 } from 'lucide-react';
 import { stationApi } from '../api/station';
 
@@ -15,33 +15,6 @@ const ZOOM_LABEL = 9;   // 7–8  → dot + name label  │  ≥ 9 → tower ico
 const STATUS_COLOR: Record<string, string> = {
   normal: '#2e7d32', expiring: '#f59e0b', expired: '#d32f2f',
 };
-
-// ─── Service bands (synced from Frequency Planning module) ───────────────────
-interface ServiceBand {
-  id: string; name: string; minMHz: number; maxMHz: number; service: string;
-}
-const SERVICE_BANDS: ServiceBand[] = [
-  // Mobile
-  { id: 'imt700',  name: 'IMT 700 MHz',       minMHz: 694,   maxMHz: 790,   service: 'Mobile'       },
-  { id: 'imt900',  name: 'IMT 900 MHz',        minMHz: 880,   maxMHz: 960,   service: 'Mobile'       },
-  { id: 'imt1800', name: 'IMT 1800 MHz',       minMHz: 1710,  maxMHz: 1880,  service: 'Mobile'       },
-  { id: 'imt2100', name: 'IMT 2100 MHz',       minMHz: 1920,  maxMHz: 2170,  service: 'Mobile'       },
-  { id: 'imt2600', name: 'IMT 2600 MHz',       minMHz: 2500,  maxMHz: 2690,  service: 'Mobile'       },
-  { id: 'imt3500', name: 'IMT 3.5 GHz (5G)',   minMHz: 3400,  maxMHz: 3600,  service: 'Mobile'       },
-  // Broadcasting
-  { id: 'vhf3',    name: 'TV VHF Band III',    minMHz: 174,   maxMHz: 230,   service: 'Broadcasting' },
-  { id: 'uhf45',   name: 'TV UHF Band IV/V',   minMHz: 470,   maxMHz: 862,   service: 'Broadcasting' },
-  // Fixed
-  { id: 'mw6',     name: 'Microwave 6 GHz',    minMHz: 5925,  maxMHz: 6425,  service: 'Fixed'        },
-  { id: 'mw7',     name: 'Microwave 7 GHz',    minMHz: 7125,  maxMHz: 7750,  service: 'Fixed'        },
-  { id: 'mw11',    name: 'Microwave 11 GHz',   minMHz: 10700, maxMHz: 11700, service: 'Fixed'        },
-  // Satellite
-  { id: 'sat_ku',  name: 'FSS Ku-Band',        minMHz: 11700, maxMHz: 12500, service: 'Satellite'    },
-  { id: 'sat_ka',  name: 'FSS Ka-Band',        minMHz: 26500, maxMHz: 27000, service: 'Satellite'    },
-  // Navigation
-  { id: 'vor',     name: 'VOR / ILS',          minMHz: 108,   maxMHz: 118,   service: 'Navigation'   },
-  { id: 'dme',     name: 'DME',                minMHz: 960,   maxMHz: 1215,  service: 'Navigation'   },
-];
 
 const STATION_TYPES = ['All', 'Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
 
@@ -188,7 +161,6 @@ export function StationMap() {
   // ── Filter state ──────────────────────────────────────────────────────────
   const [selTypes,    setSelTypes]    = useState<string[]>([]);
   const [stationType, setStationType] = useState('All');
-  const [bandId,      setBandId]      = useState('');
   const [freqMin,     setFreqMin]     = useState('');
   const [freqMax,     setFreqMax]     = useState('');
   const [nameSearch,  setNameSearch]  = useState('');
@@ -197,7 +169,6 @@ export function StationMap() {
   const activeFilterCount = [
     stationType !== 'All',
     selTypes.length > 0,
-    !!bandId,
     !!freqMin || !!freqMax,
     !!nameSearch,
     !!province,
@@ -207,18 +178,16 @@ export function StationMap() {
   const filtered = useMemo(() => {
     const fMin = parseFloat(freqMin);
     const fMax = parseFloat(freqMax);
-    const band = bandId ? SERVICE_BANDS.find(b => b.id === bandId) : null;
     return stations.filter(s => {
       if (stationType !== 'All' && s.type !== stationType) return false;
       if (selTypes.length && !selTypes.includes(s.type)) return false;
-      if (band && (s.freqMHz < band.minMHz || s.freqMHz > band.maxMHz)) return false;
       if (!isNaN(fMin) && s.freqMHz < fMin) return false;
       if (!isNaN(fMax) && s.freqMHz > fMax) return false;
       if (nameSearch && !s.name.toLowerCase().includes(nameSearch.toLowerCase())) return false;
       if (province && s.province !== province) return false;
       return true;
     });
-  }, [stations, stationType, selTypes, bandId, freqMin, freqMax, nameSearch, province]);
+  }, [stations, stationType, selTypes, freqMin, freqMax, nameSearch, province]);
 
   const selected = stations.find(s => s.guid === selectedGuid) ?? null;
 
@@ -400,7 +369,7 @@ export function StationMap() {
 
         {filterOpen && (
           <div className="border-t border-border">
-            <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border">
+            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
 
               {/* ── Section A: Station Type ──────────────────────────────── */}
               <div className="p-5">
@@ -422,51 +391,11 @@ export function StationMap() {
                 <p className="text-[11px] text-muted-foreground mt-2">Select one station type to filter the map.</p>
               </div>
 
-              {/* ── Section B: Service Band (from Frequency Planning) ──────── */}
+              {/* ── Section B: Custom Query ───────────────────────────────── */}
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold">B</span>
-                    Service Band
-                  </p>
-                  {bandId && (
-                    <button onClick={() => { setBandId(''); }} className="text-xs text-blue-600 hover:underline">Clear</button>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground mb-2 italic">Synced from Frequency Planning module</p>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Frequency Band</label>
-                    <select
-                      value={bandId}
-                      onChange={e => setBandId(e.target.value)}
-                      className={selectCls}
-                    >
-                      <option value="">— Select frequency band —</option>
-                      {SERVICE_BANDS.map(b => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} ({b.minMHz}–{b.maxMHz} MHz)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {bandId && (() => {
-                    const b = SERVICE_BANDS.find(x => x.id === bandId)!;
-                    return (
-                      <div className="flex items-center gap-1.5 text-xs bg-blue-50 border border-blue-200 rounded px-2.5 py-1.5">
-                        <Radio className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                        <span className="text-blue-700">{b.name}: {b.minMHz}–{b.maxMHz} MHz</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* ── Section C: Custom Query ───────────────────────────────── */}
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold">C</span>
                     Custom Query
                   </p>
                   {(freqMin || freqMax || nameSearch || province) && (
