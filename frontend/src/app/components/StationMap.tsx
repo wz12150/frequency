@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp, SlidersHorizontal, X,
 } from 'lucide-react';
 import { stationApi } from '../api/station';
+import { dictTypeApi, dictDataApi } from '../api/system';
 
 // ─── Zoom thresholds ──────────────────────────────────────────────────────────
 const ZOOM_DOT   = 7;   // < 7  → tiny dot only
@@ -15,8 +16,6 @@ const ZOOM_LABEL = 9;   // 7–8  → dot + name label  │  ≥ 9 → tower ico
 const STATUS_COLOR: Record<string, string> = {
   normal: '#2e7d32', expiring: '#f59e0b', expired: '#d32f2f',
 };
-
-const STATION_TYPES = ['All', 'Mobile', 'Broadcasting', 'Fixed', 'Satellite', 'Microwave', 'Navigation'];
 
 interface Station {
   guid: string; name: string; type: string;
@@ -143,6 +142,7 @@ export function StationMap() {
   const [stations,    setStations]    = useState<Station[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [selectedGuid, setSelectedGuid] = useState<string | null>(null);
+  const [stationTypeOptions, setStationTypeOptions] = useState<{label: string; value: string}[]>([]);
   const [editForm,    setEditForm]    = useState<Partial<Station>>({});
   const [savedId,     setSavedId]     = useState<string | null>(null);
   const [zoom,        setZoom]        = useState(5);
@@ -156,6 +156,27 @@ export function StationMap() {
     }).catch(() => {
       setLoading(false);
     });
+  }, []);
+
+  // ── Fetch Station Type options from dict ─────────────────────────────────
+  useEffect(() => {
+    async function loadStationTypeOptions() {
+      try {
+        const typeResult = await dictTypeApi.list();
+        const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
+        const stationTypeDict = dictTypes.find((t: any) => t.code === 'station_type');
+        if (stationTypeDict?.guid) {
+          const dataResult = await dictDataApi.list(stationTypeDict.guid);
+          const data = (dataResult as any)?.data ?? dataResult ?? [];
+          setStationTypeOptions(
+            Array.isArray(data) ? data : data.records ?? []
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load station type options:', error);
+      }
+    }
+    loadStationTypeOptions();
   }, []);
 
   // ── Filter state ──────────────────────────────────────────────────────────
@@ -385,7 +406,8 @@ export function StationMap() {
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Station Type</label>
                   <select value={stationType} onChange={e => setStationType(e.target.value)} className={selectCls}>
-                    {STATION_TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All types' : t}</option>)}
+                    <option value="All">All types</option>
+                    {stationTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
               </div>
@@ -586,7 +608,7 @@ export function StationMap() {
                 <div>
                   <label className="block text-xs font-medium mb-1">Station Type <span className="text-red-500">*</span></label>
                   <select value={editForm.type ?? ''} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className={selectCls}>
-                    {STATION_TYPES.filter(t => t !== 'All').map(t => <option key={t} value={t}>{t}</option>)}
+                    {stationTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
                 {/* Frequency */}
