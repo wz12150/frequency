@@ -369,7 +369,7 @@ export function StationMap() {
 
         {filterOpen && (
           <div className="border-t border-border">
-            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
 
               {/* ── Section A: Station Type ──────────────────────────────── */}
               <div className="p-5">
@@ -388,60 +388,71 @@ export function StationMap() {
                     {STATION_TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All types' : t}</option>)}
                   </select>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-2">Select one station type to filter the map.</p>
               </div>
 
-              {/* ── Section B: Custom Query ───────────────────────────────── */}
+              {/* ── Section B: Frequency Range ────────────────────────────── */}
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold">B</span>
-                    Custom Query
+                    Frequency Range
                   </p>
-                  {(freqMin || freqMax || nameSearch || province) && (
-                    <button onClick={() => { setFreqMin(''); setFreqMax(''); setNameSearch(''); setProvince(''); }} className="text-xs text-blue-600 hover:underline">Clear</button>
+                  {(freqMin || freqMax) && (
+                    <button onClick={() => { setFreqMin(''); setFreqMax(''); }} className="text-xs text-blue-600 hover:underline">Clear</button>
                   )}
                 </div>
-                <div className="space-y-2">
-                  {/* Frequency range */}
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Frequency Range (MHz)</label>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number" placeholder="Min" value={freqMin}
-                        onChange={e => setFreqMin(e.target.value)}
-                        className={`${inputCls} text-center`}
-                      />
-                      <span className="text-muted-foreground text-xs flex-shrink-0">—</span>
-                      <input
-                        type="number" placeholder="Max" value={freqMax}
-                        onChange={e => setFreqMax(e.target.value)}
-                        className={`${inputCls} text-center`}
-                      />
-                    </div>
-                  </div>
-                  {/* Station name fuzzy */}
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Station Name (fuzzy)</label>
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                      <input
-                        type="text" placeholder="e.g. Mobile, UB, Erdenet…"
-                        value={nameSearch}
-                        onChange={e => setNameSearch(e.target.value)}
-                        className={`${inputCls} pl-7`}
-                      />
-                    </div>
-                  </div>
-                  {/* Province */}
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Region / Province</label>
-                    <select value={province} onChange={e => setProvince(e.target.value)} className={selectCls}>
-                      <option value="">All provinces</option>
-                      {provinces.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number" placeholder="Min" value={freqMin}
+                    onChange={e => setFreqMin(e.target.value)}
+                    className={`${inputCls} text-center`}
+                  />
+                  <span className="text-muted-foreground text-xs flex-shrink-0">—</span>
+                  <input
+                    type="number" placeholder="Max" value={freqMax}
+                    onChange={e => setFreqMax(e.target.value)}
+                    className={`${inputCls} text-center`}
+                  />
                 </div>
+             </div>
+
+              {/* ── Section C: Station Name ───────────────────────────────── */}
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold">C</span>
+                    Station Name
+                  </p>
+                  {nameSearch && (
+                    <button onClick={() => setNameSearch('')} className="text-xs text-blue-600 hover:underline">Clear</button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text" placeholder="Search…"
+                    value={nameSearch}
+                    onChange={e => setNameSearch(e.target.value)}
+                    className={`${inputCls} pl-7`}
+                  />
+                </div>
+              </div>
+
+              {/* ── Section D: Region ────────────────────────────────────── */}
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold">D</span>
+                    Region
+                  </p>
+                  {province && (
+                    <button onClick={() => setProvince('')} className="text-xs text-blue-600 hover:underline">Clear</button>
+                  )}
+                </div>
+                <select value={province} onChange={e => setProvince(e.target.value)} className={selectCls}>
+                  <option value="">All provinces</option>
+                  {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
             </div>
 
