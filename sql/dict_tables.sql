@@ -40,6 +40,7 @@ INSERT INTO `sys_dict_type` VALUES ('dict-type-001', 'Frequency Band', 'freq_ban
 INSERT INTO `sys_dict_type` VALUES ('dict-type-002', 'Region Type', 'region_type', 'Administrative region classification', 'enabled', NOW(), NULL);
 INSERT INTO `sys_dict_type` VALUES ('dict-type-003', 'Organization Nature', 'org_nature', 'Organization entity types', 'enabled', NOW(), NULL);
 INSERT INTO `sys_dict_type` VALUES ('dict-type-004', 'Service Type', 'service_type', 'Radio service types', 'enabled', NOW(), NULL);
+INSERT INTO `sys_dict_type` VALUES ('dict-type-005', 'Station Type', 'station_type', 'Radio station types', 'enabled', NOW(), NULL);
 
 -- ----------------------------
 -- Dictionary Data Records
@@ -67,3 +68,10 @@ INSERT INTO `sys_dict_data` VALUES ('dict-data-017', 'dict-type-004', 'Broadcast
 INSERT INTO `sys_dict_data` VALUES ('dict-data-018', 'dict-type-004', 'Radionavigation Service', 'radionavigation', 4, 'enabled', 'Radio navigation service', NOW(), NULL);
 INSERT INTO `sys_dict_data` VALUES ('dict-data-019', 'dict-type-004', 'Aeronautical Service', 'aeronautical', 5, 'enabled', 'Aeronautical radio service', NOW(), NULL);
 INSERT INTO `sys_dict_data` VALUES ('dict-data-020', 'dict-type-004', 'Maritime Service', 'maritime', 6, 'enabled', 'Maritime radio service', NOW(), NULL);
+
+INSERT INTO `sys_dict_data` VALUES ('dict-data-021', 'dict-type-005', 'Mobile', 'Mobile', 1, 'enabled', 'Mobile station type', NOW(), NULL);
+INSERT INTO `sys_dict_data` VALUES ('dict-data-022', 'dict-type-005', 'Broadcasting', 'Broadcasting', 2, 'enabled', 'Broadcasting station type', NOW(), NULL);
+INSERT INTO `sys_dict_data` VALUES ('dict-data-023', 'dict-type-005', 'Fixed', 'Fixed', 3, 'enabled', 'Fixed station type', NOW(), NULL);
+INSERT INTO `sys_dict_data` VALUES ('dict-data-024', 'dict-type-005', 'Satellite', 'Satellite', 4, 'enabled', 'Satellite station type', NOW(), NULL);
+INSERT INTO `sys_dict_data` VALUES ('dict-data-025', 'dict-type-005', 'Microwave', 'Microwave', 5, 'enabled', 'Microwave station type', NOW(), NULL);
+INSERT INTO `sys_dict_data` VALUES ('dict-data-026', 'dict-type-005', 'Navigation', 'Navigation', 6, 'enabled', 'Navigation station type', NOW(), NULL);
