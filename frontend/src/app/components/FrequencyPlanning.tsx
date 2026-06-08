@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BadgeInfo, ChevronLeft, ChevronRight, FileDown, FileUp, Info, Plus, RadioTower, ShieldAlert, Satellite, X } from 'lucide-react';
 import { planningApi, PlanningVO } from '../api/planning';
+import { dictTypeApi, dictDataApi, type DictData } from '../api/system';
 
 type SpectrumSegment = {
   service: string;
@@ -47,6 +48,20 @@ type SpectrumBlock = {
   step?: number;
   bandwidth?: number;
   stationCount?: number;
+  /** 业务类型，从数据字典 ServiceType 获取 */
+  serviceType?: string;
+  /** 频段类型，从数据字典 BandType 获取 */
+  bandType?: string;
+};
+
+/** 垂直堆叠层的渲染单元：同一个 band 名称的多个块堆叠显示 */
+type LayeredBlock = {
+  band: string;           // band 名称（与 SpectrumBlock.band 相同）
+  layers: SpectrumBlock[]; // 该层的所有业务块（通常 1 个，冲突时多个）
+  widthPct: number;       // 宽度百分比
+  startKhz: number;       // 起始频率 kHz
+  endKhz: number;         // 终止频率 kHz
+  color: string;          // 业务类型颜色（取自第一个 layer）
 };
 
 type DetailView = 'overview' | 'detail';
@@ -94,6 +109,67 @@ function formatPlanningStepOrBandwidthFromKhz(khz: number | undefined): string {
   return formatFrequencyFromKhz(Number(khz));
 }
 
+/** 根据字典数据的 value 获取对应的 label */
+function getDictLabel(options: DictData[], value: string | undefined): string {
+  if (!value) return '-';
+  const item = options.find(opt => opt.value === value);
+  return item?.label ?? value;
+}
+
+/** 将同一 row 中的 blocks 按起始/终止频率分组，相同频率范围的多个块垂直堆叠 */
+function groupBlocksIntoLayers(blocks: SpectrumBlock[], rowStartKhz: number, rowEndKhz: number): LayeredBlock[] {
+  const rowSpanKhz = rowEndKhz - rowStartKhz;
+
+  // 按 起始频率+终止频率 分组（相同频段）
+  const freqGroups = new Map<string, SpectrumBlock[]>();
+  blocks.forEach(block => {
+    // 使用 start 和 end 作为唯一标识
+    const key = `${block.start}-${block.end}`;
+    if (!freqGroups.has(key)) {
+      freqGroups.set(key, []);
+    }
+    freqGroups.get(key)!.push(block);
+  });
+
+  const layeredBlocks: LayeredBlock[] = [];
+
+  freqGroups.forEach((groupBlocks, freqKey) => {
+    // 按起始频率排序
+    const sorted = [...groupBlocks].sort((a, b) => a.start - b.start);
+
+    if (sorted.length === 1) {
+      // 只有一个块，直接作为单层
+      const block = sorted[0];
+      const blockSpanKhz = block.end - block.start;
+      // 宽度按占该行总范围的比例计算
+      const widthPct = Math.max(2, Math.min(100, (blockSpanKhz / rowSpanKhz) * 100));
+      layeredBlocks.push({
+        band: block.band,
+        layers: [block],
+        widthPct,
+        startKhz: block.start,
+        endKhz: block.end,
+        color: block.color,
+      });
+    } else {
+      // 多个块（同一频段多个业务）：垂直堆叠
+      const block = sorted[0];
+      const blockSpanKhz = block.end - block.start;
+      const widthPct = Math.max(2, Math.min(100, (blockSpanKhz / rowSpanKhz) * 100));
+      layeredBlocks.push({
+        band: block.band,
+        layers: sorted,
+        widthPct,
+        startKhz: block.start,
+        endKhz: block.end,
+        color: sorted[0].color,
+      });
+    }
+  });
+
+  return layeredBlocks;
+}
+
 /** 解析频率字符串，返回 kHz 单位的数字值*/
 function parseFrequencyToKhz(value: string | number | undefined): number {
   if (value === undefined || value === null) return 0;
@@ -114,7 +190,7 @@ function deriveStatus(level: string): { color: string; status: 'occupied' | 'fre
     'RESERVED':    { color: '#8A8F98', status: 'reserved' },
     'UNALLOCATED': { color: '#E5E7EB', status: 'free' },
   };
-  return map[level.toUpperCase()] ?? { color: '#6366F1', status: 'occupied' };
+  return map[level.toUpperCase()] ?? { color: '#9CA3AF', status: 'free' };
 }
 
 function radioservicesToCategory(radioservices: string): string {
@@ -134,12 +210,31 @@ function radioservicesToColor(radioservices: string): string {
   if (rs.includes('emergency') || rs.includes('public safety')) return '#D64545';
   if (rs.includes('fixed') || rs.includes('microwave')) return '#F39C12';
   if (rs.includes('satellite')) return '#8E44AD';
-  return '#9CA3AF';
+  return ''; // 空字符串表示未匹配，需要兜底颜色
 }
 
-function planningVOToSpectrumBlock(record: PlanningVO, index: number, allRecords: PlanningVO[]): SpectrumBlock {
+const serviceTypeColors = [
+  '#2B7FFF', '#27AE60', '#D64545', '#F39C12',
+  '#8E44AD', '#9CA3AF', '#FF6B9D', '#00BFA5',
+  '#FFB300', '#7C4DFF', '#00ACC1', '#F06292',
+];
+
+function planningVOToSpectrumBlock(
+  record: PlanningVO,
+  index: number,
+  allRecords: PlanningVO[],
+  serviceTypeColorMap: Record<string, string>,
+): SpectrumBlock {
   const { status } = deriveStatus(record.level ?? '');
-  const serviceColor = radioservicesToColor(record.radioservices ?? '');
+  const serviceColor = (() => {
+    // Free / Unallocated 明确用灰色
+    if (record.level === 'UNALLOCATED') return '#9CA3AF';
+    const st = record.serviceType;
+    if (st && st.trim() && serviceTypeColorMap[st]) return serviceTypeColorMap[st];
+    const rc = radioservicesToColor(record.radioservices ?? '');
+    if (rc && rc.trim()) return rc;
+    return '#8B7355';
+  })();
   const startKhz = parseFrequencyToKhz(record.startfrequency);
   const endKhz = parseFrequencyToKhz(record.stopfrequency);
   const width = endKhz - startKhz;
@@ -163,6 +258,8 @@ function planningVOToSpectrumBlock(record: PlanningVO, index: number, allRecords
     step: record.step,
     bandwidth: record.bandwidth,
     stationCount: allRecords.filter(r => r.radioservices === record.radioservices).length,
+    serviceType: record.serviceType,
+    bandType: record.bandType,
   };
   return block;
 }
@@ -178,22 +275,35 @@ const categoryRangeMap: Record<string, string> = {
   'Satellite': 'Space-ground services', 'Reserved / Free': 'Unallocated blocks',
 };
 
-const spectrumRows: SpectrumRowDef[] = [
-  { title: '3–300 kHz', unit: 'kHz', khzStart: 3, khzEnd: 300 },
-  { title: '300–3000 kHz', unit: 'kHz', khzStart: 300, khzEnd: 3000 },
-  { title: '3–30 MHz', unit: 'MHz', khzStart: 3000, khzEnd: 30_000 },
-  { title: '30–300 MHz', unit: 'MHz', khzStart: 30_000, khzEnd: 300_000 },
+const defaultSpectrumRows: SpectrumRowDef[] = [
+  { title: 'ULF (300–3000 Hz)', unit: 'Hz', khzStart: 0.3, khzEnd: 3 },
+  { title: 'VLF (3–30 kHz)', unit: 'kHz', khzStart: 3, khzEnd: 30 },
+  { title: 'LF (30–300 kHz)', unit: 'kHz', khzStart: 30, khzEnd: 300 },
+  { title: 'MF (300–3000 kHz)', unit: 'kHz', khzStart: 300, khzEnd: 3000 },
+  { title: 'HF (3–30 MHz)', unit: 'MHz', khzStart: 3000, khzEnd: 30_000 },
+  { title: 'VHF (30–300 MHz)', unit: 'MHz', khzStart: 30_000, khzEnd: 300_000 },
+  { title: 'UHF (300–3000 MHz)', unit: 'MHz', khzStart: 300_000, khzEnd: 3_000_000 },
+  { title: 'SHF (3–30 GHz)', unit: 'GHz', khzStart: 3_000_000, khzEnd: 30_000_000 },
+  { title: 'EHF (30–300 GHz)', unit: 'GHz', khzStart: 30_000_000, khzEnd: 300_000_000 },
+  { title: 'THF (300–3000 GHz)', unit: 'GHz', khzStart: 300_000_000, khzEnd: 3_000_000_000 },
 ];
 
 export function FrequencyPlanning() {
   // --- State ---
   const [viewMode, setViewMode] = useState<DetailView>('overview');
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [hoveredBlock, setHoveredBlock] = useState<{ range: string; radioservices: string } | null>(null);
+  const [mouseX, setMouseX] = useState(0);
+  const [mouseY, setMouseY] = useState(0);
   const [selectedBlock, setSelectedBlock] = useState<SpectrumBlock | null>(null);
   const [showStationPanel, setShowStationPanel] = useState(false);
   const [stationFreqRange, setStationFreqRange] = useState('');
+  const [stationPage, setStationPage] = useState(1);
   const [planningRecords, setPlanningRecords] = useState<PlanningVO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [serviceTypeOptions, setServiceTypeOptions] = useState<DictData[]>([]);
+  const [bandTypeOptions, setBandTypeOptions] = useState<DictData[]>([]);
 
   // --- Fetch data ---
   useEffect(() => {
@@ -213,14 +323,56 @@ export function FrequencyPlanning() {
       });
   }, []);
 
+  // --- Fetch dict data for ServiceType and BandType ---
+  useEffect(() => {
+    const loadDictData = async () => {
+      try {
+        // 获取所有字典类型
+        const typeResult = await dictTypeApi.list();
+        const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
+
+        // 查找 ServiceType 和 BandType 的 typeId
+        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'ServiceType');
+        const bandTypeDict = dictTypes.find((d: any) => d.code === 'BandType');
+
+        // 并行获取字典数据
+        const promises = [];
+        if (serviceTypeDict?.guid) {
+          promises.push(dictDataApi.list(serviceTypeDict.guid).then((res: any) => {
+            const data = res?.data ?? res ?? [];
+            setServiceTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+          }));
+        }
+        if (bandTypeDict?.guid) {
+          promises.push(dictDataApi.list(bandTypeDict.guid).then((res: any) => {
+            const data = res?.data ?? res ?? [];
+            setBandTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+          }));
+        }
+        await Promise.all(promises);
+      } catch (err) {
+        console.error('加载数据字典失败:', err);
+      }
+    };
+    loadDictData();
+  }, []);
+
   // --- Dynamic data derived from API ---
+  const serviceTypeColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    serviceTypeOptions.forEach((opt, idx) => {
+      map[opt.value] = serviceTypeColors[idx % serviceTypeColors.length];
+    });
+    return map;
+  }, [serviceTypeOptions]);
+
   const spectrumBlocks = useMemo(() => {
     if (planningRecords.length === 0) return [];
     const blocks = planningRecords.map((record, index) =>
-      planningVOToSpectrumBlock(record, index, planningRecords),
+      planningVOToSpectrumBlock(record, index, planningRecords, serviceTypeColorMap),
     );
     return blocks.sort((a, b) => a.start - b.start);
-  }, [planningRecords]);
+  }, [planningRecords, serviceTypeColorMap]);
 
   const categories = useMemo(() => {
     if (planningRecords.length === 0) return [];
@@ -234,6 +386,28 @@ export function FrequencyPlanning() {
     }));
   }, [planningRecords]);
 
+  // 根据频段类型字典动态生成频段行标签
+  const spectrumRows = useMemo(() => {
+    if (bandTypeOptions.length === 0) return defaultSpectrumRows;
+    return defaultSpectrumRows.map((row) => {
+      // 尝试根据频率范围匹配 BandType 字典
+      const matched = bandTypeOptions.find((opt) => {
+        const label = opt.label ?? '';
+        // 匹配如 "LW"、"MW"、"SW"、"VHF" 等缩写
+        return (
+          (row.khzStart >= 3 && row.khzEnd <= 300 && /^(LF|LW|Long\s*Wave)/i.test(label)) ||
+          (row.khzStart >= 300 && row.khzEnd <= 3000 && /^(MF|MW|Medium\s*Wave)/i.test(label)) ||
+          (row.khzStart >= 3000 && row.khzEnd <= 30000 && /^(HF|SW|Short\s*Wave)/i.test(label)) ||
+          (row.khzStart >= 30000 && row.khzEnd <= 300000 && /^(VHF|Very\s*High)/i.test(label))
+        );
+      });
+      if (matched) {
+        return { ...row, title: `${matched.label} (${row.title.split('(')[1]}` };
+      }
+      return row;
+    });
+  }, [bandTypeOptions]);
+
   const blocksByRow = useMemo(() => {
     return spectrumRows.map((row, rowIndex) => {
       const isLastRow = rowIndex === spectrumRows.length - 1;
@@ -243,9 +417,11 @@ export function FrequencyPlanning() {
         if (isLastRow) return midKhz <= row.khzEnd;
         return midKhz < row.khzEnd;
       });
-      return { ...row, blocks: rowBlocks };
+      // 将同 band 的块分组为垂直堆叠层
+      const layeredBlocks = groupBlocksIntoLayers(rowBlocks, row.khzStart, row.khzEnd);
+      return { ...row, blocks: rowBlocks, layeredBlocks };
     });
-  }, [spectrumBlocks]);
+  }, [spectrumBlocks, spectrumRows]);
 
   const frequencyBands = [
     { id: 1, category: 'Mobile', subCategory: 'LTE/5G', service: 'Primary', bandName: 'Band 3', startFreq: 1710, endFreq: 1785, step: 5, bandwidth: 5, status: 'occupied', stations: 342 },
@@ -293,7 +469,7 @@ export function FrequencyPlanning() {
   const pageStations = filteredStationRecords;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-auto max-h-[calc(100vh-180px)]">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-semibold mb-1">Frequency Planning</h2>
@@ -356,55 +532,124 @@ export function FrequencyPlanning() {
                 <p className="text-xs text-muted-foreground">7-band layout inspired by the reference radio allocation chart. Width shows range, stacked height shows shared use.</p>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#2B7FFF]" />Broadcast</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#27AE60]" />Mobile</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#D64545]" />Emergency</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#F39C12]" />Fixed</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#8E44AD]" />Satellite</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#9CA3AF]" />Free</span>
+                {serviceTypeOptions.length > 0 ? (
+                  serviceTypeOptions.map((opt, idx) => (
+                    <span key={opt.value} className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded" style={{ backgroundColor: serviceTypeColors[idx % serviceTypeColors.length] }} />
+                      {opt.label}
+                    </span>
+                  ))
+                ) : (
+                  <>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#2B7FFF]" />Broadcast</span>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#27AE60]" />Mobile</span>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#D64545]" />Emergency</span>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#F39C12]" />Fixed</span>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#8E44AD]" />Satellite</span>
+                    <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-[#9CA3AF]" />Free</span>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 mr-4">
               {blocksByRow.map((row) => (
                 <div key={row.title} className="flex gap-3 items-center">
-                  <div className="text-xs font-medium text-muted-foreground w-[130px] shrink-0 self-center">{row.title}</div>
-                  <div className="relative h-24 min-w-[600px] rounded-xl border border-slate-800 bg-slate-950 overflow-visible">
-                    <div className="absolute inset-0 opacity-30 overflow-hidden" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '8% 100%' }} />
-                    <div className="relative h-full flex items-stretch gap-0 w-max overflow-visible">
-                      {row.blocks.length > 0 ? row.blocks.map((block) => {
-                        const hasSegments = block.segments && block.segments.length > 0;
-                        const rowSpanKhz = Math.max(row.khzEnd - row.khzStart, 1);
-                        const blockSpanKhz = Math.max(block.end - block.start, 1);
-                        const widthPct = Math.min(100, Math.max((blockSpanKhz / rowSpanKhz) * 100, 3));
-                        const isNarrowBlock = widthPct < 8;
+                  <div className="text-xs font-medium text-muted-foreground w-[130px]">{row.title}</div>
+                  <div
+                      className="relative mr-2 rounded-xl border border-slate-800 overflow-hidden"
+                      style={{ height: '128px', width: '100%', backgroundColor: !(row.layeredBlocks && row.layeredBlocks.length > 0) ? '#D1D5DB' : '#0f172a' }}
+                    >
+                    <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '8% 100%' }} />
+                    <div className="relative h-full flex items-stretch gap-0 w-full overflow-x-auto">
+                      {/* 按频率顺序渲染所有块和Free区域 */}
+                      {(() => {
+                        if (!row.blocks || row.blocks.length === 0) return null;
+
+                        const totalRangeKhz = row.khzEnd - row.khzStart;
+                        const sortedLayered = [...(row.layeredBlocks || [])].sort((a, b) => a.startKhz - b.startKhz);
+
+                        // 构建所有段（块和Free区域）
+                        const segments: { type: 'block' | 'free'; start: number; end: number; layeredIdx?: number }[] = [];
+                        let currentKhz = row.khzStart;
+
+                        // 遍历sortedLayered，按顺序插入块和间隙
+                        for (let i = 0; i < sortedLayered.length; i++) {
+                          const layer = sortedLayered[i];
+                          // 跳过完全在行范围外的块
+                          if (layer.endKhz <= row.khzStart || layer.startKhz >= row.khzEnd) continue;
+                          // 如果块超出范围，裁剪到行范围内
+                          const blockStart = Math.max(layer.startKhz, row.khzStart);
+                          const blockEnd = Math.min(layer.endKhz, row.khzEnd);
+                          // 如果有间隙（Free区域）
+                          if (blockStart > currentKhz) {
+                            segments.push({ type: 'free', start: currentKhz, end: blockStart });
+                          }
+                          // 添加块
+                          segments.push({ type: 'block', start: blockStart, end: blockEnd, layeredIdx: i });
+                          currentKhz = blockEnd;
+                        }
+
+                        // 末尾Free区域
+                        if (currentKhz < row.khzEnd) {
+                          segments.push({ type: 'free', start: currentKhz, end: row.khzEnd });
+                        }
+
                         return (
-                        <button
-                          key={block.id}
-                          onClick={() => { setSelectedBlock(block); setViewMode('detail'); setStationPage(1); }}
-                          className="relative border-r border-white/15 transition-all hover:brightness-110 hover:shadow-2xl group overflow-visible shrink-0 h-full"
-                          style={{ background: block.color, width: `${widthPct}%`, minWidth: '40px' }}
-                        >
-                          {!isNarrowBlock && <div className="absolute bottom-1 right-2 text-[10px] bg-black/20 px-1 rounded text-white/95">{block.status === 'free' ? 'FREE' : block.status.toUpperCase()}</div>}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black/90 text-white text-xs px-2 py-1.5 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none">
-                            <div className="text-center">
-                              <div className="font-semibold text-sm">{block.label}</div>
-                              <div className="text-[10px] opacity-80">{block.range}</div>
-                            </div>
-                          </div>
-                        </button>
+                          <>
+                            {segments.map((seg, idx) => {
+                              const segEnd = Math.min(seg.end, row.khzEnd);
+                              const segRangeKhz = segEnd - seg.start;
+                              const widthPct = (segRangeKhz / totalRangeKhz) * 100;
+
+                              if (seg.type === 'free') {
+                                return (
+                                  <div
+                                    key={`free-${idx}`}
+                                    className="relative shrink-0 overflow-visible cursor-default"
+                                    style={{ width: `${widthPct}%`, backgroundColor: '#9CA3AF' }}
+                                    onMouseEnter={(e) => { setHoveredRow(row.title); setHoveredBlock({ range: 'Free', radioservices: `${formatFrequencyRangeFromKhz(seg.start, Math.min(seg.end, row.khzEnd))}` }); setMouseX(e.clientX); setMouseY(e.clientY); }}
+                                    onMouseLeave={() => { setHoveredRow(null); }}
+                                  />
+                                );
+                              }
+
+                              // 渲染业务块
+                              const layeredBlock = sortedLayered[seg.layeredIdx!];
+                              const { layers, color } = layeredBlock;
+                              const isMultiLayer = layers.length > 1;
+
+                              return (
+                                <div key={`layered-${seg.layeredIdx}`} className="relative shrink-0 overflow-visible" style={{ width: `${widthPct}%` }}>
+                                  <div className="relative w-full h-full">
+                                    {layers.map((block, layerIndex) => {
+                                      const layerHeightPct = isMultiLayer ? `${100 / layers.length}%` : '100%';
+                                      const layerTop = isMultiLayer ? `${(layerIndex / layers.length) * 100}%` : '0%';
+                                      return (
+                                        <button
+                                          key={block.id}
+                                          onClick={() => { setSelectedBlock(block); setViewMode('detail'); setStationPage(1); }}
+                                          onMouseEnter={(e) => { setHoveredRow(row.title); setHoveredBlock({ range: block.range, radioservices: block.label }); setMouseX(e.clientX); setMouseY(e.clientY); }}
+                                          onMouseLeave={() => { setHoveredRow(null); setHoveredBlock(null); }}
+                                          className="absolute left-0 right-0 transition-all hover:brightness-110"
+                                          style={{ backgroundColor: block.color, height: layerHeightPct, top: layerTop }}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
                         );
-                      }) : (
-                        <div className="h-full w-full bg-gradient-to-r from-slate-200 via-white to-slate-200" />
-                      )}
+                      })()}
                     </div>
                     <div className="absolute left-3 right-3 bottom-0 h-6 flex items-center justify-between text-[10px] text-slate-200/80">
                       <span>Start</span>
-                      <span>Shared / segmented allocation</span>
                       <span>End</span>
                     </div>
                   </div>
-                  <div className="text-right text-xs text-muted-foreground w-[90px] shrink-0 self-center">{row.unit}</div>
+                  <div className="text-right text-xs text-muted-foreground w-[90px] self-center">{row.unit}</div>
                 </div>
               ))}
             </div>
@@ -446,6 +691,8 @@ export function FrequencyPlanning() {
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Subcategory</div><div className="font-medium text-black">{selectedBlock.subCategoryName ?? '-'}</div></div>
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Level</div><div className="font-medium text-black capitalize">{selectedBlock.level}</div></div>
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Band Name</div><div className="font-medium text-black">{selectedBlock.band}</div></div>
+              <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Service Type</div><div className="font-medium text-black">{getDictLabel(serviceTypeOptions, selectedBlock.serviceType)}</div></div>
+              <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Band Type</div><div className="font-medium text-black">{getDictLabel(bandTypeOptions, selectedBlock.bandType)}</div></div>
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Start Frequency</div><div className="font-medium text-black">{formatFrequencyFromKhz(selectedBlock.start)}</div></div>
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">End Frequency</div><div className="font-medium text-black">{formatFrequencyFromKhz(selectedBlock.end)}</div></div>
               <div className="rounded-lg bg-white/35 p-3"><div className="text-black/70">Step</div><div className="font-medium text-black">{formatPlanningStepOrBandwidthFromKhz(selectedBlock.step)}</div></div>
@@ -523,6 +770,26 @@ export function FrequencyPlanning() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {hoveredRow && (
+        <div
+          className="fixed bg-slate-900 text-white text-xs px-3 py-2 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none"
+          style={{
+            left: mouseX,
+            top: mouseY - 40,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div className="text-center">
+            <div className="font-semibold text-sm">
+              {hoveredBlock?.radioservices ?? '-'}
+            </div>
+            <div className="text-[10px] opacity-80">
+              {hoveredBlock?.range ?? '-'}
+            </div>
           </div>
         </div>
       )}
