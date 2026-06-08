@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { dashboardApi, DashboardOverviewVO } from '../../api/dashboard';
-import { DashboardHeader } from './DashboardHeader';
 import { LeftPanel } from './LeftPanel';
 import { MapSection } from './MapSection';
 import { RightPanel } from './RightPanel';
@@ -40,15 +39,25 @@ export function Dashboard2() {
 
   // Left panel data
   const vibrantColors = [
-    '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181',
-    '#aa96da', '#fcbad3', '#a8d8ea', '#ff9f43', '#6a89cc',
+    '#ff4757', '#2ed573', '#ffa502', '#1e90ff', '#ff6b9d',
+    '#a55eea', '#ff6348', '#00d2d3', '#f368e0', '#ff9f43',
   ];
+
+  // Calculate totals from licenseTypeStats (same as NewDashboard)
+  let totalNormal = 0;
+  let totalExpiring = 0;
+  let totalExpired = 0;
+  (apiData?.licenseTypeStats ?? []).forEach((item: any) => {
+    totalNormal += item.normal || 0;
+    totalExpiring += item.expiring || 0;
+    totalExpired += item.expired || 0;
+  });
 
   const leftData: LeftPanelData = {
     totalStations: apiData?.totalStations ?? 0,
-    normal: apiData?.normalLicenses ?? 0,
-    expiring: apiData?.expiringSoon ?? 0,
-    expired: apiData?.expired ?? 0,
+    normal: totalNormal,
+    expiring: totalExpiring,
+    expired: totalExpired,
     licenseAuthList: (apiData?.licenseTypeStats ?? []).slice(0, 6).map((l, i) => ({
       label: l.type,
       value: l.normal + l.expiring + l.expired,
@@ -56,7 +65,7 @@ export function Dashboard2() {
     stationTypeList: (apiData?.stationTypes ?? []).map((t, i) => ({
       name: t.name,
       value: t.value,
-      color: t.color || vibrantColors[i % vibrantColors.length],
+      color: vibrantColors[i % vibrantColors.length],
     })),
   };
 
@@ -101,7 +110,6 @@ export function Dashboard2() {
 
       {/* Main layout */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        <DashboardHeader />
         <div style={{ flex: 1, display: 'flex', padding: '8px', gap: '8px', overflow: 'hidden' }}>
           <LeftPanel data={leftData} loading={loading} />
           <MapSection data={mapData} loading={loading} />

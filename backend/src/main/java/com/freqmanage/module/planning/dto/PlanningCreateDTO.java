@@ -13,4 +13,8 @@ public class PlanningCreateDTO {
     private String step;
     private String bandwidth;
     private String remark;
+    /** 业务类型，从数据字典 ServiceType 获取 */
+    private String serviceType;
+    /** 频段类型，从数据字典 BandType 获取 */
+    private String bandType;
 }

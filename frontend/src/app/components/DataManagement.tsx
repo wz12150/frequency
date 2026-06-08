@@ -9,6 +9,7 @@ import { CoordinatePicker } from './CoordinatePicker';
 import { planningApi, PlanningVO } from '../api/planning';
 import { stationApi } from '../api/station';
 import { permitApi, PermitVO } from '../api/permit';
+import { dictTypeApi, dictDataApi, type DictData } from '../api/system';
 import {
   Pagination,
   PaginationContent,
@@ -93,6 +94,10 @@ type FrequencyBand = {
   bandwidth: number;
   status: 'occupied' | 'free';
   note: string;
+  /** 业务类型，从数据字典 ServiceType 获取 */
+  serviceType?: string;
+  /** 频段类型，从数据字典 BandType 获取 */
+  bandType?: string;
 };
 
 const convertToFrequencyBand = (vo: PlanningVO): FrequencyBand => ({
@@ -107,6 +112,8 @@ const convertToFrequencyBand = (vo: PlanningVO): FrequencyBand => ({
   bandwidth: vo.bandwidth,
   status: 'free' as const,
   note: vo.remark || '',
+  serviceType: vo.serviceType,
+  bandType: vo.bandType,
 });
 
 const convertToPlanningVO = (fb: FrequencyBand): Partial<PlanningVO> => ({
@@ -120,7 +127,84 @@ const convertToPlanningVO = (fb: FrequencyBand): Partial<PlanningVO> => ({
   step: fb.step,
   bandwidth: fb.bandwidth,
   remark: fb.note,
+  serviceType: fb.serviceType,
+  bandType: fb.bandType,
 });
+
+/** 根据 radioservices 文本匹配 ServiceType 字典的 value */
+function matchServiceType(radioservices: string, serviceTypeOptions: DictData[]): string | undefined {
+  if (!radioservices || serviceTypeOptions.length === 0) return undefined;
+  const lower = radioservices.toLowerCase();
+  // 精确匹配 label
+  const exact = serviceTypeOptions.find(opt => opt.label.toLowerCase() === lower);
+  if (exact) return exact.value;
+  // 包含匹配 label
+  const partial = serviceTypeOptions.find(opt => lower.includes(opt.label.toLowerCase()) || opt.label.toLowerCase().includes(lower));
+  if (partial) return partial.value;
+  // 业务类型关键词匹配
+  if (lower.includes('broadcast') || lower.includes('tv') || lower.includes('radio')) {
+    const found = serviceTypeOptions.find(opt => opt.label.toLowerCase().includes('broadcast') || opt.label.toLowerCase().includes('tv'));
+    if (found) return found.value;
+  }
+  if (lower.includes('mobile') || lower.includes('cellular') || lower.includes('lte') || lower.includes('5g')) {
+    const found = serviceTypeOptions.find(opt => opt.label.toLowerCase().includes('mobile'));
+    if (found) return found.value;
+  }
+  if (lower.includes('emergency') || lower.includes('public safety') || lower.includes('rescue')) {
+    const found = serviceTypeOptions.find(opt => opt.label.toLowerCase().includes('emergency'));
+    if (found) return found.value;
+  }
+  if (lower.includes('fixed') || lower.includes('microwave') || lower.includes('point')) {
+    const found = serviceTypeOptions.find(opt => opt.label.toLowerCase().includes('fixed') || opt.label.toLowerCase().includes('microwave'));
+    if (found) return found.value;
+  }
+  if (lower.includes('satellite') || lower.includes('vsat')) {
+    const found = serviceTypeOptions.find(opt => opt.label.toLowerCase().includes('satellite'));
+    if (found) return found.value;
+  }
+  return undefined;
+}
+
+/** 根据频段范围（MHz）匹配 BandType 字典的 value */
+function matchBandType(startFreqMHz: number, endFreqMHz: number, bandTypeOptions: DictData[]): string | undefined {
+  if (!endFreqMHz || bandTypeOptions.length === 0) return undefined;
+  const midFreq = (startFreqMHz + endFreqMHz) / 2;
+  // 尝试精确匹配
+  for (const opt of bandTypeOptions) {
+    const labelLower = opt.label.toLowerCase();
+    // 匹配频段关键词
+    if (labelLower.includes('lf') || labelLower.includes('low frequency')) {
+      if (midFreq >= 30 && midFreq <= 300) return opt.value;
+    }
+    if (labelLower.includes('mf') || labelLower.includes('medium frequency')) {
+      if (midFreq >= 300 && midFreq <= 3000) return opt.value;
+    }
+    if (labelLower.includes('hf') || labelLower.includes('high frequency')) {
+      if (midFreq >= 3_000 && midFreq <= 30_000) return opt.value;
+    }
+    if (labelLower.includes('vhf') || labelLower.includes('very high frequency')) {
+      if (midFreq >= 30_000 && midFreq <= 300_000) return opt.value;
+    }
+    if (labelLower.includes('uhf') || labelLower.includes('ultra high frequency')) {
+      if (midFreq >= 300_000 && midFreq <= 3_000_000) return opt.value;
+    }
+    if (labelLower.includes('shf') || labelLower.includes('super high frequency')) {
+      if (midFreq >= 3_000_000 && midFreq <= 30_000_000) return opt.value;
+    }
+    if (labelLower.includes('ehf') || labelLower.includes('extremely high frequency')) {
+      if (midFreq >= 30_000_000) return opt.value;
+    }
+    // 匹配 L/S/C/Ku/Ka 等频段名称
+    if (labelLower.includes('l-band') && midFreq >= 1_000_000 && midFreq <= 2_000_000) return opt.value;
+    if (labelLower.includes('s-band') && midFreq >= 2_000_000 && midFreq <= 4_000_000) return opt.value;
+    if (labelLower.includes('c-band') && midFreq >= 4_000_000 && midFreq <= 8_000_000) return opt.value;
+    if (labelLower.includes('x-band') && midFreq >= 8_000_000 && midFreq <= 12_000_000) return opt.value;
+    if (labelLower.includes('ku') && midFreq >= 10_700_000 && midFreq <= 14_500_000) return opt.value;
+    if (labelLower.includes('ka') && midFreq >= 26_500_000 && midFreq <= 40_000_000) return opt.value;
+    if (labelLower.includes('k') && midFreq >= 18_000_000 && midFreq <= 27_000_000) return opt.value;
+  }
+  return undefined;
+}
 
 function mapPermitVoToLicenseRecord(r: PermitVO): LicenseRecord {
   const now = new Date();
@@ -175,6 +259,8 @@ type PlanningFormProps = {
   onClose: () => void;
   onSubmit: () => void;
   submitLabel: string;
+  serviceTypeOptions?: DictData[];
+  bandTypeOptions?: DictData[];
 };
 
 const stationFields: (keyof StationRecord)[] = [
@@ -205,7 +291,7 @@ const stationFields: (keyof StationRecord)[] = [
   'longitude',
 ];
 const licenseFields: (keyof LicenseRecord)[] = ['number', 'organization', 'station', 'frequency', 'type', 'power', 'status', 'startDate', 'endDate', 'licenseAuthorization', 'unit', 'category', 'law', 'coverage', 'process', 'code', 'decisionDate', 'decision', 'description', 'registration', 'address', 'phone', 'email', 'administrativeInfo', 'contactPerson'];
-const planningFields: (keyof FrequencyBand)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note'];
+const planningFields: (keyof FrequencyBand)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note', 'serviceType', 'bandType'];
 const stationFieldMap: Record<keyof StationRecord, string> = {
   name: 'Station Name',
   frequencyLicense: 'Frequency License',
@@ -302,6 +388,8 @@ const planningFieldMap: Record<keyof FrequencyBand, string> = {
   bandwidth: 'Signal Bandwidth',
   status: 'Status',
   note: 'Notes',
+  serviceType: 'Service Type',
+  bandType: 'Band Type',
 };
 
 type StationFormProps = {
@@ -417,7 +505,7 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
   );
 }
 
-function PlanningForm({ title, description, value, onChange, onClose, onSubmit, submitLabel }: PlanningFormProps) {
+function PlanningForm({ title, description, value, onChange, onClose, onSubmit, submitLabel, serviceTypeOptions = [], bandTypeOptions = [] }: PlanningFormProps) {
   const update = <K extends keyof FrequencyBand>(key: K, next: FrequencyBand[K]) => onChange({ ...value, [key]: next });
 
   return (
@@ -442,6 +530,22 @@ function PlanningForm({ title, description, value, onChange, onClose, onSubmit, 
             <div><label className="block text-sm font-medium mb-2">End Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.endFreq} onChange={(e) => update('endFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
             <div><label className="block text-sm font-medium mb-2">Step</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium mb-2">Signal Bandwidth</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium mb-2">Service Type</label>
+              <select value={value.serviceType ?? ''} onChange={(e) => update('serviceType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">-- Select Service Type --</option>
+                {serviceTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium mb-2">Band Type</label>
+              <select value={value.bandType ?? ''} onChange={(e) => update('bandType', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">-- Select Band Type --</option>
+                {bandTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Notes</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
           </div>
         </div>
@@ -527,6 +631,8 @@ export function DataManagement() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [exportOptions, setExportOptions] = useState({ format: 'xlsx', range: 'all', fields: stationExportFields.map(f => f.key) });
   const [coordinatePickerOpen, setCoordinatePickerOpen] = useState(false);
+  const [serviceTypeOptions, setServiceTypeOptions] = useState<DictData[]>([]);
+  const [bandTypeOptions, setBandTypeOptions] = useState<DictData[]>([]);
 
   // 分页状态 - pageSize 9999 for fetching all data, display uses actual pagination
   const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 9999 });
@@ -630,7 +736,7 @@ export function DataManagement() {
 
   const filteredLicenseData = useMemo(() => licenseRecords.filter((license) => {
     const q = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm || [license.number, license.organization, license.station, license.frequency, license.type].some((value) => value.toLowerCase().includes(q));
+    const matchesSearch = !searchTerm || [license.number, license.licenseAuthorization, license.organization, license.station, license.frequency, license.type].some((value) => value?.toLowerCase().includes(q));
     const matchesUnit = licenseUnitFilter === 'All' || license.organization === licenseUnitFilter;
     const matchesRegion = licenseRegionFilter === 'All' || stationRecords.find((station) => station.name === license.station)?.region === licenseRegionFilter;
     const matchesBand = licenseBandFilter === 'All' || license.frequency === licenseBandFilter;
@@ -709,6 +815,8 @@ export function DataManagement() {
           step: vo.step!,
           bandwidth: vo.bandwidth!,
           remark: vo.remark || '',
+          serviceType: vo.serviceType || '',
+          bandType: vo.bandType || '',
         });
       } else {
         await planningApi.update(planningFormRecord.guid, {
@@ -721,6 +829,8 @@ export function DataManagement() {
           step: vo.step,
           bandwidth: vo.bandwidth,
           remark: vo.note,
+          serviceType: vo.serviceType,
+          bandType: vo.bandType,
         });
       }
       const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
@@ -766,10 +876,11 @@ export function DataManagement() {
   };
 
   const refreshLicenseData = async () => {
-    const res = await permitApi.page({ pageNum: licensePage.pageNum, pageSize: licensePage.pageSize, keyword: searchTerm });
+    const res = await permitApi.page({ pageNum: 1, pageSize: licensePage.pageSize, keyword: searchTerm });
     if (res.code === 200 && res.data?.records) {
       setLicenseRecords(res.data.records.map(mapPermitVoToLicenseRecord));
       setLicenseTotal(res.data.total || 0);
+      setLicensePage(prev => ({ ...prev, pageNum: 1 }));
     }
   };
 
@@ -779,6 +890,36 @@ export function DataManagement() {
       refreshLicenseData();
     }
   }, [stationDialogMode, licenseRecords.length]);
+
+  // 加载 ServiceType 和 BandType 字典数据
+  useEffect(() => {
+    if (!showImportDialog && activeTab !== 'planning') return;
+    const loadDictData = async () => {
+      try {
+        const typeResult = await dictTypeApi.list();
+        const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
+        const serviceTypeDict = dictTypes.find((d: any) => d.code === 'ServiceType');
+        const bandTypeDict = dictTypes.find((d: any) => d.code === 'BandType');
+        const promises = [];
+        if (serviceTypeDict?.guid) {
+          promises.push(dictDataApi.list(serviceTypeDict.guid).then((res: any) => {
+            const data = res?.data ?? res ?? [];
+            setServiceTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+          }));
+        }
+        if (bandTypeDict?.guid) {
+          promises.push(dictDataApi.list(bandTypeDict.guid).then((res: any) => {
+            const data = res?.data ?? res ?? [];
+            setBandTypeOptions(Array.isArray(data) ? data : data.records ?? []);
+          }));
+        }
+        await Promise.all(promises);
+      } catch (err) {
+        console.error('加载数据字典失败:', err);
+      }
+    };
+    loadDictData();
+  }, [showImportDialog, activeTab]);
 
   const refreshPlanningData = async () => {
     const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
@@ -850,8 +991,9 @@ export function DataManagement() {
     const data = tab === 'station' ? stationRecords : tab === 'license' ? licenseRecords : planningRecords;
     const fields = tab === 'station' ? stationFields : tab === 'license' ? licenseFields : planningFields;
     const fieldLabelMap = tab === 'station' ? stationFieldMap : tab === 'license' ? licenseFieldMap : planningFieldMap;
+    const headerRow = fields.map((field) => fieldLabelMap[field as keyof typeof fieldLabelMap] ?? String(field));
     const rows = data.map((item) => fields.map((field) => (item as any)[field] ?? ''));
-    const worksheet = XLSX.utils.aoa_to_sheet([[...fields.map((field) => fieldLabelMap[field as keyof typeof fieldLabelMap] ?? String(field)), ...rows]]);
+    const worksheet = XLSX.utils.aoa_to_sheet([headerRow, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, tab);
     XLSX.writeFile(workbook, `${tab}-data.xlsx`);
@@ -861,7 +1003,43 @@ export function DataManagement() {
     if (!importFile) return;
     if (importTab === 'planning') {
       try {
-        await planningApi.import(importFile);
+        //读取 Excel 文件并预处理：添加 serviceType 和 bandType 列
+        const buffer = await importFile.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+
+        // 为每行添加 serviceType 和 bandType
+        const processedRows = rows.map((row: any) => {
+          const radioservices = row.Radioservices || row.radioservices || row.category || '';
+          const startFreq = parseFloat(String(row['Start Frequency'] || row.startFreq || row.startfrequency || 0));
+          const endFreq = parseFloat(String(row['End Frequency'] || row.endFreq || row.stopfrequency || 0));
+          return {
+            ...row,
+            ServiceType: matchServiceType(radioservices, serviceTypeOptions) ?? row.ServiceType ?? row.serviceType ?? '',
+            BandType: matchBandType(startFreq, endFreq, bandTypeOptions) ?? row.BandType ?? row.bandType ?? '',
+          };
+        });
+
+        //写入新的 Excel 文件（添加 ServiceType 和 BandType 列）
+        const planningExportFields: (keyof typeof planningFieldMap)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note', 'serviceType', 'bandType'];
+        const headerRow = [...planningFields.map((field) => planningFieldMap[field as keyof typeof planningFieldMap] ?? String(field)), 'ServiceType', 'BandType'];
+        const dataRows = processedRows.map((item) => {
+          const rowData: any[] = [];
+          for (const field of planningFields) {
+            rowData.push((item as any)[field] ?? '');
+          }
+          // 添加 serviceType 和 bandType
+          rowData.push(item.ServiceType || item.serviceType || '', item.BandType || item.bandType || '');
+          return rowData;
+        });
+        const newSheet = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
+        const newWorkbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWorkbook, newSheet, 'planning');
+        const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
+        const processedFile = new File([wbout], importFile.name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        await planningApi.import(processedFile);
         const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
         if (res.code === 200 && res.data) {
           setPlanningRecords(res.data.records.map(convertToFrequencyBand));
@@ -872,6 +1050,7 @@ export function DataManagement() {
         alert('Planning data import failed');
         return;
       }
+      alert('成功导入数据');
       setShowImportDialog(false);
       setImportFile(null);
       return;
@@ -884,54 +1063,78 @@ export function DataManagement() {
 
     if (importTab === 'station') {
       try {
+        let importedCount = 0;
         for (const row of rows) {
           const payload = {
             // 基本信息（与表单顺序对应）
-            sitename: String(row.name ?? row.Name ?? ''),
-            frequencyLicense: String(row.frequencyLicense ?? row['Frequency License'] ?? ''),
-            technology: String(row.technicalStandard ?? row['Technical Standard'] ?? ''),
-            bbumodel: String(row.bbuModel ?? row.BBUModel ?? row['BBU Model'] ?? ''),
-            ownedsite: String(row.ownedsite ?? row.OwnedSite ?? row['Owner Name'] ?? row.unit ?? row.Unit ?? ''),
-            backbone: String(row.backhaulNetworkAccessMethod ?? row['Backhaul Network Access Method'] ?? ''),
-            stationpurpose: String(row.stationPurpose ?? row['Station Purpose'] ?? ''),
-            modulation: String(row.modulationType ?? row['Modulation Type'] ?? ''),
+            // 注意：模板列名使用空格（如 'Station Name'），也需要支持
+            sitename: String(row['Station Name'] ?? row.name ?? row.Name ?? ''),
+            frequencyLicense: String(row['Frequency License'] ?? row.frequencyLicense ?? ''),
+            technology: String(row['Technical Standard'] ?? row.technicalStandard ?? ''),
+            bbumodel: String(row['BBU Model'] ?? row.bbumodel ?? row.BBUModel ?? ''),
+            ownedsite: String(row['Owner Name'] ?? row.ownedsite ?? row.OwnedSite ?? row.unit ?? row.Unit ?? ''),
+            backbone: String(row['Backhaul Network Access Method'] ?? row.backhaulNetworkAccessMethod ?? ''),
+            stationpurpose: String(row['Station Purpose'] ?? row.stationPurpose ?? ''),
+            modulation: String(row['Modulation Type'] ?? row.modulationType ?? ''),
 
             // 频率相关
-            type: String(row.type ?? row.Type ?? ''),
-            stationtype: String(row.type ?? row.Type ?? ''),
+            type: String(row['Station Type'] ?? row.type ?? row.Type ?? ''),
+            stationtype: String(row['Station Type'] ?? row.type ?? row.Type ?? ''),
             frequencyt: row.frequencyt ?? row.FrequencyT ?? row.frequency ?? row.Frequency ?? row['Transmit Frequency'] ? parseFloat(String(row.frequencyt ?? row.FrequencyT ?? row.frequency ?? row.Frequency ?? row['Transmit Frequency'])) : undefined,
             frequencyr: row.frequencyr ?? row.FrequencyR ?? row.receiveFrequency ?? row['Receive Frequency'] ? parseFloat(String(row.frequencyr ?? row.FrequencyR ?? row.receiveFrequency ?? row['Receive Frequency'])) : undefined,
-            bandwidth: row.bandwidth ?? row.Bandwidth ? parseFloat(String(row.bandwidth ?? row.Bandwidth)) : undefined,
+            bandwidth: row.bandwidth ?? row.Bandwidth ?? row['Bandwidth'] ? parseFloat(String(row.bandwidth ?? row.Bandwidth ?? row['Bandwidth'])) : undefined,
 
             // 设备信息
-            devicemodel: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
-            devicequantity: row.equipmentCount ?? row['Equipment Count'] ? parseInt(String(row.equipmentCount ?? row['Equipment Count'])) : undefined,
-            outputpower: row.equipmentPower ?? row['Equipment Output Power'] ? parseFloat(String(row.equipmentPower ?? row['Equipment Output Power'])) : undefined,
+            devicemodel: String(row['Equipment Name and Model'] ?? row.equipmentNameAndModel ?? ''),
+            devicequantity: row['Equipment Count'] ?? row.equipmentCount ? parseInt(String(row['Equipment Count'] ?? row.equipmentCount)) : undefined,
+            outputpower: row['Equipment Output Power'] ?? row.equipmentPower ? parseFloat(String(row['Equipment Output Power'] ?? row.equipmentPower)) : undefined,
 
             // 天线信息
-            anttype: String(row.antenna ?? row['Antenna Type'] ?? ''),
-            antquantity: row.antennaCount ?? row['Antenna Count'] ? parseInt(String(row.antennaCount ?? row['Antenna Count'])) : undefined,
+            anttype: String(row['Antenna Type'] ?? row.antenna ?? ''),
+            antquantity: row['Antenna Count'] ?? row.antennaCount ? parseInt(String(row['Antenna Count'] ?? row.antennaCount)) : undefined,
 
             // 位置信息
-            province: String(row.province ?? row.Province ?? ''),
-            district: String(row.region ?? row.Region ?? ''),
-            location: String(row.detailedLocation ?? row['Detailed Location'] ?? ''),
+            province: String(row['Province'] ?? row.province ?? ''),
+            district: String(row['Region'] ?? row.region ?? row.Region ?? ''),
+            location: String(row['Detailed Location'] ?? row.detailedLocation ?? ''),
 
             // 日期
-            startdate: String(row.openDate ?? row['Open Date'] ?? ''),
-            expirationdate: String(row.expireDate ?? row['Expire Date'] ?? ''),
+            startdate: String(row['Open Date'] ?? row.openDate ?? ''),
+            expirationdate: String(row['Expire Date'] ?? row.expireDate ?? ''),
 
             // 坐标
-            longitude: row.longitude ?? row.Longitude ? parseFloat(String(row.longitude ?? row.Longitude)) : undefined,
-            latitude: row.latitude ?? row.Latitude ? parseFloat(String(row.latitude ?? row.Latitude)) : undefined,
+            longitude: row['Longitude'] ?? row.longitude ? parseFloat(String(row['Longitude'] ?? row.longitude)) : undefined,
+            latitude: row['Latitude'] ?? row.latitude ? parseFloat(String(row['Latitude'] ?? row.latitude)) : undefined,
 
             // 额外字段
-            unit: String(row.ownedsite ?? row.OwnedSite ?? row['Owner Name'] ?? ''),
-            equipname: String(row.equipmentNameAndModel ?? row['Equipment Name and Model'] ?? ''),
+            unit: String(row['Owner Name'] ?? row.ownedsite ?? row.OwnedSite ?? ''),
+            equipname: String(row['Equipment Name and Model'] ?? row.equipmentNameAndModel ?? ''),
           };
-          await stationApi.create(payload);
+          console.log('[Station Import] Row data:', row);
+          console.log('[Station Import] Payload:', payload);
+
+          // 验证必填字段
+          if (!payload.sitename) {
+            console.warn('[Station Import] Skipping row - missing sitename:', row);
+            continue;
+          }
+          if (!payload.province) {
+            console.warn('[Station Import] Skipping row - missing province:', row);
+            continue;
+          }
+          if (!payload.type) {
+            console.warn('[Station Import] Skipping row - missing type:', row);
+            continue;
+          }
+
+          const result = await stationApi.create(payload);
+          console.log('[Station Import] Create result:', result);
+          importedCount++;
         }
+        console.log('[Station Import] Total imported:', importedCount, 'rows');
         await refreshStationData();
+        console.log('[Station Import] After refresh - stationRecords:', stationRecords.length);
+        alert(`成功导入 ${importedCount} 行数据`);
       } catch (error) {
         console.error('Failed to import station data:', error);
         alert('导入失败');
@@ -941,41 +1144,89 @@ export function DataManagement() {
       }
     }
     if (importTab === 'license') {
-      setLicenseRecords(rows.map((row, index) => ({
-        id: Date.now() + index,
-        number: String(row.number ?? row.Number ?? ''),
-        organization: String(row.organization ?? row.Organization ?? ''),
-        station: String(row.station ?? row.Station ?? ''),
-        frequency: String(row.frequency ?? row.Frequency ?? ''),
-        type: String(row.type ?? row.Type ?? ''),
-        power: String(row.power ?? row.Power ?? ''),
-        status: (String(row.status ?? row.Status ?? 'normal').toLowerCase() as LicenseRecord['status']),
-        startDate: String(row.startDate ?? row['Start Date'] ?? ''),
-        endDate: String(row.endDate ?? row['End Date'] ?? ''),
-        licenseAuthorization: String(row.licenseAuthorization ?? row['License / Authorization'] ?? ''),
-        unit: String(row.unit ?? row.Unit ?? ''),
-        category: String(row.category ?? row.Category ?? ''),
-        law: String(row.law ?? row.Law ?? ''),
-        coverage: String(row.coverage ?? row['Coverage Range'] ?? ''),
-        process: String(row.process ?? row.Process ?? ''),
-        code: String(row.code ?? row['Code / No.'] ?? ''),
-        decisionDate: String(row.decisionDate ?? row['Decision Date'] ?? ''),
-        decision: String(row.decision ?? row.Decision ?? ''),
-        description: String(row.description ?? row.Description ?? ''),
-        registration: String(row.registration ?? row.Registration ?? ''),
-        address: String(row.address ?? row.Address ?? ''),
-        phone: String(row.phone ?? row.Phone ?? ''),
-        email: String(row.email ?? row.Email ?? ''),
-        administrativeInfo: String(row.administrativeInfo ?? row['Administrative Info'] ?? ''),
-        contactPerson: String(row.contactPerson ?? row['Contact Person'] ?? ''),
-      })));
+      let importedCount = 0;
+      for (const row of rows) {
+        // 辅助函数：格式化日期为 yyyy-MM-dd
+        const formatDate = (val: any): string => {
+          if (!val) return '';
+          if (val instanceof Date) {
+            const d = val;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          if (typeof val === 'number') {
+            // Excel 日期序列号转换
+            const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          // 如果是字符串，尝试解析并格式化
+          if (typeof val === 'string' && val) {
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) {
+              const year = d.getFullYear();
+              const month = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${year}-${month}-${day}`;
+            }
+          }
+          return String(val);
+        };
+
+        const payload = {
+          consent: String(row['License / Authorization'] ?? row.licenseAuthorization ?? ''),
+          interlocutor: String(row.organization ?? row.Organization ?? row.unit ?? row.Unit ?? ''),
+          category: String(row.category ?? row.Category ?? ''),
+          legal: String(row.law ?? row.Law ?? ''),
+          type: String(row.type ?? row.Type ?? ''),
+          startdate: formatDate(row['Start Date'] ?? row.startDate),
+          enddate: formatDate(row['End Date'] ?? row.endDate),
+          scope: String(row.coverage ?? row['Coverage Range'] ?? row.frequency ?? row.Frequency ?? ''),
+          process: String(row.process ?? row.Process ?? ''),
+          status: String(row.status ?? row.Status ?? 'active'),
+          code: String(row['Code / No.'] ?? row.code ?? ''),
+          decisiondate: formatDate(row['Decision Date'] ?? row.decisionDate),
+          decision: String(row.decision ?? row.Decision ?? ''),
+          note: String(row.description ?? row.Description ?? ''),
+          register: String(row.registration ?? row.Registration ?? ''),
+          address: String(row.address ?? row.Address ?? ''),
+          phone: String(row.phone ?? row.Phone ?? ''),
+          email: String(row.email ?? row.Email ?? ''),
+          administrativeinfo: String(row['Administrative Info'] ?? row.administrativeInfo ?? ''),
+          directorname: String(row['Contact Person'] ?? row.contactPerson ?? ''),
+        };
+        console.log('[License Import] Row data:', row);
+        console.log('[License Import] Payload:', payload);
+
+        // 验证必填字段
+        if (!payload.interlocutor) {
+          console.warn('[License Import] Skipping row - missing interlocutor:', row);
+          continue;
+        }
+
+        try {
+          const result = await permitApi.create(payload);
+          console.log('[License Import] Create result:', result);
+          importedCount++;
+        } catch (error) {
+          console.error('[License Import] Failed to create license:', error);
+          alert(`导入失败：第 ${importedCount + 1} 行数据存在问题。\n错误信息：${error instanceof Error ? error.message : '未知错误'}\n数据：${JSON.stringify(payload)}`);
+          return; // 遇到错误就停止导入
+        }
+      }
+      console.log('[License Import] Total imported:', importedCount, 'rows');
+      await refreshLicenseData();
+      alert(`成功导入 ${importedCount} 行数据`);
     }
     setShowImportDialog(false);
     setImportFile(null);
   };
 
   const downloadImportTemplate = () => {
-    let templateFileName: string;
     if (importTab === 'station') {
       // 动态生成 Station 导入模板（使用 stationFields 顺序）
       const fields = [
@@ -991,17 +1242,29 @@ export function DataManagement() {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Station Import');
       XLSX.writeFile(workbook, 'station-data.xlsx');
       return;
-    } else if (importTab === 'planning') {
-      templateFileName = 'frequency-planning-data.xlsx';
+    } else if (importTab === 'license') {
+      // 动态生成 License 导入模板
+      const fields = [
+        'Code / No.', 'License / Authorization', 'Organization', 'Category', 'Type',
+        'Start Date', 'End Date', 'Coverage Range', 'Process', 'Status',
+        'Decision Date', 'Decision', 'Description', 'Registration',
+        'Address', 'Phone', 'Email', 'Administrative Info', 'Contact Person',
+        'Law',
+      ];
+      const worksheet = XLSX.utils.aoa_to_sheet([fields]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'License Import');
+      XLSX.writeFile(workbook, 'license-data.xlsx');
+      return;
     } else {
-      templateFileName = 'frequency-license-data.xlsx';
+      // Planning 类型，下载模板文件
+      const link = document.createElement('a');
+      link.href = '/docs/frequency-planning-data.xlsx';
+      link.download = 'frequency-planning-data.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-    const link = document.createElement('a');
-    link.href = `/docs/${templateFileName}`;
-    link.download = templateFileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
@@ -1025,35 +1288,37 @@ export function DataManagement() {
       </div>
 
       {activeTab === 'station' && (
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Station Data Management</h3>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => { setImportTab('station'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
-              <button type="button" onClick={() => setShowExportDialog(true)} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={async () => { setStationFormRecord({ id: '', name: '', frequencyLicense: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', receiveFrequency: '', bandwidth: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', ownedsite: '', bbuModel: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); await refreshLicenseData(); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Station</button>
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-y-auto max-h-[calc(100vh-280px)]">
+          <div className="flex items-center justify-between p-4 gap-4 sticky top-0 bg-card z-10 border-b border-border">
+            <h3 className="text-lg font-semibold whitespace-nowrap">Station Data Management</h3>
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <button type="button" onClick={() => { setImportTab('station'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import</button>
+              <button type="button" onClick={() => setShowExportDialog(true)} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export</button>
+              <button type="button" onClick={async () => { setStationFormRecord({ id: '', name: '', frequencyLicense: '', type: '', region: '', province: '', detailedLocation: '', frequency: '', receiveFrequency: '', bandwidth: '', status: 'normal', openDate: '', expireDate: '', latitude: '', longitude: '', power: '', antenna: '', equipmentCount: '', equipmentPower: '', technicalStandard: '', bandwidthProcessingUnitModel: '', ownerName: '', ownedsite: '', bbuModel: '', backhaulNetworkAccessMethod: '', stationPurpose: '', modulationType: '', antennaCount: '', equipmentNameAndModel: '' }); await refreshLicenseData(); setStationDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><div className="md:col-span-2 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search station name..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
-          <div className="overflow-x-auto">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading stations...</div>
-            ) : filteredStationData.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No stations found</div>
-            ) : (
-              <>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4">Station Name</th>
-                    <th className="text-left py-3 px-4">Frequency License</th>
-                    <th className="text-left py-3 px-4">Station Type</th>
-                    <th className="text-left py-3 px-4">Region</th>
-                    <th className="text-left py-3 px-4">Owner Name</th>
-                    <th className="text-center py-3 px-4">Status</th>
-                    <th className="text-center py-3 px-4">Actions</th>
-                  </tr>
-                </thead>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading stations...</div>
+          ) : filteredStationData.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No stations found</div>
+          ) : (
+            <>
+            <table className="w-full">
+              <thead className="sticky top-[60px] bg-card z-10">
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4">Station Name</th>
+                  <th className="text-left py-3 px-4">Frequency License</th>
+                  <th className="text-left py-3 px-4">Station Type</th>
+                  <th className="text-left py-3 px-4">Region</th>
+                  <th className="text-left py-3 px-4">Owner Name</th>
+                  <th className="text-center py-3 px-4">Status</th>
+                  <th className="text-center py-3 px-4">Actions</th>
+                </tr>
+              </thead>
                 <tbody key={stationPage.pageNum}>
                   {paginatedStations.map((station) => (
                     <tr key={station.id} className="border-b border-border hover:bg-muted/50">
@@ -1072,85 +1337,86 @@ export function DataManagement() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-              {filteredStationData.length > 0 && (
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Total {filteredStationData.length} items
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={stationPage.pageSize}
-                      onChange={(e) => handleStationPageSizeChange(Number(e.target.value))}
-                      className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
-                    >
-                      <option value={10}>10 条/页</option>
-                      <option value={20}>20 条/页</option>
-                      <option value={50}>50 条/页</option>
-                    </select>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() => handleStationPageChange(stationPage.pageNum - 1)}
-                            className={stationPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <span className="px-3 py-1 text-sm">{stationPage.pageNum}</span>
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() => handleStationPageChange(stationPage.pageNum + 1)}
-                            className={stationPage.pageNum >= Math.ceil(filteredStationData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
+              </tbody>
+            </table>
+            {filteredStationData.length > 0 && (
+              <div className="flex items-center justify-between p-4 border-t border-border">
+                <div className="text-sm text-muted-foreground">
+                  Total {filteredStationData.length} items
                 </div>
-              )}
-              </>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={stationPage.pageSize}
+                    onChange={(e) => handleStationPageSizeChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                  >
+                    <option value={10}>10 条/页</option>
+                    <option value={20}>20 条/页</option>
+                    <option value={50}>50 条/页</option>
+                  </select>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handleStationPageChange(stationPage.pageNum - 1)}
+                          className={stationPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="px-3 py-1 text-sm">{stationPage.pageNum}</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handleStationPageChange(stationPage.pageNum + 1)}
+                          className={stationPage.pageNum >= Math.ceil(filteredStationData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
             )}
-          </div>
+            </>
+          )}
         </div>
       )}
 
       {activeTab === 'license' && (
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">License Data Management</h3>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => { setImportTab('license'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
-              <button type="button" onClick={() => exportToExcel('license')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setLicenseFormRecord({ guid: '', id: '', number: '', organization: '', station: '', frequency: '', type: '', power: '', status: 'normal', startDate: '', endDate: '', licenseAuthorization: '', unit: '', category: '', law: '', coverage: '', process: '', code: '', decisionDate: '', decision: '', description: '', registration: '', address: '', phone: '', email: '', administrativeInfo: '', contactPerson: '' }); setLicenseDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add License</button>
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-y-auto max-h-[calc(100vh-280px)]">
+          <div className="flex items-center justify-between p-4 gap-4 sticky top-0 bg-card z-10 border-b border-border">
+            <h3 className="text-lg font-semibold whitespace-nowrap">License Data Management</h3>
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="px-3 py-2 border border-border rounded-lg bg-input-background text-sm">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select>
+              <select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="px-3 py-2 border border-border rounded-lg bg-input-background text-sm">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select>
+              <select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="px-3 py-2 border border-border rounded-lg bg-input-background text-sm">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select>
+              <select value={licenseStatusFilter} onChange={(e) => setLicenseStatusFilter(e.target.value)} className="px-3 py-2 border border-border rounded-lg bg-input-background text-sm">{licenseStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select>
+              <button type="button" onClick={() => { setImportTab('license'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import</button>
+              <button type="button" onClick={() => exportToExcel('license')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export</button>
+              <button type="button" onClick={() => { setLicenseFormRecord({ guid: '', id: '', number: '', organization: '', station: '', frequency: '', type: '', power: '', status: 'normal', startDate: '', endDate: '', licenseAuthorization: '', unit: '', category: '', law: '', coverage: '', process: '', code: '', decisionDate: '', decision: '', description: '', registration: '', address: '', phone: '', email: '', administrativeInfo: '', contactPerson: '' }); setLicenseDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
-            <div className="xl:col-span-3 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input type="text" placeholder="Search license number, organization, or station..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <select value={licenseUnitFilter} onChange={(e) => setLicenseUnitFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseUnits.map((unit) => <option key={unit} value={unit}>{unit === 'All' ? 'All Units' : unit}</option>)}</select>
-            <select value={licenseRegionFilter} onChange={(e) => setLicenseRegionFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseRegions.map((region) => <option key={region} value={region}>{region === 'All' ? 'All Regions' : region}</option>)}</select>
-            <select value={licenseBandFilter} onChange={(e) => setLicenseBandFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-2">{licenseBands.map((band) => <option key={band} value={band}>{band === 'All' ? 'All Bands' : band}</option>)}</select>
-            <select value={licenseStatusFilter} onChange={(e) => setLicenseStatusFilter(e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background xl:col-span-3">{licenseStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4">License</th>
-                  <th className="text-left py-3 px-4">Organization</th>
-                  <th className="text-left py-3 px-4">Category</th>
-                  <th className="text-left py-3 px-4">Type</th>
-                  <th className="text-left py-3 px-4">Start Date</th>
-                  <th className="text-left py-3 px-4">End Date</th>
-                  <th className="text-center py-3 px-4">Actions</th>
-                </tr>
-              </thead>
+          <table className="w-full">
+            <thead className="sticky top-[60px] bg-card z-10">
+              <tr className="border-b border-border">
+                <th className="text-left py-3 px-4">License</th>
+                <th className="text-left py-3 px-4">License/Authorization</th>
+                <th className="text-left py-3 px-4">Organization</th>
+                <th className="text-left py-3 px-4">Category</th>
+                <th className="text-left py-3 px-4">Type</th>
+                <th className="text-left py-3 px-4">Start Date</th>
+                <th className="text-left py-3 px-4">End Date</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
               <tbody key={licensePage.pageNum}>
                 {paginatedLicenses.map((license) => (
                   <tr key={license.id} className="border-b border-border hover:bg-muted/50">
                     <td className="py-3 px-4 font-medium text-sm">{license.number || '-'}</td>
+                    <td className="py-3 px-4 text-sm">{license.licenseAuthorization || '-'}</td>
                     <td className="py-3 px-4">{license.unit ?? license.organization}</td>
                     <td className="py-3 px-4">{license.category ?? license.type}</td>
                     <td className="py-3 px-4">{license.type}</td>
@@ -1172,70 +1438,70 @@ export function DataManagement() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-            {filteredLicenseData.length > 0 && (
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Total {filteredLicenseData.length} items
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={licensePage.pageSize}
-                    onChange={(e) => handleLicensePageSizeChange(Number(e.target.value))}
-                    className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
-                  >
-                    <option value={10}>10 条/页</option>
-                    <option value={20}>20 条/页</option>
-                    <option value={50}>50 条/页</option>
-                  </select>
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          onClick={() => handleLicensePageChange(licensePage.pageNum - 1)}
-                          className={licensePage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        />
-                      </PaginationItem>
-                      <PaginationItem>
-                        <span className="px-3 py-1 text-sm">{licensePage.pageNum}</span>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationNext
-                          onClick={() => handleLicensePageChange(licensePage.pageNum + 1)}
-                          className={licensePage.pageNum >= Math.ceil(filteredLicenseData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
+          </table>
+          {filteredLicenseData.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t border-border">
+              <div className="text-sm text-muted-foreground">
+                Total {filteredLicenseData.length} items
               </div>
-            )}
-          </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={licensePage.pageSize}
+                  onChange={(e) => handleLicensePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                >
+                  <option value={10}>10 条/页</option>
+                  <option value={20}>20 条/页</option>
+                  <option value={50}>50 条/页</option>
+                </select>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => handleLicensePageChange(licensePage.pageNum - 1)}
+                        className={licensePage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="px-3 py-1 text-sm">{licensePage.pageNum}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => handleLicensePageChange(licensePage.pageNum + 1)}
+                        className={licensePage.pageNum >= Math.ceil(filteredLicenseData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === 'planning' && (
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Planning Data Management</h3>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => { setImportTab('planning'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import Excel</button>
-              <button type="button" onClick={() => exportToExcel('planning')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export Excel</button>
-              <button type="button" onClick={() => { setPlanningFormRecord({ guid: '', category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add Custom Band</button>
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-y-auto max-h-[calc(100vh-280px)]">
+          <div className="flex items-center justify-between p-4 gap-4 sticky top-0 bg-card z-10 border-b border-border">
+            <h3 className="text-lg font-semibold whitespace-nowrap">Planning Data Management</h3>
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <button type="button" onClick={() => { setImportTab('planning'); setShowImportDialog(true); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileUp className="w-4 h-4" />Import</button>
+              <button type="button" onClick={() => exportToExcel('planning')} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><FileDown className="w-4 h-4" />Export</button>
+              <button type="button" onClick={() => { setPlanningFormRecord({ guid: '', category: '', subCategory: '', service: '', bandName: '', startFreq: 0, endFreq: 0, step: 0, bandwidth: 0, status: 'free', note: '', serviceType: '', bandType: '' }); setPlanningDialogMode('add'); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Plus className="w-4 h-4" />Add</button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4">Radioservices</th>
-                  <th className="text-left py-3 px-4">Subservices</th>
-                  <th className="text-left py-3 px-4">Level</th>
+          <table className="w-full">
+            <thead className="sticky top-[60px] bg-card z-10">
+              <tr className="border-b border-border">
+                <th className="text-left py-3 px-4">Radioservices</th>
+                <th className="text-left py-3 px-4">Subservices</th>
+                <th className="text-left py-3 px-4">Level</th>
                   <th className="text-left py-3 px-4">Band Name</th>
                   <th className="text-left py-3 px-4">Start Frequency</th>
                   <th className="text-left py-3 px-4">End Frequency</th>
                   <th className="text-left py-3 px-4">Step</th>
                   <th className="text-left py-3 px-4">Signal Bandwidth</th>
+                  <th className="text-left py-3 px-4">Service Type</th>
+                  <th className="text-left py-3 px-4">Band Type</th>
                   <th className="text-left py-3 px-4">Notes</th>
                   <th className="text-center py-3 px-4">Actions</th>
                 </tr>
@@ -1243,7 +1509,7 @@ export function DataManagement() {
               <tbody key={planningPage.pageNum}>
                 {paginatedPlans.map((plan) => (
                   <tr key={plan.guid} className="border-b border-border hover:bg-muted/50">
-                    <td className="py-3 px-4">{plan.category}</td>
+                     <td className="py-3 px-4">{plan.category}</td>
                     <td className="py-3 px-4">{plan.subCategory}</td>
                     <td className="py-3 px-4">{plan.service}</td>
                     <td className="py-3 px-4 font-medium">{plan.bandName}</td>
@@ -1251,6 +1517,8 @@ export function DataManagement() {
                     <td className="py-3 px-4">{plan.endFreq}</td>
                     <td className="py-3 px-4">{plan.step}</td>
                     <td className="py-3 px-4">{plan.bandwidth}</td>
+                    <td className="py-3 px-4">{serviceTypeOptions.find(o => o.value === plan.serviceType)?.label ?? plan.serviceType ?? '-'}</td>
+                    <td className="py-3 px-4">{bandTypeOptions.find(o => o.value === plan.bandType)?.label ?? plan.bandType ?? '-'}</td>
                     <td className="py-3 px-4">{plan.note}</td>
                     <td className="text-center py-3 px-4">
                       <div className="flex items-center justify-center gap-2">
@@ -1261,45 +1529,44 @@ export function DataManagement() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-            {filteredPlanningData.length > 0 && (
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Total {filteredPlanningData.length} items
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={planningPage.pageSize}
-                    onChange={(e) => handlePlanningPageSizeChange(Number(e.target.value))}
-                    className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
-                  >
-                    <option value={10}>10 条/页</option>
-                    <option value={20}>20 条/页</option>
-                    <option value={50}>50 条/页</option>
-                  </select>
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          onClick={() => handlePlanningPageChange(planningPage.pageNum - 1)}
-                          className={planningPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        />
-                      </PaginationItem>
-                      <PaginationItem>
-                        <span className="px-3 py-1 text-sm">{planningPage.pageNum}</span>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationNext
-                          onClick={() => handlePlanningPageChange(planningPage.pageNum + 1)}
-                          className={planningPage.pageNum >= Math.ceil(filteredPlanningData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
+          </table>
+          {filteredPlanningData.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t border-border">
+              <div className="text-sm text-muted-foreground">
+                Total {filteredPlanningData.length} items
               </div>
-            )}
-          </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={planningPage.pageSize}
+                  onChange={(e) => handlePlanningPageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1 border border-border rounded-lg bg-input-background text-sm"
+                >
+                  <option value={10}>10 条/页</option>
+                  <option value={20}>20 条/页</option>
+                  <option value={50}>50 条/页</option>
+                </select>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => handlePlanningPageChange(planningPage.pageNum - 1)}
+                        className={planningPage.pageNum <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="px-3 py-1 text-sm">{planningPage.pageNum}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => handlePlanningPageChange(planningPage.pageNum + 1)}
+                        className={planningPage.pageNum >= Math.ceil(filteredPlanningData.length / DISPLAY_PAGE_SIZE) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1312,6 +1579,8 @@ export function DataManagement() {
           onClose={() => { setPlanningDialogMode(null); setPlanningFormRecord(null); }}
           onSubmit={savePlanningEdit}
           submitLabel={planningDialogMode === 'add' ? 'Add Band' : 'Save Changes'}
+          serviceTypeOptions={serviceTypeOptions}
+          bandTypeOptions={bandTypeOptions}
         />
       )}
 

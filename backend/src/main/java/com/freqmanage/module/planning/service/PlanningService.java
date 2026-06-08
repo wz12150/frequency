@@ -130,6 +130,8 @@ public class PlanningService extends ServiceImpl<PlanningMapper, RsbtPlanning> {
             target.setStep(dto.getStep());
             target.setBandwidth(dto.getBandwidth());
             target.setRemark(dto.getRemark());
+            target.setServiceType(dto.getServiceType());
+            target.setBandType(dto.getBandType());
         } else if (src instanceof PlanningUpdateDTO) {
             PlanningUpdateDTO dto = (PlanningUpdateDTO) src;
             target.setRadioservices(dto.getRadioservices());
@@ -141,6 +143,8 @@ public class PlanningService extends ServiceImpl<PlanningMapper, RsbtPlanning> {
             target.setStep(dto.getStep());
             target.setBandwidth(dto.getBandwidth());
             target.setRemark(dto.getRemark());
+            target.setServiceType(dto.getServiceType());
+            target.setBandType(dto.getBandType());
         }
     }
 
@@ -156,6 +160,8 @@ public class PlanningService extends ServiceImpl<PlanningMapper, RsbtPlanning> {
         vo.setStep(entity.getStep());
         vo.setBandwidth(entity.getBandwidth());
         vo.setRemark(entity.getRemark());
+        vo.setServiceType(entity.getServiceType());
+        vo.setBandType(entity.getBandType());
         return vo;
     }
 }

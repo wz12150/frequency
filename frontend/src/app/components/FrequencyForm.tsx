@@ -54,7 +54,7 @@ export function FrequencyForm({ title, description, value, onChange, onClose, on
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">
-              Bandwidth (MHz)
+              Bandwidth (kHz)
             </label>
             <Input
               type="number"

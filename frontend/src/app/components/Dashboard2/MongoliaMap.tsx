@@ -67,9 +67,9 @@ export function MongoliaMap({ data, loading }: MongoliaMapProps) {
         <image
           href="/union.png"
           x="0"
-          y="0"
-          width="750"
-          height="450"
+          y="-30"
+          width="780"
+          height="480"
           preserveAspectRatio="xMidYMid meet"
         />
 

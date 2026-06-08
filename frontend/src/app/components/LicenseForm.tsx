@@ -1,3 +1,5 @@
+import { DatePicker } from "./ui/date-picker";
+
 type LicenseRecord = {
   id: number;
   number: string;
@@ -52,18 +54,25 @@ export function LicenseForm({ title, description, value, onChange, onClose, onSu
           </div>
           <button type="button" onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">×</button>
         </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             ['License / Authorization', 'licenseAuthorization'], ['Organization', 'unit'], ['Category', 'category'], ['Law', 'law'], ['Type', 'type'], ['Start Date', 'startDateDisplay'], ['End Date', 'endDateDisplay'], ['Coverage Range', 'coverage'], ['Process', 'process'], ['Status', 'status'], ['Code / No.', 'code'], ['Decision Date', 'decisionDate'], ['Decision', 'decision'], ['Description', 'description'], ['Registration', 'registration'], ['Address', 'address'], ['Phone', 'phone'], ['Email', 'email'], ['Administrative Info', 'administrativeInfo'], ['Contact Person', 'contactPerson'],
           ].map(([label, key]) => (
             <div key={key}>
               <label className="block text-sm font-medium mb-2">{label}{requiredFields.includes(key) && <span className="text-red-500"> *</span>}</label>
-              <input
-                value={(value as any)[key] ?? ''}
-                onChange={(e) => update(key as keyof LicenseRecord, e.target.value as any)}
-                className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
-                required={requiredFields.includes(key)}
-              />
+              {['startDateDisplay', 'endDateDisplay', 'decisionDate'].includes(key) ? (
+                <DatePicker
+                  value={(value as any)[key] ?? ''}
+                  onChange={(v) => update(key as keyof LicenseRecord, v as any)}
+                />
+              ) : (
+                <input
+                  value={(value as any)[key] ?? ''}
+                  onChange={(e) => update(key as keyof LicenseRecord, e.target.value as any)}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  required={requiredFields.includes(key)}
+                />
+              )}
             </div>
           ))}
         </div>

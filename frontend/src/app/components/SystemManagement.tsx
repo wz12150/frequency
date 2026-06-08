@@ -114,8 +114,12 @@ export function SystemManagement() {
         const result = await roleApi.page();
         setRoleData((result as ApiResponse<PageResponse<Role>>).data.records);
       } else if (activeTab === 'dictionary') {
+        console.log('Loading dict types with keyword:', searchTerm);
         const result = await dictTypeApi.page({ keyword: searchTerm });
-        setDictTypes((result as ApiResponse<PageResponse<DictType>>).data.records);
+        console.log('Dict types API result:', result);
+        const records = (result as ApiResponse<PageResponse<DictType>>).data.records;
+        console.log('Dict types records:', records);
+        setDictTypes(records);
         if (selectedDictType) {
           loadDictData(selectedDictType.guid);
         }
@@ -1253,7 +1257,7 @@ export function SystemManagement() {
                     </div>
                   )}
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-96 overflow-y-auto">
                   {!selectedDictType ? (
                     <div className="p-8 text-center text-muted-foreground">
                       <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -1274,7 +1278,7 @@ export function SystemManagement() {
                     </div>
                   ) : (
                     <table className="w-full">
-                      <thead className="bg-muted">
+                      <thead className="bg-muted sticky top-0">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-medium">Label</th>
                           <th className="px-4 py-3 text-left text-xs font-medium">Value</th>

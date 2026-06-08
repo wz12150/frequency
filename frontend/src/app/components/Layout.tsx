@@ -23,22 +23,22 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
   });
 
   const menuItems = [
-    { id: 'new-dashboard', icon: LayoutDashboard, label: 'New Dashboard' },
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
+    { id: 'dashboard', icon: Home, label: 'Dashboard1' },
     { id: 'dashboard2', icon: LayoutDashboard, label: 'Dashboard2' },
+    { id: 'new-dashboard', icon: LayoutDashboard, label: 'Dashboard3' },
+    { id: 'dashboard4', icon: LayoutDashboard, label: 'Dashboard4' },
     { id: 'station-map', icon: Map, label: 'Station Map' },
     { id: 'frequency-planning', icon: Radio, label: 'Frequency Planning' },
     { id: 'station-stats', icon: BarChart3, label: 'Station Statistics' },
     { id: 'license-analysis', icon: FileCheck, label: 'License Analysis' },
     { id: 'data-management', icon: Database, label: 'Data Management' },
     { id: 'system-management', icon: Settings, label: 'System Management' },
-    { id: 'dashboard4', icon: LayoutDashboard, label: 'Dashboard4' },
   ];
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <div className={`${sidebarOpen ? 'w-48' : 'w-16'} bg-gradient-to-b from-[#0a3d8f] to-[#1976d2] transition-all duration-300 flex flex-col overflow-hidden`}>
-        <div className="p-4 border-b border-white/20 flex items-center justify-center">
+        <div className="px-4 py-2 border-b border-white/20 flex items-center justify-center">
           <div className={`bg-white rounded-lg p-2 ${sidebarOpen ? 'w-32' : 'w-12'} flex items-center justify-center transition-all duration-300`}>
             <img src={iconImage} alt="Logo" className={`${sidebarOpen ? 'h-10' : 'h-6'} w-auto transition-all duration-300`} />
           </div>

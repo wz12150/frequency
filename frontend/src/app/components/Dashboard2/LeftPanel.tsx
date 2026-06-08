@@ -102,26 +102,26 @@ export function LeftPanel({ data, loading }: LeftPanelProps) {
 
   // Vibrant color palette for pie chart
   const vibrantColors = [
-    '#ff6b6b', // red
-    '#4ecdc4', // teal
-    '#ffe66d', // yellow
-    '#95e1d3', // mint
-    '#f38181', // coral
-    '#aa96da', // lavender
-    '#fcbad3', // pink
-    '#a8d8ea', // sky blue
-    '#ff9f43', // orange
-    '#6a89cc', // periwinkle
-    '#78e08f', // green
-    '#eb3b5a', // crimson
+    '#ff4757', // vivid red
+    '#2ed573', // bright green
+    '#ffa502', // vivid orange
+    '#1e90ff', // dodger blue
+    '#ff6b9d', // hot pink
+    '#a55eea', // bright purple
+    '#ff6348', // tomato
+    '#00d2d3', // cyan
+    '#f368e0', // magenta pink
+    '#ff9f43', // amber
+    '#10ac84', // emerald
+    '#5f27cd', // purple
   ];
 
   const fallbackSlices = [
-    { name: 'Mobile', pct: 20, color: '#ff6b6b' },
-    { name: 'Broadcast', pct: 16, color: '#4ecdc4' },
-    { name: 'Radio', pct: 14, color: '#ffe66d' },
-    { name: 'Aviation', pct: 35, color: '#aa96da' },
-    { name: 'Maritime', pct: 15, color: '#a8d8ea' },
+    { name: 'Mobile', pct: 20, color: '#ff4757' },
+    { name: 'Broadcast', pct: 16, color: '#2ed573' },
+    { name: 'Radio', pct: 14, color: '#ffa502' },
+    { name: 'Aviation', pct: 35, color: '#1e90ff' },
+    { name: 'Maritime', pct: 15, color: '#ff6b9d' },
   ];
 
   const donutSlices = stationTypeList.length > 0

@@ -56,6 +56,10 @@ export interface PlanningVO {
   step: number;
   bandwidth: number;
   remark: string;
+  /**业务类型，从数据字典 ServiceType 获取 */
+  serviceType?: string;
+  /** 频段类型，从数据字典 BandType 获取 */
+  bandType?: string;
 }
 
 export interface PlanningQuery {
@@ -78,6 +82,10 @@ export interface PlanningCreate {
   step: number;
   bandwidth: number;
   remark: string;
+  /**业务类型，从数据字典 ServiceType 获取 */
+  serviceType?: string;
+  /** 频段类型，从数据字典 BandType 获取 */
+  bandType?: string;
 }
 
 export interface PlanningUpdate {
@@ -90,6 +98,10 @@ export interface PlanningUpdate {
   step?: number;
   bandwidth?: number;
   remark?: string;
+  /** 业务类型，从数据字典 ServiceType 获取 */
+  serviceType?: string;
+  /** 频段类型，从数据字典 BandType 获取 */
+  bandType?: string;
 }
 
 export const planningApi = {
