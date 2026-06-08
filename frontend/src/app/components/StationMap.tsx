@@ -361,7 +361,7 @@ export function StationMap() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-y-auto h-full pb-4">
       {/* Title */}
       <div>
         <h2 className="text-2xl font-semibold mb-1">Station Map</h2>
