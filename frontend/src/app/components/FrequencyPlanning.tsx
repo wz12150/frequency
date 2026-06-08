@@ -227,8 +227,8 @@ function planningVOToSpectrumBlock(
 ): SpectrumBlock {
   const { status } = deriveStatus(record.level ?? '');
   const serviceColor = (() => {
-    // Free / Unallocated 明确用灰色
-    if (record.level === 'UNALLOCATED') return '#9CA3AF';
+    // Free / Unallocated / Reserved 明确用灰色（与图例一致）
+    if (record.level === 'UNALLOCATED' || record.level === 'RESERVED') return '#9CA3AF';
     const st = record.serviceType;
     if (st && st.trim() && serviceTypeColorMap[st]) return serviceTypeColorMap[st];
     const rc = radioservicesToColor(record.radioservices ?? '');
