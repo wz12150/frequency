@@ -210,7 +210,7 @@ export function StationStats() {
   const validityMapStations = showExpiredOnMap ? selectedMonthStations : [];
 
   return (
-    <div className="space-y-6">
+    <div className="max-h-[calc(100vh-200px)] overflow-y-auto space-y-6 pr-2">
       {apiError && (
         <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
           {apiError}
