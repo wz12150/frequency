@@ -6,6 +6,7 @@ import { RecordDetailCard } from './RecordDetailCard';
 import { LicenseDetail } from './LicenseDetail';
 import { LicenseForm } from './LicenseForm';
 import { CoordinatePicker } from './CoordinatePicker';
+import { PlanningForm, type FrequencyBand } from './PlanningForm';
 import { planningApi, PlanningVO } from '../api/planning';
 import { stationApi } from '../api/station';
 import { permitApi, PermitVO } from '../api/permit';
@@ -89,23 +90,6 @@ type LicenseRecord = {
   contactPerson?: string;
 };
 
-type FrequencyBand = {
-  guid: string;
-  category: string;
-  subCategory: string;
-  service: string;
-  bandName: string;
-  startFreq: number;
-  endFreq: number;
-  step: number;
-  bandwidth: number;
-  status: 'occupied' | 'free';
-  note: string;
-  /** 业务类型，从数据字典 ServiceType 获取 */
-  serviceType?: string;
-  /** 频段类型，从数据字典 BandType 获取 */
-  bandType?: string;
-};
 
 const convertToFrequencyBand = (vo: PlanningVO): FrequencyBand => ({
   guid: vo.guid,
@@ -213,6 +197,16 @@ function matchBandType(startFreqMHz: number, endFreqMHz: number, bandTypeOptions
   return undefined;
 }
 
+/** 将频率字符串转换为可比较的数值（统一转为 kHz） */
+function parseFreqToNumber(freqStr: string | number): number {
+  if (!freqStr) return 0;
+  const str = String(freqStr).trim().toUpperCase();
+  const num = parseFloat(str.replace(/[^\d.]/g, '')) || 0;
+  if (str.includes('GHZ')) return num * 1_000_000;
+  if (str.includes('MHZ')) return num * 1_000;
+  return num; // 默认 kHz
+}
+
 function mapPermitVoToLicenseRecord(r: PermitVO): LicenseRecord {
   const now = new Date();
   const endDate = r.enddate ? new Date(r.enddate) : null;
@@ -257,18 +251,6 @@ type DetailRecord =
   | { type: 'station'; data: StationRecord }
   | { type: 'license'; data: LicenseRecord }
   | { type: 'planning'; data: FrequencyBand };
-
-type PlanningFormProps = {
-  title: string;
-  description: string;
-  value: FrequencyBand;
-  onChange: (value: FrequencyBand) => void;
-  onClose: () => void;
-  onSubmit: () => void;
-  submitLabel: string;
-  serviceTypeOptions?: DictData[];
-  bandTypeOptions?: DictData[];
-};
 
 const stationFields: (keyof StationRecord)[] = [
   'name',
@@ -518,67 +500,6 @@ function StationForm({ title, description, value, onChange, onClose, onSubmit, s
   );
 }
 
-function PlanningForm({ title, description, value, onChange, onClose, onSubmit, submitLabel, serviceTypeOptions = [], bandTypeOptions = [] }: PlanningFormProps) {
-  const update = <K extends keyof FrequencyBand>(key: K, next: FrequencyBand[K]) => onChange({ ...value, [key]: next });
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium mb-2">Radioservices<span className="text-red-500"> *</span></label><input value={value.category} onChange={(e) => update('category', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Subservices<span className="text-red-500"> *</span></label><input value={value.subCategory} onChange={(e) => update('subCategory', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Level<span className="text-red-500"> *</span></label><input value={value.service} onChange={(e) => update('service', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Band Name</label><input value={value.bandName} onChange={(e) => update('bandName', e.target.value)} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Start Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.startFreq} onChange={(e) => update('startFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">End Frequency<span className="text-red-500"> *</span></label><input type="number" value={value.endFreq} onChange={(e) => update('endFreq', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" required /></div>
-            <div><label className="block text-sm font-medium mb-2">Step</label><input type="number" value={value.step} onChange={(e) => update('step', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Signal Bandwidth</label><input type="number" value={value.bandwidth} onChange={(e) => update('bandwidth', Number(e.target.value))} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-            <div><label className="block text-sm font-medium mb-2">Service Type</label>
-              <Select value={value.serviceType ?? ''} onValueChange={(v) => update('serviceType', v)}>
-                <SelectTrigger className="w-full h-10">
-                  <SelectValue placeholder="-- Select Service Type --" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {serviceTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div><label className="block text-sm font-medium mb-2">Band Type</label>
-              <Select value={value.bandType ?? ''} onValueChange={(v) => update('bandType', v)}>
-                <SelectTrigger className="w-full h-10">
-                  <SelectValue placeholder="-- Select Band Type --" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {bandTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Notes</label><textarea value={value.note} onChange={(e) => update('note', e.target.value)} rows={4} className="w-full px-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary" /></div>
-          </div>
-        </div>
-        <div className="p-6 border-t border-border flex justify-end gap-3">
-          <button onClick={onClose} className="px-6 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Cancel</button>
-          <button onClick={onSubmit} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity">{submitLabel}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function buildFrequencyString(ft?: number, fr?: number): string {
   if (ft && fr) return `${ft}–${fr} MHz`;
   if (ft) return `${ft} MHz`;
@@ -655,6 +576,9 @@ export function DataManagement() {
   const [serviceTypeOptions, setServiceTypeOptions] = useState<DictData[]>([]);
   const [bandTypeOptions, setBandTypeOptions] = useState<DictData[]>([]);
   const [stationTypeOptions, setStationTypeOptions] = useState<DictData[]>([]);
+  const [importProgress, setImportProgress] = useState<{ total: number; success: number; errors: number; status: 'idle' | 'loading' | 'done' }>({ total: 0, success: 0, errors: 0, status: 'idle' });
+  const [planningSortField, setPlanningSortField] = useState<'startFreq' | 'endFreq'>('startFreq');
+  const [planningSortOrder, setPlanningSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // 分页状态 - pageSize 9999 for fetching all data, display uses actual pagination
   const [stationPage, setStationPage] = useState({ pageNum: 1, pageSize: 9999 });
@@ -768,7 +692,14 @@ export function DataManagement() {
 
   const filteredStationData = useMemo(() => stationRecords.filter((s) => !searchTerm || [s.name, s.type, s.region, s.ownerName].some((v) => v?.toLowerCase().includes(searchTerm.toLowerCase()))), [searchTerm, stationRecords]);
 
-  const filteredPlanningData = useMemo(() => planningRecords, [planningRecords]);
+  const filteredPlanningData = useMemo(() => {
+    const sorted = [...planningRecords].sort((a, b) => {
+      const aVal = planningSortField === 'startFreq' ? parseFreqToNumber(a.startFreq) : parseFreqToNumber(a.endFreq);
+      const bVal = planningSortField === 'startFreq' ? parseFreqToNumber(b.startFreq) : parseFreqToNumber(b.endFreq);
+      return planningSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+    return sorted;
+  }, [planningRecords, planningSortField, planningSortOrder]);
 
   // Client-side pagination for display (10 items per page)
   const DISPLAY_PAGE_SIZE = 10;
@@ -1045,35 +976,136 @@ export function DataManagement() {
     if (!importFile) return;
     if (importTab === 'planning') {
       try {
-        //读取 Excel 文件并预处理：添加 serviceType 和 bandType 列
+        // 确保数据字典已加载
+        let currentServiceTypeOptions = serviceTypeOptions;
+        let currentBandTypeOptions = bandTypeOptions;
+        if (currentServiceTypeOptions.length === 0 || currentBandTypeOptions.length === 0) {
+          console.log('[Planning] 数据字典为空，先触发加载');
+          const typeResult = await dictTypeApi.list();
+          const dictTypes = (typeResult as any)?.data ?? typeResult ?? [];
+          const serviceTypeDict = dictTypes.find((d: any) => d.code === 'service_type');
+          const bandTypeDict = dictTypes.find((d: any) => d.code === 'freq_band');
+
+          if (serviceTypeDict?.guid) {
+            const stRes = await dictDataApi.list(serviceTypeDict.guid);
+            const stData = (stRes as any)?.data ?? stRes ?? [];
+            currentServiceTypeOptions = Array.isArray(stData) ? stData : stData.records ?? [];
+            setServiceTypeOptions(currentServiceTypeOptions);
+          }
+          if (bandTypeDict?.guid) {
+            const btRes = await dictDataApi.list(bandTypeDict.guid);
+            const btData = (btRes as any)?.data ?? btRes ?? [];
+            currentBandTypeOptions = Array.isArray(btData) ? btData : btData.records ?? [];
+            setBandTypeOptions(currentBandTypeOptions);
+          }
+        }
+
+        //读取 Excel 文件并预处理
         const buffer = await importFile.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
 
-        // 为每行添加 serviceType 和 bandType
-        const processedRows = rows.map((row: any) => {
-          const radioservices = row.Radioservices || row.radioservices || row.category || '';
-          const startFreq = parseFloat(String(row['Start Frequency'] || row.startFreq || row.startfrequency || 0));
-          const endFreq = parseFloat(String(row['End Frequency'] || row.endFreq || row.stopfrequency || 0));
-          return {
+        // 逐行验证并收集错误
+        const errors: { row: number; data: any; reason: string }[] = [];
+        const validRows: any[] = [];
+
+        rows.forEach((row: any, index: number) => {
+          const rowNum = index + 2; // Excel行号（从2开始，1是表头）
+          // 兼容模板列名
+          const radioservices = row.Radioservices || row.radioservices || row.category || row.Category || '';
+          // 频率值可能带单位（kHz/MHz/GHz），需要提取数字和单位
+          const rawStartFreq = String(row['Start Frequency'] || row['Start Frequency '] || row.startFreq || row.startfrequency || '0');
+          const rawEndFreq = String(row['End Frequency'] || row['End Frequency '] || row.endFreq || row.stopfrequency || '0');
+          const startFreqNum = parseFloat(rawStartFreq.replace(/[^\d.]/g, '')) || 0;
+          const endFreqNum = parseFloat(rawEndFreq.replace(/[^\d.]/g, '')) || 0;
+          // 提取单位（如果没有明确单位，默认 MHz，因为用户输入的是 MHz）
+          const startFreqUnit = rawStartFreq.toLowerCase().includes('khz') ? 'kHz' : rawStartFreq.toLowerCase().includes('ghz') ? 'GHz' : 'MHz';
+          const endFreqUnit = rawEndFreq.toLowerCase().includes('khz') ? 'kHz' : rawEndFreq.toLowerCase().includes('ghz') ? 'GHz' : 'MHz';
+          const startFreq = `${startFreqNum} ${startFreqUnit}`;
+          const endFreq = `${endFreqNum} ${endFreqUnit}`;
+
+          // 验证必填字段
+          if (!radioservices) {
+            errors.push({ row: rowNum, data: row, reason: 'Category (radioservices) 不能为空' });
+            return;
+          }
+          if (endFreqNum <= 0) {
+            errors.push({ row: rowNum, data: row, reason: 'End Frequency 必须是大于0的数字' });
+            return;
+          }
+          if (startFreqNum > 0 && endFreqNum < startFreqNum) {
+            errors.push({ row: rowNum, data: row, reason: `End Frequency (${endFreq}) 不能小于 Start Frequency (${startFreq})` });
+            return;
+          }
+
+          // 验证通过，添加到有效列表
+          const subservices = row.Subservices || row.subservices || row.subCategory || row.Subcategory || '';
+          const level = row.Level || row.level || row.Service || '';
+          const segmentname = row['Band Name'] || row.bandName || row.Band_Name || '';
+          const step = row.Step || row['Step(kHz)'] || row.step || 0;
+          const bandwidth = row['Signal Bandwidth'] || row['Signal Bandwidth（kHz）'] || row.bandwidth || 0;
+          const note = row.Notes || row.note || row.Note || '';
+
+          validRows.push({
             ...row,
-            ServiceType: matchServiceType(radioservices, serviceTypeOptions) ?? row.ServiceType ?? row.serviceType ?? '',
-            BandType: matchBandType(startFreq, endFreq, bandTypeOptions) ?? row.BandType ?? row.bandType ?? '',
-          };
+            // 使用与 planningFields 一致的属性名（小写）
+            category: radioservices,
+            subCategory: subservices,
+            service: level,
+            bandName: segmentname,
+            startFreq: startFreq,
+            endFreq: endFreq,
+            step: step,
+            bandwidth: bandwidth,
+            note: note,
+            status: 'free',
+            // 自动分析填充 serviceType 和 bandType（小写，与 planningFields 一致）
+            // 注意：频率已转为带单位的字符串，需要转换为 MHz 传给 matchBandType
+            serviceType: matchServiceType(radioservices, currentServiceTypeOptions) ?? row.serviceType ?? row['Service Type'] ?? '',
+            bandType: matchBandType(startFreqNum / 1000, endFreqNum / 1000, currentBandTypeOptions) ?? row.bandType ?? row['Band Type'] ?? '',
+          });
         });
 
-        //写入新的 Excel 文件（添加 ServiceType 和 BandType 列）
-        const planningExportFields: (keyof typeof planningFieldMap)[] = ['category', 'subCategory', 'service', 'bandName', 'startFreq', 'endFreq', 'step', 'bandwidth', 'status', 'note', 'serviceType', 'bandType'];
-        const headerRow = [...planningFields.map((field) => planningFieldMap[field as keyof typeof planningFieldMap] ?? String(field)), 'ServiceType', 'BandType'];
+        // 设置进度状态：加载中
+        setImportProgress({ total: rows.length, success: 0, errors: errors.length, status: 'loading' });
+
+        // 生成错误报告文件（如果有错误）
+        let errorReportUrl = '';
+        if (errors.length > 0) {
+          const errorReportRows = [
+            ['Excel行号', '错误原因', '原始数据'],
+            ...errors.map(e => [e.row, e.reason, JSON.stringify(e.data)])
+          ];
+          const errorSheet = XLSX.utils.aoa_to_sheet(errorReportRows);
+          const errorWorkbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(errorWorkbook, errorSheet, '错误报告');
+          const errorWbout = XLSX.write(errorWorkbook, { bookType: 'xlsx', type: 'array' });
+          const errorFile = new File([errorWbout], `import-errors-${Date.now()}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          errorReportUrl = URL.createObjectURL(errorFile);
+        }
+
+        if (validRows.length === 0) {
+          // 设置进度状态：完成
+          setImportProgress({ total: rows.length, success: 0, errors: errors.length, status: 'done' });
+          // 自动下载错误报告
+          const errorLink = document.createElement('a');
+          errorLink.href = errorReportUrl;
+          errorLink.download = `import-errors-${Date.now()}.xlsx`;
+          document.body.appendChild(errorLink);
+          errorLink.click();
+          document.body.removeChild(errorLink);
+          URL.revokeObjectURL(errorReportUrl);
+          return;
+        }
+
+        // 为每行添加 serviceType 和 bandType，并转换为 planningFields 期望的字段格式
+        const processedRows = validRows;
+
+        //写入新的 Excel 文件
+        const headerRow = planningFields.map((field) => planningFieldMap[field as keyof typeof planningFieldMap] ?? String(field));
         const dataRows = processedRows.map((item) => {
-          const rowData: any[] = [];
-          for (const field of planningFields) {
-            rowData.push((item as any)[field] ?? '');
-          }
-          // 添加 serviceType 和 bandType
-          rowData.push(item.ServiceType || item.serviceType || '', item.BandType || item.bandType || '');
-          return rowData;
+          return planningFields.map((field) => (item as any)[field] ?? '');
         });
         const newSheet = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
         const newWorkbook = XLSX.utils.book_new();
@@ -1081,18 +1113,49 @@ export function DataManagement() {
         const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
         const processedFile = new File([wbout], importFile.name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
+        // 设置进度状态：导入中
+        setImportProgress({ total: rows.length, success: 0, errors: errors.length, status: 'loading' });
+
         await planningApi.import(processedFile);
         const res = await planningApi.page({ pageNum: planningPage.pageNum, pageSize: planningPage.pageSize });
         if (res.code === 200 && res.data) {
           setPlanningRecords(res.data.records.map(convertToFrequencyBand));
           setPlanningTotal(res.data.total || 0);
         }
+        // 设置进度状态：完成
+        setImportProgress({ total: rows.length, success: validRows.length, errors: errors.length, status: 'done' });
+        // 如果有错误，自动下载错误报告
+        if (errors.length > 0) {
+          const errorLink = document.createElement('a');
+          errorLink.href = errorReportUrl;
+          errorLink.download = `import-errors-${Date.now()}.xlsx`;
+          document.body.appendChild(errorLink);
+          errorLink.click();
+          document.body.removeChild(errorLink);
+          URL.revokeObjectURL(errorReportUrl);
+        }
       } catch (error) {
-        console.error('Failed to import planning data:', error);
-        alert('Planning data import failed');
+        const errorMsg = error instanceof Error ? error.message : '未知错误';
+        // 将错误信息写入文件
+        const errorRows = [['错误时间', '错误信息'], [new Date().toLocaleString(), errorMsg]];
+        const errorSheet = XLSX.utils.aoa_to_sheet(errorRows);
+        const errorWorkbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(errorWorkbook, errorSheet, '错误报告');
+        const errorWbout = XLSX.write(errorWorkbook, { bookType: 'xlsx', type: 'array' });
+        const errorFile = new File([errorWbout], `import-error-${Date.now()}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const errorUrl = URL.createObjectURL(errorFile);
+        // 自动下载错误报告
+        const errorLink = document.createElement('a');
+        errorLink.href = errorUrl;
+        errorLink.download = `import-error-${Date.now()}.xlsx`;
+        document.body.appendChild(errorLink);
+        errorLink.click();
+        document.body.removeChild(errorLink);
+        URL.revokeObjectURL(errorUrl);
+        // 设置进度状态：完成（有错误）
+        setImportProgress({ total: 0, success: 0, errors: 1, status: 'done' });
         return;
       }
-      alert('成功导入数据');
       setShowImportDialog(false);
       setImportFile(null);
       return;
@@ -1549,17 +1612,41 @@ export function DataManagement() {
                 <th className="text-left py-3 px-4">Radioservices</th>
                 <th className="text-left py-3 px-4">Subservices</th>
                 <th className="text-left py-3 px-4">Level</th>
-                  <th className="text-left py-3 px-4">Band Name</th>
-                  <th className="text-left py-3 px-4">Start Frequency</th>
-                  <th className="text-left py-3 px-4">End Frequency</th>
-                  <th className="text-left py-3 px-4">Step</th>
-                  <th className="text-left py-3 px-4">Signal Bandwidth</th>
-                  <th className="text-left py-3 px-4">Service Type</th>
-                  <th className="text-left py-3 px-4">Band Type</th>
-                  <th className="text-left py-3 px-4">Notes</th>
-                  <th className="text-center py-3 px-4">Actions</th>
-                </tr>
-              </thead>
+                <th className="text-left py-3 px-4">Band Name</th>
+                <th
+                  className="text-left py-3 px-4 cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => {
+                    if (planningSortField === 'startFreq') {
+                      setPlanningSortOrder(planningSortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setPlanningSortField('startFreq');
+                      setPlanningSortOrder('asc');
+                    }
+                  }}
+                >
+                  Start Frequency {planningSortField === 'startFreq' ? (planningSortOrder === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th
+                  className="text-left py-3 px-4 cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => {
+                    if (planningSortField === 'endFreq') {
+                      setPlanningSortOrder(planningSortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setPlanningSortField('endFreq');
+                      setPlanningSortOrder('asc');
+                    }
+                  }}
+                >
+                  End Frequency {planningSortField === 'endFreq' ? (planningSortOrder === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th className="text-left py-3 px-4">Step</th>
+                <th className="text-left py-3 px-4">Signal Bandwidth</th>
+                <th className="text-left py-3 px-4">Service Type</th>
+                <th className="text-left py-3 px-4">Band Type</th>
+                <th className="text-left py-3 px-4">Notes</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
               <tbody key={planningPage.pageNum}>
                 {paginatedPlans.map((plan) => (
                   <tr key={plan.guid} className="border-b border-border hover:bg-muted/50">
@@ -1897,9 +1984,33 @@ export function DataManagement() {
                 </button>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => { setShowImportDialog(false); setImportFile(null); }} className="px-5 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Cancel</button>
-                <button type="button" onClick={importFromExcel} disabled={!importFile} className="px-5 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">Import Data</button>
+                <button type="button" onClick={() => { setShowImportDialog(false); setImportFile(null); setImportProgress({ total: 0, success: 0, errors: 0, status: 'idle' }); }} className="px-5 py-2 border border-border rounded-lg hover:bg-muted transition-colors">Cancel</button>
+                <button type="button" onClick={importFromExcel} disabled={!importFile || importProgress.status === 'loading'} className="px-5 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">Import Data</button>
               </div>
+              {importProgress.status !== 'idle' && (
+                <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
+                  <div className="text-sm font-medium mb-2">
+                    {importProgress.status === 'loading' ? '导入中...' : '导入完成'}
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                    <div
+                      className="bg-primary h-2.5 rounded-full transition-all"
+                      style={{ width: importProgress.status === 'done' ? '100%' : '50%' }}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>总行数：{importProgress.total}</div>
+                    {importProgress.status === 'done' && (
+                      <>
+                        <div className="text-green-600">成功：{importProgress.success}</div>
+                        {importProgress.errors > 0 && (
+                          <div className="text-red-600">错误：{importProgress.errors}（错误报告已自动下载）</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

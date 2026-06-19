@@ -121,7 +121,7 @@ export function LeftPanel({ data, loading }: LeftPanelProps) {
     { name: 'Broadcast', pct: 16, color: '#2ed573' },
     { name: 'Radio', pct: 14, color: '#ffa502' },
     { name: 'Aviation', pct: 35, color: '#1e90ff' },
-    { name: 'Maritime', pct: 15, color: '#ff6b9d' },
+    { name: 'Maritime', pct: 15, color: '#00BFA5' },
   ];
 
   const donutSlices = stationTypeList.length > 0

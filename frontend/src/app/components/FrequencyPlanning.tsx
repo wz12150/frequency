@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BadgeInfo, ChevronLeft, ChevronRight, FileDown, FileUp, Info, Plus, RadioTower, ShieldAlert, Satellite, X } from 'lucide-react';
+import { ArrowLeft, BadgeInfo, ChevronLeft, ChevronRight, Edit, FileDown, FileUp, Info, Plus, RadioTower, ShieldAlert, Satellite, X } from 'lucide-react';
 import { planningApi, PlanningVO } from '../api/planning';
 import { dictTypeApi, dictDataApi, type DictData } from '../api/system';
+import { PlanningForm, type FrequencyBand } from './PlanningForm';
 
 type SpectrumSegment = {
   service: string;
@@ -31,6 +32,7 @@ type StationRecord = {
 /** start/end/width 为 kHz；step、bandwidth 为 kHz（与后端导入一致）*/
 type SpectrumBlock = {
   id: number;
+  guid: string;
   band: string;
   range: string;
   start: number;
@@ -170,27 +172,34 @@ function groupBlocksIntoLayers(blocks: SpectrumBlock[], rowStartKhz: number, row
   return layeredBlocks;
 }
 
-/** 解析频率字符串，返回 kHz 单位的数字值*/
+/** 解析频率字符串，返回 kHz 单位的数字值
+ * 导入时频率单位为 MHz（Excel 中不带单位后缀），所以纯数字默认按 MHz 处理
+ */
 function parseFrequencyToKhz(value: string | number | undefined): number {
   if (value === undefined || value === null) return 0;
   const str = String(value).trim().toUpperCase();
   if (str === '') return 0;
   if (str.includes('GHZ')) return parseFloat(str.replace(/[^\d.]/g, '')) * 1_000_000;
   if (str.includes('MHZ')) return parseFloat(str.replace(/[^\d.]/g, '')) * 1_000;
-  return parseFloat(str.replace(/[^\d.]/g, '')); // 默认 kHz
+  // 导入时单位为 MHz，纯数字默认按 MHz 处理
+  const num = parseFloat(str.replace(/[^\d.]/g, ''));
+  return num * 1_000; // MHz → kHz
 }
 
 // --- API data transform helpers ---
 
 function deriveStatus(level: string): { color: string; status: 'occupied' | 'free' | 'reserved' } {
+  const levelUpper = level.toUpperCase();
+  if (levelUpper === 'NOT ALLOCATED' || levelUpper === 'UNALLOCATED' || levelUpper === 'FREE') {
+    return { color: '#9CA3AF', status: 'free' };
+  }
   const map: Record<string, { color: string; status: 'occupied' | 'free' | 'reserved' }> = {
     'PRIMARY':     { color: '#2B7FFF', status: 'occupied' },
     'SECONDARY':   { color: '#27AE60', status: 'occupied' },
     'ALLOCATED':   { color: '#2563EB', status: 'occupied' },
     'RESERVED':    { color: '#8A8F98', status: 'reserved' },
-    'UNALLOCATED': { color: '#E5E7EB', status: 'free' },
   };
-  return map[level.toUpperCase()] ?? { color: '#9CA3AF', status: 'free' };
+  return map[levelUpper] ?? { color: '#9CA3AF', status: 'free' };
 }
 
 function radioservicesToCategory(radioservices: string): string {
@@ -198,6 +207,7 @@ function radioservicesToCategory(radioservices: string): string {
   if (rs.includes('broadcast') || rs.includes('tv') || rs.includes('radio')) return 'Broadcasting';
   if (rs.includes('mobile') || rs.includes('cellular') || rs.includes('lte') || rs.includes('5g')) return 'Mobile Communication';
   if (rs.includes('emergency') || rs.includes('public safety') || rs.includes('rescue')) return 'Emergency Communication';
+  if (rs.includes('maritime')) return 'Maritime Communication';
   if (rs.includes('fixed') || rs.includes('microwave') || rs.includes('point')) return 'Dedicated / Fixed Wireless';
   if (rs.includes('satellite') || rs.includes('vsat')) return 'Satellite';
   return 'Reserved / Free';
@@ -208,6 +218,7 @@ function radioservicesToColor(radioservices: string): string {
   if (rs.includes('broadcast') || rs.includes('tv') || rs.includes('radio')) return '#2B7FFF';
   if (rs.includes('mobile') || rs.includes('cellular') || rs.includes('lte') || rs.includes('5g')) return '#27AE60';
   if (rs.includes('emergency') || rs.includes('public safety')) return '#D64545';
+  if (rs.includes('maritime')) return '#00BFA5';
   if (rs.includes('fixed') || rs.includes('microwave')) return '#F39C12';
   if (rs.includes('satellite')) return '#8E44AD';
   return ''; // 空字符串表示未匹配，需要兜底颜色
@@ -215,7 +226,7 @@ function radioservicesToColor(radioservices: string): string {
 
 const serviceTypeColors = [
   '#2B7FFF', '#27AE60', '#D64545', '#F39C12',
-  '#8E44AD', '#9CA3AF', '#FF6B9D', '#00BFA5',
+  '#8E44AD', '#00BFA5', '#FF6B9D', '#00BFA5',
   '#FFB300', '#7C4DFF', '#00ACC1', '#F06292',
 ];
 
@@ -226,20 +237,25 @@ function planningVOToSpectrumBlock(
   serviceTypeColorMap: Record<string, string>,
 ): SpectrumBlock {
   const { status } = deriveStatus(record.level ?? '');
+  const levelUpper = (record.level ?? '').toUpperCase();
+  const startKhz = parseFrequencyToKhz(record.startfrequency);
+  const endKhz = parseFrequencyToKhz(record.stopfrequency);
   const serviceColor = (() => {
-    // Free / Unallocated / Reserved 明确用灰色（与图例一致）
-    if (record.level === 'UNALLOCATED' || record.level === 'RESERVED') return '#9CA3AF';
+    // Free / Unallocated / Reserved / Not Allocated 明确用灰色（与图例一致）
+    const normalizedLevel = levelUpper.replace(/[-_]/g, ' ');
+    const radiosUpper = (record.radioservices ?? '').toUpperCase().replace(/[-_]/g, ' ');
+    // MF (300-3000 kHz) 频段跟随 Free 的颜色逻辑
+    if (normalizedLevel === 'UNALLOCATED' || normalizedLevel === 'RESERVED' || normalizedLevel === 'NOT ALLOCATED' || normalizedLevel === 'FREE' || normalizedLevel === 'NO ALLOCATED' || radiosUpper === 'NOT ALLOCATED' || radiosUpper === 'FREE') return '#9CA3AF';
     const st = record.serviceType;
     if (st && st.trim() && serviceTypeColorMap[st]) return serviceTypeColorMap[st];
     const rc = radioservicesToColor(record.radioservices ?? '');
     if (rc && rc.trim()) return rc;
     return '#8B7355';
   })();
-  const startKhz = parseFrequencyToKhz(record.startfrequency);
-  const endKhz = parseFrequencyToKhz(record.stopfrequency);
   const width = endKhz - startKhz;
   const block: SpectrumBlock = {
     id: index + 1,
+    guid: record.guid,
     band: record.radioservices ?? 'Unknown',
     range: record.segmentname?.trim()
       ? record.segmentname
@@ -266,17 +282,18 @@ function planningVOToSpectrumBlock(
 
 const categoryColorMap: Record<string, string> = {
   'Broadcasting': '#2B7FFF', 'Mobile Communication': '#27AE60',
-  'Emergency Communication': '#D64545', 'Dedicated / Fixed Wireless': '#F39C12',
+  'Emergency Communication': '#D64545', 'Maritime Communication': '#00BFA5',
+  'Dedicated / Fixed Wireless': '#F39C12',
   'Satellite': '#8E44AD', 'Reserved / Free': '#9CA3AF',
 };
 const categoryRangeMap: Record<string, string> = {
   'Broadcasting': 'Radio & TV services', 'Mobile Communication': 'Public cellular networks',
-  'Emergency Communication': 'Public safety, rescue', 'Dedicated / Fixed Wireless': 'Microwave links',
+  'Emergency Communication': 'Public safety, rescue', 'Maritime Communication': 'Maritime mobile services',
+  'Dedicated / Fixed Wireless': 'Microwave links',
   'Satellite': 'Space-ground services', 'Reserved / Free': 'Unallocated blocks',
 };
 
 const defaultSpectrumRows: SpectrumRowDef[] = [
-  { title: 'ULF (300–3000 Hz)', unit: 'Hz', khzStart: 0.3, khzEnd: 3 },
   { title: 'VLF (3–30 kHz)', unit: 'kHz', khzStart: 3, khzEnd: 30 },
   { title: 'LF (30–300 kHz)', unit: 'kHz', khzStart: 30, khzEnd: 300 },
   { title: 'MF (300–3000 kHz)', unit: 'kHz', khzStart: 300, khzEnd: 3000 },
@@ -304,6 +321,81 @@ export function FrequencyPlanning() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [serviceTypeOptions, setServiceTypeOptions] = useState<DictData[]>([]);
   const [bandTypeOptions, setBandTypeOptions] = useState<DictData[]>([]);
+  const [planningDialogMode, setPlanningDialogMode] = useState<'add' | 'edit' | null>(null);
+  const [planningFormRecord, setPlanningFormRecord] = useState<FrequencyBand | null>(null);
+
+  // --- Helper: convert PlanningVO to FrequencyBand ---
+  const convertToFrequencyBand = (vo: PlanningVO): FrequencyBand => ({
+    guid: vo.guid,
+    category: vo.radioservices,
+    subCategory: vo.subservices,
+    service: vo.level,
+    bandName: vo.segmentname,
+    startFreq: vo.startfrequency as number,
+    endFreq: vo.stopfrequency as number,
+    step: vo.step,
+    bandwidth: vo.bandwidth,
+    status: 'free' as const,
+    note: vo.remark || '',
+    serviceType: vo.serviceType,
+    bandType: vo.bandType,
+  });
+
+  // --- Helper: convert FrequencyBand to Partial<PlanningVO> ---
+  const convertToPlanningVO = (fb: FrequencyBand): Partial<PlanningVO> => ({
+    guid: fb.guid,
+    radioservices: fb.category,
+    subservices: fb.subCategory,
+    level: fb.service,
+    segmentname: fb.bandName,
+    startfrequency: fb.startFreq,
+    stopfrequency: fb.endFreq,
+    step: fb.step,
+    bandwidth: fb.bandwidth,
+    remark: fb.note,
+    serviceType: fb.serviceType,
+    bandType: fb.bandType,
+  });
+
+  // --- Open edit dialog ---
+  const openPlanningEdit = (record: FrequencyBand) => {
+    setPlanningFormRecord(record);
+    setPlanningDialogMode('edit');
+  };
+
+  // --- Save planning edit ---
+  const savePlanningEdit = async () => {
+    if (!planningFormRecord) return;
+    if (!planningFormRecord.category || !planningFormRecord.subCategory || !planningFormRecord.service || planningFormRecord.startFreq === 0 || planningFormRecord.endFreq === 0) {
+      alert('Please fill in all required fields: Category, Subcategory, Level, Start Frequency, End Frequency');
+      return;
+    }
+    try {
+      const vo = convertToPlanningVO(planningFormRecord);
+      await planningApi.update(planningFormRecord.guid, {
+        radioservices: vo.radioservices,
+        subservices: vo.subservices,
+        level: vo.level,
+        segmentname: vo.segmentname,
+        startfrequency: vo.startfrequency,
+        stopfrequency: vo.stopfrequency,
+        step: vo.step,
+        bandwidth: vo.bandwidth,
+        remark: vo.remark,
+        serviceType: vo.serviceType,
+        bandType: vo.bandType,
+      });
+      // Refresh data
+      const response: any = await planningApi.list();
+      const data = response?.data ?? response ?? {};
+      const records = Array.isArray(data) ? data : (data.records ?? data.list ?? []);
+      setPlanningRecords(records);
+      setPlanningDialogMode(null);
+      setPlanningFormRecord(null);
+    } catch (err: any) {
+      alert(err.message ?? '保存失败');
+    }
+  };
 
   // --- Fetch data ---
   useEffect(() => {
@@ -469,7 +561,7 @@ export function FrequencyPlanning() {
   const pageStations = filteredStationRecords;
 
   return (
-    <div className="space-y-3 overflow-auto max-h-[calc(100vh-180px)]">
+    <div className="space-y-3 overflow-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-semibold mb-1">Frequency Planning</h2>
@@ -561,7 +653,7 @@ export function FrequencyPlanning() {
                       style={{ height: '128px', width: '100%', backgroundColor: !(row.layeredBlocks && row.layeredBlocks.length > 0) ? '#D1D5DB' : '#0f172a' }}
                     >
                     <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '8% 100%' }} />
-                    <div className="relative h-full flex items-stretch gap-0 w-full overflow-x-auto">
+                    <div className="relative h-full flex items-stretch gap-0 w-full overflow-hidden">
                       {/* 按频率顺序渲染所有块和Free区域 */}
                       {(() => {
                         if (!row.blocks || row.blocks.length === 0) return null;
@@ -670,6 +762,12 @@ export function FrequencyPlanning() {
               </div>
             </div>
             <div className="flex gap-3">
+              <button onClick={() => {
+                const vo = planningRecords.find(r => r.guid === selectedBlock.guid);
+                if (vo) {
+                  openPlanningEdit(convertToFrequencyBand(vo));
+                }
+              }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><Edit className="w-4 h-4" />Edit</button>
               <button onClick={() => { setSelectedBlock(null); setViewMode('overview'); setShowStationPanel(false); }} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"><ChevronRight className="w-4 h-4 rotate-180" />Back to spectrum map</button>
             </div>
           </div>
@@ -792,6 +890,20 @@ export function FrequencyPlanning() {
             </div>
           </div>
         </div>
+      )}
+
+      {planningDialogMode && planningFormRecord && (
+        <PlanningForm
+          title={planningDialogMode === 'add' ? 'Add Frequency Planning Band' : 'Edit Planning Data'}
+          description={planningDialogMode === 'add' ? 'Create a new planning record for the table.' : 'Update the selected planning record.'}
+          value={planningFormRecord}
+          onChange={(data) => setPlanningFormRecord(data)}
+          onClose={() => { setPlanningDialogMode(null); setPlanningFormRecord(null); }}
+          onSubmit={savePlanningEdit}
+          submitLabel={planningDialogMode === 'add' ? 'Add Band' : 'Save Changes'}
+          serviceTypeOptions={serviceTypeOptions}
+          bandTypeOptions={bandTypeOptions}
+        />
       )}
 
     </div>

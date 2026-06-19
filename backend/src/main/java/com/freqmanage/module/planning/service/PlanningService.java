@@ -80,6 +80,10 @@ public class PlanningService extends ServiceImpl<PlanningMapper, RsbtPlanning> {
         baseMapper.deleteById(id);
     }
 
+    public void deleteAll() {
+        baseMapper.delete(null);
+    }
+
     public PlanningOverviewVO overview() {
         PlanningOverviewVO vo = new PlanningOverviewVO();
         vo.setTotalCount(baseMapper.selectCount(null));

@@ -53,6 +53,12 @@ public class PlanningController {
         return ApiResponse.ok();
     }
 
+    @DeleteMapping("/deleteAll")
+    public ApiResponse<Void> deleteAll() {
+        planningService.deleteAll();
+        return ApiResponse.ok();
+    }
+
     @GetMapping("/overview")
     public ApiResponse<PlanningOverviewVO> overview() {
         return ApiResponse.ok(planningService.overview());
